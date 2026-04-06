@@ -6,7 +6,8 @@ import { useEffect } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 
 const navItems = [
-  { href: '/', label: 'Overview' },
+  { href: '/dashboard', label: 'Overview' },
+  { href: '/requests', label: 'Requests' },
   { href: '/loans', label: 'Loans' },
   { href: '/loans/new', label: 'Create Loan' },
   { href: '/rules', label: 'Rules' },
@@ -26,7 +27,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     setUser(null)
-    router.replace('/login')
+    router.replace('/')
   }
 
   return (
@@ -75,7 +76,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`nav-link${pathname === item.href ? ' active' : ''}`}
+                    className={`nav-link${pathname === item.href || pathname.startsWith(`${item.href}/`) ? ' active' : ''}`}
                   >
                     {item.label}
                   </Link>

@@ -46,7 +46,8 @@ export function DashboardOverview() {
         </p>
         <div className="inline-actions" style={{ marginTop: '1rem' }}>
           <Link href="/loans/new" className="button">Create a new loan</Link>
-          <Link href="/rules" className="button-secondary">Open the rules page</Link>
+          <Link href="/requests" className="button-secondary">Review requests</Link>
+          <Link href="/rules" className="button-ghost">Open the rules page</Link>
         </div>
       </section>
 

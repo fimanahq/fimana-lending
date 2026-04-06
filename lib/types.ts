@@ -3,6 +3,8 @@ export type PaymentFrequency = 'monthly' | 'twice_monthly'
 export type LoanStatus = 'active' | 'completed' | 'cancelled'
 export type LoanInstallmentStatus = 'pending' | 'partial' | 'paid'
 export type LoanReminderStatus = 'pending' | 'sent' | 'cancelled'
+export type LoanRequestStatus = 'pending' | 'approved' | 'rejected'
+export type LoanSchedulePreset = '15_month_end' | '5_20' | 'custom'
 
 export interface ApiErrorPayload {
   message: string
@@ -96,4 +98,25 @@ export interface UpcomingLoanReminder {
   status: LoanReminderStatus
   borrower: LoanBorrower | null
   loanStatus: LoanStatus
+}
+
+export interface LoanRequest {
+  id: string
+  firstName: string
+  lastName: string
+  email?: string
+  phone?: string
+  principal: number
+  gives: number
+  paymentFrequency: PaymentFrequency
+  paymentDays: string[]
+  paymentPreset: LoanSchedulePreset
+  firstPaymentDate: string
+  notes?: string
+  status: LoanRequestStatus
+  createdAt: string
+  reviewedAt?: string | null
+  reviewedBy?: string | null
+  contactId?: string | null
+  loanId?: string | null
 }

@@ -2,7 +2,7 @@ import { loanRules } from '@/content/rules'
 
 export default function RulesPage() {
   return (
-    <div className="page-wrap" style={{ padding: '1.2rem 0 2rem' }}>
+    <div className="stack">
       <section className="card panel stack">
         <div className="eyebrow">Policy document</div>
         <h1 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)' }}>
@@ -13,7 +13,7 @@ export default function RulesPage() {
         </p>
       </section>
 
-      <section className="card panel stack" style={{ marginTop: '1rem' }}>
+      <section className="card panel stack">
         <h2 className="section-title">1. Payment schedule</h2>
         <table className="rule-table">
           <thead>
@@ -36,7 +36,7 @@ export default function RulesPage() {
         </div>
       </section>
 
-      <section className="card panel stack" style={{ marginTop: '1rem' }}>
+      <section className="card panel stack">
         <h2 className="section-title">2. Interest rate rules per cutoff</h2>
         <table className="rule-table">
           <thead>
@@ -58,7 +58,7 @@ export default function RulesPage() {
         </table>
       </section>
 
-      <section className="card panel stack" style={{ marginTop: '1rem' }}>
+      <section className="card panel stack">
         <h2 className="section-title">3. Calculation method</h2>
         <table className="rule-table">
           <thead>
@@ -88,7 +88,7 @@ n = number of gives`}
         </article>
       </section>
 
-      <section className="card panel stack" style={{ marginTop: '1rem' }}>
+      <section className="card panel stack">
         <h2 className="section-title">4. Loan schedule table output</h2>
         <p className="muted">The application should show these table headers for every generated schedule.</p>
         <table className="rule-table">
@@ -107,7 +107,7 @@ n = number of gives`}
         </table>
       </section>
 
-      <section className="card panel stack" style={{ marginTop: '1rem' }}>
+      <section className="card panel stack">
         <h2 className="section-title">5. Reminder rule</h2>
         <p className="muted">
           Reminder generation follows the selected payment schedule. If the loan is monthly, reminders follow the monthly payment day.
@@ -115,7 +115,7 @@ n = number of gives`}
         </p>
       </section>
 
-      <section className="card panel stack" style={{ marginTop: '1rem' }}>
+      <section className="card panel stack">
         <h2 className="section-title">6. Quick decision guide</h2>
         <table className="rule-table">
           <thead>

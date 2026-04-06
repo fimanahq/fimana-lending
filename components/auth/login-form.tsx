@@ -28,7 +28,7 @@ export function LoginForm() {
       })
 
       setUser(payload.user)
-      router.push(searchParams.get('next') || '/')
+      router.push(searchParams.get('next') || '/dashboard')
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to sign in')
     } finally {

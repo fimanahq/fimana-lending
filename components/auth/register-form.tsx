@@ -31,7 +31,7 @@ export function RegisterForm() {
       })
 
       setUser(payload.user)
-      router.push('/')
+      router.push('/dashboard')
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to create account')
     } finally {

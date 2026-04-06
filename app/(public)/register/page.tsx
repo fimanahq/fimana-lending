@@ -7,7 +7,7 @@ import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 export default async function RegisterPage() {
   const cookieStore = await cookies()
   if (cookieStore.get(REFRESH_COOKIE_NAME)?.value) {
-    redirect('/')
+    redirect('/dashboard')
   }
 
   return (
@@ -21,7 +21,10 @@ export default async function RegisterPage() {
           <p style={{ maxWidth: 420, color: 'rgba(255,255,255,0.8)' }}>
             Accounts created here are tagged for `fimana-loan` and can be extended to other FiMana apps later.
           </p>
-          <Link href="/login" className="button-secondary">Already have an account?</Link>
+          <div className="inline-actions" style={{ marginTop: '1rem' }}>
+            <Link href="/login" className="button-secondary">Already have an account?</Link>
+            <Link href="/request-loan" className="button-secondary">Request a loan</Link>
+          </div>
         </aside>
 
         <section className="auth-body stack">

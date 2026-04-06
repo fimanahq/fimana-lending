@@ -2,31 +2,9 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { buildPaymentDays, paymentDayOptions } from '@/lib/loan-schedule'
 import { apiRequest } from '@/lib/client-api'
-import type { Contact, Loan, PaymentFrequency } from '@/lib/types'
-
-const paymentDayOptions = Array.from({ length: 31 }, (_, index) => String(index + 1)).concat('month_end')
-
-function buildPaymentDays(
-  paymentFrequency: PaymentFrequency,
-  firstDay: string,
-  secondDay: string,
-  preset: string,
-) {
-  if (paymentFrequency === 'monthly') {
-    return [firstDay]
-  }
-
-  if (preset === '15_month_end') {
-    return ['15', 'month_end']
-  }
-
-  if (preset === '5_20') {
-    return ['5', '20']
-  }
-
-  return [firstDay, secondDay]
-}
+import type { Contact, Loan, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
 
 export function LoanForm() {
   const router = useRouter()
@@ -42,7 +20,7 @@ export function LoanForm() {
     paymentFrequency: 'twice_monthly' as PaymentFrequency,
     firstDay: '15',
     secondDay: 'month_end',
-    preset: '15_month_end',
+    preset: '15_month_end' as LoanSchedulePreset,
     firstPaymentDate: '',
     notes: '',
   })
@@ -205,7 +183,12 @@ export function LoanForm() {
                 <select
                   id="preset"
                   value={form.preset}
-                  onChange={(event) => setForm((current) => ({ ...current, preset: event.target.value }))}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      preset: event.target.value as LoanSchedulePreset,
+                    }))
+                  }
                 >
                   <option value="15_month_end">15th + month end</option>
                   <option value="5_20">5th + 20th</option>

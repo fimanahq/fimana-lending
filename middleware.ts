@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 
-const protectedPaths = ['/', '/loans']
+const protectedPaths = ['/dashboard', '/loans', '/requests', '/rules']
 const authPaths = ['/login', '/register']
 
 function isProtectedPath(pathname: string) {
@@ -24,7 +24,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (isAuthPath(pathname) && hasRefreshToken) {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return NextResponse.next()

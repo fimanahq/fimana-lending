@@ -229,9 +229,75 @@ th {
   color: var(--accent-strong);
 }
 
+.status-pill.approved,
+.status-pill.active,
+.status-pill.completed,
+.status-pill.paid,
+.status-pill.sent {
+  background: rgba(36, 98, 79, 0.12);
+  color: var(--success);
+}
+
+.status-pill.rejected,
+.status-pill.cancelled {
+  background: rgba(143, 51, 38, 0.12);
+  color: var(--danger);
+}
+
 .status-pill.partial {
   background: rgba(143, 51, 38, 0.12);
   color: var(--danger);
+}
+
+.landing-shell {
+  min-height: 100vh;
+  padding: 2rem 0 3rem;
+}
+
+.landing-hero {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  right: -6rem;
+  bottom: -7rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(216, 108, 50, 0.18), transparent 68%);
+  pointer-events: none;
+}
+
+.feature-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1.1rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.request-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+}
+
+.request-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.request-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
 }
 
 .topbar {
@@ -367,5 +433,14 @@ th {
 
   .page-wrap {
     width: min(100vw - 1rem, 100%);
+  }
+
+  .request-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .request-meta {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
