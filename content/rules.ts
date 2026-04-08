@@ -1,3 +1,19 @@
+import type { LoanInterestRulesConfig } from '@/lib/types'
+
+export const defaultLoanInterestRules: LoanInterestRulesConfig = {
+  thresholdAmount: 5000,
+  smallLoanRates: {
+    oneGive: 10,
+    twoGives: 9,
+    threePlusGives: 8,
+  },
+  largeLoanRates: {
+    oneGive: 10,
+    twoGives: 9,
+    threePlusGives: 7.5,
+  },
+}
+
 export const loanRules = {
   scheduleTableHeaders: [
     'Cutoff',

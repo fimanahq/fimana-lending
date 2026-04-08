@@ -4,7 +4,7 @@ import type { UpcomingLoanReminder } from '@/lib/types'
 
 export async function GET() {
   try {
-    const reminders = await authorizedBackendRequest<UpcomingLoanReminder[]>('/loans/reminders/upcoming')
+    const reminders = await authorizedBackendRequest<UpcomingLoanReminder[]>('/lendings/reminders/upcoming')
     return NextResponse.json(reminders)
   } catch (caughtError) {
     return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load reminders', 400)

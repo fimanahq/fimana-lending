@@ -1,5 +1,5 @@
 {
-  "name": "fimana-loan",
+  "name": "fimana-lending",
   "private": true,
   "scripts": {
     "dev": "next dev",

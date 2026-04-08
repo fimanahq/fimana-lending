@@ -1,76 +1,125 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
-const lendingSteps = [
-  {
-    title: 'Borrower submits a request',
-    copy: 'Collect the amount, preferred schedule, and contact details from a clean public page.',
-  },
-  {
-    title: 'You review it inside FiMana',
-    copy: 'Open the protected request queue, confirm the payment rhythm, and approve only the ready borrowers.',
-  },
-  {
-    title: 'FiMana creates the loan',
-    copy: 'Approved requests become a borrower record and a generated schedule in the internal workspace.',
-  },
+const HERO_IMAGE_URL = 'https://www.figma.com/api/mcp/asset/bd91ea1a-8716-481b-80a0-0bcb19290174'
+
+const primaryLinks = [
+  { href: '#vision', label: 'Our Vision' },
+  { href: '#lending-solutions', label: 'Lending Solutions' },
+  { href: '#about', label: 'About Us' },
+]
+
+const footerLinks = [
+  { href: '#privacy-policy', label: 'Privacy Policy', emphasized: true },
+  { href: '#terms-of-service', label: 'Terms of Service' },
+  { href: '#financial-security', label: 'Financial Security' },
+  { href: '#regulatory-disclosure', label: 'Regulatory Disclosure' },
 ]
 
 export default function LandingPage() {
   return (
-    <div className="landing-shell">
-      <div className="page-wrap stack">
-        <section className="landing-hero card panel">
-          <div className="eyebrow">FiMana Loan</div>
-          <h1 className="display-title" style={{ marginTop: '0.9rem', maxWidth: 860 }}>
-            Let borrowers request a loan publicly, then approve the right deals inside your protected workspace.
-          </h1>
-          <p className="muted" style={{ fontSize: '1.05rem', maxWidth: 720 }}>
-            Give applicants a simple intake page, keep approval decisions in your account, and turn approved requests
-            into borrower records plus amortization schedules.
-          </p>
+    <div className="landing-homepage">
+      <header className="landing-homepage__header" data-node-id="2003:45">
+        <div className="page-wrap landing-homepage__container landing-homepage__headerContainer">
+          <Link href="/" className="landing-homepage__brand" aria-label="FiMana Lending home" data-node-id="2003:47">
+            FiMana Lending
+          </Link>
 
-          <div className="inline-actions" style={{ marginTop: '1rem' }}>
-            <Link href="/request-loan" className="button">Request a loan</Link>
-            <Link href="/login" className="button-secondary">Sign in</Link>
-            <Link href="/dashboard" className="button-ghost">Open workspace</Link>
-          </div>
-        </section>
-
-        <section className="grid three">
-          <article className="card panel">
-            <div className="eyebrow">Public intake</div>
-            <h2 className="section-title" style={{ marginTop: '0.7rem' }}>Capture real borrower demand</h2>
-            <p className="muted">Applicants can send their preferred amount, cutoff cadence, and first payment date.</p>
-          </article>
-          <article className="card panel">
-            <div className="eyebrow">Internal control</div>
-            <h2 className="section-title" style={{ marginTop: '0.7rem' }}>Approve inside your account</h2>
-            <p className="muted">Only signed-in workspace users can convert a request into an issued loan.</p>
-          </article>
-          <article className="card panel">
-            <div className="eyebrow">Operational follow-through</div>
-            <h2 className="section-title" style={{ marginTop: '0.7rem' }}>Stay on top of collections</h2>
-            <p className="muted">Approved loans flow into the borrower roster, schedule table, and reminders.</p>
-          </article>
-        </section>
-
-        <section className="card panel stack">
-          <div>
-            <div className="eyebrow">Workflow</div>
-            <h2 className="section-title" style={{ marginTop: '0.7rem' }}>Three steps from inquiry to approval</h2>
-          </div>
-
-          <div className="grid three">
-            {lendingSteps.map((step, index) => (
-              <article key={step.title} className="feature-card">
-                <div className="eyebrow">Step {index + 1}</div>
-                <h3 className="section-title" style={{ marginTop: '0.7rem' }}>{step.title}</h3>
-                <p className="muted">{step.copy}</p>
-              </article>
+          <nav className="landing-homepage__nav" aria-label="Primary" data-node-id="2003:49">
+            {primaryLinks.map((link) => (
+              <a key={link.href} href={link.href} className="landing-homepage__navLink">
+                {link.label}
+              </a>
             ))}
+          </nav>
+
+          <div className="landing-homepage__headerActions" data-node-id="2003:56">
+            <Link href="/login" className="landing-homepage__signIn">
+              Sign in
+            </Link>
+            <Link href="/register" className="landing-homepage__createAccount" data-node-id="2003:60">
+              Create account
+            </Link>
           </div>
-        </section>
-      </div>
+        </div>
+      </header>
+
+      <main className="landing-homepage__main">
+        <div className="page-wrap landing-homepage__container">
+          <section className="landing-homepage__hero" id="vision" data-node-id="2003:4">
+            <div className="landing-homepage__copy" data-node-id="2003:17">
+              <div className="landing-homepage__eyebrow" data-node-id="2003:18">
+                The Curated Ledger
+              </div>
+
+              <h1 className="landing-homepage__title" data-node-id="2003:20">
+                <span>Request a</span>
+                <span>loan online</span>
+                <span>
+                  with <em>FiMana</em>
+                </span>
+                <span className="landing-homepage__titleAccent">Lending.</span>
+              </h1>
+
+              <p className="landing-homepage__body" data-node-id="2003:22">
+                Experience a sophisticated financial journey where modern lending meets artisanal precision. We
+                transform the transaction into a guided path toward your aspirations.
+              </p>
+
+              <div className="landing-homepage__actions" data-node-id="2003:24">
+                <Link
+                  href="/request-loan"
+                  className="landing-homepage__button landing-homepage__button--primary"
+                  data-node-id="2003:25"
+                >
+                  Request loan
+                </Link>
+                <a href="#about" className="landing-homepage__button landing-homepage__button--secondary" data-node-id="2003:28">
+                  View rates
+                </a>
+              </div>
+            </div>
+
+            <div className="landing-homepage__visual" id="lending-solutions" data-node-id="2003:5">
+              <div className="landing-homepage__visualPlate" aria-hidden="true" data-node-id="2003:6" />
+              <div className="landing-homepage__imageFrame" data-node-id="2003:7">
+                <Image
+                  src={HERO_IMAGE_URL}
+                  alt="A sophisticated home office desk with a laptop, lamp, and wooden cabinetry."
+                  className="landing-homepage__image"
+                  width={552}
+                  height={552}
+                  priority
+                  sizes="(max-width: 720px) calc(100vw - 40px), (max-width: 1120px) 552px, 552px"
+                />
+              </div>
+            </div>
+          </section>
+
+          <div className="landing-homepage__separator" aria-hidden="true" data-node-id="2003:30" />
+        </div>
+      </main>
+
+      <footer className="landing-homepage__footer" id="about" data-node-id="2003:31">
+        <div className="page-wrap landing-homepage__container landing-homepage__footerContainer">
+          <div className="landing-homepage__footerBrand" data-node-id="2003:33">
+            <strong>FiMana Lending</strong>
+            <span>© 2024 FiMana Lending. All rights reserved.</span>
+          </div>
+
+          <nav className="landing-homepage__footerNav" aria-label="Footer" data-node-id="2003:36">
+            {footerLinks.map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className={`landing-homepage__footerLink${link.emphasized ? ' landing-homepage__footerLink--emphasized' : ''}`}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+      </footer>
     </div>
   )
 }

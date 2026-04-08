@@ -27,7 +27,7 @@ export function RegisterForm() {
     try {
       const payload = await apiRequest<{ user: User }>('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ ...form, appCode: 'fimana-loan' }),
+        body: JSON.stringify({ ...form, appCode: 'fimana-lending' }),
       })
 
       setUser(payload.user)

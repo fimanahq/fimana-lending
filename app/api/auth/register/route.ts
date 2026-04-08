@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
       ...body,
-      appCode: body.appCode || 'fimana-loan',
+      appCode: body.appCode || 'fimana-lending',
     }),
     cache: 'no-store',
   })

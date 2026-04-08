@@ -1,13 +1,38 @@
-export type UserAppCode = 'fimana-loan' | 'fimana-web'
+export type UserAppCode = 'fimana-lending' | 'fimana-web'
 export type PaymentFrequency = 'monthly' | 'twice_monthly'
 export type LoanStatus = 'active' | 'completed' | 'cancelled'
 export type LoanInstallmentStatus = 'pending' | 'partial' | 'paid'
 export type LoanReminderStatus = 'pending' | 'sent' | 'cancelled'
 export type LoanRequestStatus = 'pending' | 'approved' | 'rejected'
 export type LoanSchedulePreset = '15_month_end' | '5_20' | 'custom'
+export type InterestMode = 'rules' | 'manual'
 
 export interface ApiErrorPayload {
   message: string
+}
+
+export interface LoanInterestRulesConfig {
+  thresholdAmount: number
+  smallLoanRates: {
+    oneGive: number
+    twoGives: number
+    threePlusGives: number
+  }
+  largeLoanRates: {
+    oneGive: number
+    twoGives: number
+    threePlusGives: number
+  }
+}
+
+export interface LoanSchedulePreviewRow {
+  sequence: number
+  dueDate: string
+  beginningBalance: number
+  interest: number
+  principalPaid: number
+  endingBalance: number
+  totalPayment: number
 }
 
 export interface User {

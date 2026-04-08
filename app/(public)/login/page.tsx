@@ -14,7 +14,7 @@ export default async function LoginPage() {
     <div className="auth-shell">
       <div className="card auth-card">
         <aside className="auth-hero">
-          <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.16)', color: 'white' }}>FiMana Loan</div>
+          <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.16)', color: 'white' }}>FiMana Lending</div>
           <h1 className="display-title" style={{ marginTop: '1rem' }}>
             Sign in and work the next cutoff with precision.
           </h1>

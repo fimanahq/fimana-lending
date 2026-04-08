@@ -15,8 +15,8 @@ export function DashboardOverview() {
     const load = async () => {
       try {
         const [loanRows, reminderRows] = await Promise.all([
-          apiRequest<Loan[]>('/api/loans'),
-          apiRequest<UpcomingLoanReminder[]>('/api/loans/reminders/upcoming'),
+          apiRequest<Loan[]>('/api/lendings'),
+          apiRequest<UpcomingLoanReminder[]>('/api/lendings/reminders/upcoming'),
         ])
 
         setLoans(loanRows)
@@ -41,7 +41,7 @@ export function DashboardOverview() {
           Originate faster. Collect on time. Keep every cutoff visible.
         </h1>
         <p className="muted" style={{ fontSize: '1.05rem', maxWidth: 720 }}>
-          FiMana Loan keeps your borrower roster, payment frequency, equal amortization schedule,
+          FiMana Lending keeps your borrower roster, payment frequency, equal amortization schedule,
           and reminders in one protected workspace.
         </p>
         <div className="inline-actions" style={{ marginTop: '1rem' }}>

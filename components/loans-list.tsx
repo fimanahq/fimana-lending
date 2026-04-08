@@ -13,7 +13,7 @@ export function LoansList() {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoans(await apiRequest<Loan[]>('/api/loans'))
+        setLoans(await apiRequest<Loan[]>('/api/lendings'))
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
       }

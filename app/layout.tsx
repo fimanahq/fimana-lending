@@ -3,8 +3,8 @@ import { AuthProvider } from '@/components/providers/auth-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'FiMana Loan',
-  description: 'Loan origination, payment schedules, reminders, and borrower tracking for FiMana.',
+  title: 'FiMana Lending',
+  description: 'Lending operations, payment schedules, reminders, and borrower tracking for FiMana.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

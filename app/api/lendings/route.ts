@@ -4,7 +4,7 @@ import type { Loan } from '@/lib/types'
 
 export async function GET() {
   try {
-    const loans = await authorizedBackendRequest<Loan[]>('/loans')
+    const loans = await authorizedBackendRequest<Loan[]>('/lendings')
     return NextResponse.json(loans)
   } catch (caughtError) {
     return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans', 401)
@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const loan = await authorizedBackendRequest<Loan>('/loans', {
+    const loan = await authorizedBackendRequest<Loan>('/lendings', {
       method: 'POST',
       body: JSON.stringify(body),
     })

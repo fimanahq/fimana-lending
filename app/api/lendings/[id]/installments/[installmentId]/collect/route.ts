@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const { id, installmentId } = await context.params
     const body = await request.json()
-    const loan = await authorizedBackendRequest<Loan>(`/loans/${id}/installments/${installmentId}/collect`, {
+    const loan = await authorizedBackendRequest<Loan>(`/lendings/${id}/installments/${installmentId}/collect`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     })

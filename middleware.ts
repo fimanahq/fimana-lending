@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 
-const protectedPaths = ['/dashboard', '/loans', '/requests', '/rules']
+const protectedPaths = ['/dashboard', '/loans', '/requests', '/calculator', '/rules']
 const authPaths = ['/login', '/register']
 
 function isProtectedPath(pathname: string) {

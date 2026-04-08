@@ -8,7 +8,7 @@ export default function RequestLoanPage() {
         <aside className="auth-hero">
           <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.16)', color: 'white' }}>Loan request</div>
           <h1 className="display-title" style={{ marginTop: '1rem' }}>
-            Tell FiMana what you need, and the lender can approve your request inside the workspace.
+            Tell FiMana Lending what you need, and the lender can approve your request inside the workspace.
           </h1>
           <p style={{ maxWidth: 420, color: 'rgba(255,255,255,0.8)' }}>
             Share your requested amount, preferred payment cadence, and contact information. Approved requests move

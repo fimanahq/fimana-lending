@@ -14,12 +14,12 @@ export default async function RegisterPage() {
     <div className="auth-shell">
       <div className="card auth-card">
         <aside className="auth-hero">
-          <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.16)', color: 'white' }}>FiMana Loan</div>
+          <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.16)', color: 'white' }}>FiMana Lending</div>
           <h1 className="display-title" style={{ marginTop: '1rem' }}>
             Register the right app, then start lending with policy-first defaults.
           </h1>
           <p style={{ maxWidth: 420, color: 'rgba(255,255,255,0.8)' }}>
-            Accounts created here are tagged for `fimana-loan` and can be extended to other FiMana apps later.
+            Accounts created here are tagged for `fimana-lending` and can be extended to other FiMana apps later.
           </p>
           <div className="inline-actions" style={{ marginTop: '1rem' }}>
             <Link href="/login" className="button-secondary">Already have an account?</Link>

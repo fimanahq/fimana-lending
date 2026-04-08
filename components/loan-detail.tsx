@@ -13,7 +13,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoan(await apiRequest<Loan>(`/api/loans/${loanId}`))
+        setLoan(await apiRequest<Loan>(`/api/lendings/${loanId}`))
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan')
       }
@@ -27,7 +27,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
     setError('')
 
     try {
-      const updated = await apiRequest<Loan>(`/api/loans/${loanId}/installments/${installmentId}/collect`, {
+      const updated = await apiRequest<Loan>(`/api/lendings/${loanId}/installments/${installmentId}/collect`, {
         method: 'PATCH',
         body: JSON.stringify({ paidAmount: amount }),
       })

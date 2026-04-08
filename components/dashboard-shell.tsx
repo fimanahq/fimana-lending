@@ -9,6 +9,7 @@ const navItems = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/requests', label: 'Requests' },
   { href: '/loans', label: 'Loans' },
+  { href: '/calculator', label: 'Calculator' },
   { href: '/loans/new', label: 'Create Loan' },
   { href: '/rules', label: 'Rules' },
 ]
@@ -37,7 +38,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <div className="brand-block">
             <div className="brand-mark" />
             <div>
-              <div className="eyebrow">FiMana Loan</div>
+              <div className="eyebrow">FiMana Lending</div>
               <h1 className="section-title" style={{ marginTop: '0.55rem' }}>
                 Lending operations with fixed rules and clean collections.
               </h1>

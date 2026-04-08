@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { buildPaymentDays, paymentDayOptions } from '@/lib/loan-schedule'
@@ -81,7 +82,7 @@ export function LoanForm() {
     setSuccess('')
 
     try {
-      const loan = await apiRequest<Loan>('/api/loans', {
+      const loan = await apiRequest<Loan>('/api/lendings', {
         method: 'POST',
         body: JSON.stringify({
           contactId: form.contactId,
@@ -109,6 +110,9 @@ export function LoanForm() {
           <p className="muted">
             Freeze the interest rate, lock the payment dates, and generate the full table immediately.
           </p>
+          <div style={{ marginTop: '0.85rem' }}>
+            <Link href="/calculator" className="button-ghost">Open calculator first</Link>
+          </div>
         </div>
 
         {error ? <div className="notice danger">{error}</div> : null}

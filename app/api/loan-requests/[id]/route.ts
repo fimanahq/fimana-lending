@@ -75,7 +75,7 @@ export async function PATCH(
     await updateLoanRequest(id, (current) => ({ ...current, contactId }))
   }
 
-  const loan = await authorizedBackendRequest<Loan>('/loans', {
+  const loan = await authorizedBackendRequest<Loan>('/lendings', {
     method: 'POST',
     body: JSON.stringify({
       contactId,
