@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { apiRequest } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { getStatusClassName } from '@/lib/status'
 import type { Loan } from '@/lib/types'
 
 export function LoanDetail({ loanId }: { loanId: string }) {
@@ -64,7 +65,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div className={`status-pill ${loan.status === 'completed' ? '' : 'pending'}`}>{loan.status}</div>
+            <div className={getStatusClassName(loan.status)}>{loan.status}</div>
             <div style={{ marginTop: '0.6rem' }}>{formatCurrency(loan.totalPayment, loan.currency)} total</div>
           </div>
         </div>
@@ -107,7 +108,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
                     </div>
                     <div className="muted">{formatDate(reminder.scheduledAt)} via {reminder.channel}</div>
                   </div>
-                  <span className="status-pill pending">{reminder.status}</span>
+                  <span className={getStatusClassName(reminder.status)}>{reminder.status}</span>
                 </div>
               </div>
             ))}
@@ -143,7 +144,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
                   <td>{formatCurrency(installment.principalPaid, loan.currency)}</td>
                   <td>{formatCurrency(installment.endingBalance, loan.currency)}</td>
                   <td>{formatCurrency(installment.totalPayment, loan.currency)}</td>
-                  <td><span className={`status-pill ${installment.status}`}>{installment.status}</span></td>
+                  <td><span className={getStatusClassName(installment.status)}>{installment.status}</span></td>
                   <td>
                     {installment.status === 'paid' ? (
                       <span className="muted">Collected</span>

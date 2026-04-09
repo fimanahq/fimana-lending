@@ -97,6 +97,36 @@ export default function LandingPage() {
           </section>
 
           <div className="landing-homepage__separator" aria-hidden="true" data-node-id="2003:30" />
+
+          <section className="grid two" style={{ marginBottom: '3rem' }}>
+            <article id="privacy-policy" className="card panel stack">
+              <h2 className="section-title">Privacy Policy</h2>
+              <p className="muted">
+                Borrower details are collected only to evaluate requests, create schedules, and support repayment operations.
+              </p>
+            </article>
+
+            <article id="terms-of-service" className="card panel stack">
+              <h2 className="section-title">Terms of Service</h2>
+              <p className="muted">
+                Loan approval, payment frequency, and repayment terms remain subject to lender review and the final agreement.
+              </p>
+            </article>
+
+            <article id="financial-security" className="card panel stack">
+              <h2 className="section-title">Financial Security</h2>
+              <p className="muted">
+                The workspace uses authenticated routes for internal operations and limits direct browser access to protected data.
+              </p>
+            </article>
+
+            <article id="regulatory-disclosure" className="card panel stack">
+              <h2 className="section-title">Regulatory Disclosure</h2>
+              <p className="muted">
+                Lending terms, charges, and collection practices should be reviewed against the applicable local compliance requirements.
+              </p>
+            </article>
+          </section>
         </div>
       </main>
 

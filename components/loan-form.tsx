@@ -156,6 +156,7 @@ export function LoanForm() {
                 id="gives"
                 type="number"
                 min="1"
+                step="1"
                 value={form.gives}
                 onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
                 required

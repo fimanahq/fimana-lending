@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, getSessionUser, jsonError } from '@/lib/server/backend'
-import { getLoanRequest, updateLoanRequest } from '@/lib/server/loan-requests'
+import {
+  claimLoanRequestReview,
+  completeLoanRequestReview,
+  releaseLoanRequestReview,
+  saveLoanRequestReviewProgress,
+} from '@/lib/server/loan-requests'
+import { readJsonBody } from '@/lib/server/request'
 import type { Contact, Loan } from '@/lib/types'
 
 function buildContactNotes(requestNotes: string | undefined, requestId: string, createdAt: string) {
@@ -28,23 +34,27 @@ export async function PATCH(
     return jsonError('Unauthorized', 401)
   }
 
-  const body = (await request.json().catch(() => null)) as { action?: string } | null
+  const body = await readJsonBody<{ action?: string }>(request)
   const { id } = await context.params
-  const currentRequest = await getLoanRequest(id)
-
-  if (!currentRequest) {
-    return jsonError('Loan request not found', 404)
-  }
-
-  if (currentRequest.status !== 'pending') {
-    return jsonError('Only pending requests can be reviewed', 409)
-  }
-
   const reviewedBy = `${user.firstName} ${user.lastName}`.trim()
   const reviewedAt = new Date().toISOString()
 
+  if (body?.action !== 'approve' && body?.action !== 'reject') {
+    return jsonError('Unsupported review action', 400)
+  }
+
+  const claimed = await claimLoanRequestReview(id, reviewedBy)
+
+  if (claimed.kind === 'not_found') {
+    return jsonError('Loan request not found', 404)
+  }
+
+  if (claimed.kind === 'conflict') {
+    return jsonError('Only pending requests can be reviewed', 409)
+  }
+
   if (body?.action === 'reject') {
-    const rejected = await updateLoanRequest(id, (current) => ({
+    const rejected = await completeLoanRequestReview(id, claimed.token, (current) => ({
       ...current,
       status: 'rejected',
       reviewedAt,
@@ -54,48 +64,54 @@ export async function PATCH(
     return NextResponse.json(rejected)
   }
 
-  if (body?.action !== 'approve') {
-    return jsonError('Unsupported review action', 400)
-  }
+  try {
+    let currentRequest = claimed.request
+    let contactId = currentRequest.contactId || null
 
-  let contactId = currentRequest.contactId || null
-  if (!contactId) {
-    const contact = await authorizedBackendRequest<Contact>('/contacts', {
+    if (!contactId) {
+      const contact = await authorizedBackendRequest<Contact>('/contacts', {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName: currentRequest.firstName,
+          lastName: currentRequest.lastName,
+          email: currentRequest.email,
+          phone: currentRequest.phone,
+          notes: buildContactNotes(currentRequest.notes, currentRequest.id, currentRequest.createdAt),
+        }),
+      })
+
+      contactId = contact._id
+      currentRequest = await saveLoanRequestReviewProgress(id, claimed.token, (current) => ({
+        ...current,
+        contactId,
+      }))
+    }
+
+    const loan = await authorizedBackendRequest<Loan>('/lendings', {
       method: 'POST',
       body: JSON.stringify({
-        firstName: currentRequest.firstName,
-        lastName: currentRequest.lastName,
-        email: currentRequest.email,
-        phone: currentRequest.phone,
-        notes: buildContactNotes(currentRequest.notes, currentRequest.id, currentRequest.createdAt),
+        contactId,
+        principal: currentRequest.principal,
+        gives: currentRequest.gives,
+        paymentFrequency: currentRequest.paymentFrequency,
+        paymentDays: currentRequest.paymentDays,
+        firstPaymentDate: currentRequest.firstPaymentDate,
+        notes: buildLoanNotes(currentRequest.notes, currentRequest.id, currentRequest.createdAt),
       }),
     })
 
-    contactId = contact._id
-    await updateLoanRequest(id, (current) => ({ ...current, contactId }))
-  }
-
-  const loan = await authorizedBackendRequest<Loan>('/lendings', {
-    method: 'POST',
-    body: JSON.stringify({
+    const approved = await completeLoanRequestReview(id, claimed.token, (current) => ({
+      ...current,
+      status: 'approved',
+      reviewedAt,
+      reviewedBy,
       contactId,
-      principal: currentRequest.principal,
-      gives: currentRequest.gives,
-      paymentFrequency: currentRequest.paymentFrequency,
-      paymentDays: currentRequest.paymentDays,
-      firstPaymentDate: currentRequest.firstPaymentDate,
-      notes: buildLoanNotes(currentRequest.notes, currentRequest.id, currentRequest.createdAt),
-    }),
-  })
+      loanId: loan._id,
+    }))
 
-  const approved = await updateLoanRequest(id, (current) => ({
-    ...current,
-    status: 'approved',
-    reviewedAt,
-    reviewedBy,
-    contactId,
-    loanId: loan._id,
-  }))
-
-  return NextResponse.json(approved)
+    return NextResponse.json(approved)
+  } catch (caughtError) {
+    await releaseLoanRequestReview(id, claimed.token)
+    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to review request', 400)
+  }
 }

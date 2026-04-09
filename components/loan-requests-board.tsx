@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { apiRequest } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { getStatusClassName } from '@/lib/status'
 import type { LoanRequest } from '@/lib/types'
 
 export function LoanRequestsBoard() {
@@ -80,7 +81,7 @@ export function LoanRequestsBoard() {
                   </div>
                   <div className="muted">Submitted {formatDate(request.createdAt)}</div>
                 </div>
-                <span className={`status-pill ${request.status}`}>{request.status}</span>
+                <span className={getStatusClassName(request.status)}>{request.status}</span>
               </div>
 
               <div className="grid two">
@@ -147,7 +148,7 @@ export function LoanRequestsBoard() {
                     {request.reviewedAt ? formatDate(request.reviewedAt) : formatDate(request.createdAt)}
                   </div>
                 </div>
-                <span className={`status-pill ${request.status}`}>{request.status}</span>
+                <span className={getStatusClassName(request.status)}>{request.status}</span>
               </div>
 
               <div className="grid two">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
+import { readJsonBody } from '@/lib/server/request'
 import type { Loan } from '@/lib/types'
 
 export async function GET(
@@ -21,7 +22,11 @@ export async function PATCH(
 ) {
   try {
     const { id } = await context.params
-    const body = await request.json()
+    const body = await readJsonBody<Record<string, unknown>>(request)
+    if (!body) {
+      return jsonError('Invalid request body', 400)
+    }
+
     const loan = await authorizedBackendRequest<Loan>(`/lendings/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(body),

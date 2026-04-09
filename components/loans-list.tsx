@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { apiRequest } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { getStatusClassName } from '@/lib/status'
 import type { Loan } from '@/lib/types'
 
 export function LoansList() {
@@ -61,7 +62,7 @@ export function LoansList() {
                 <td>{loan.interestRate}% / cutoff</td>
                 <td>{loan.paymentDays.map(formatPaymentDay).join(' and ')}</td>
                 <td>{formatDate(loan.firstPaymentDate)}</td>
-                <td><span className={`status-pill ${loan.status === 'completed' ? '' : 'pending'}`}>{loan.status}</span></td>
+                <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
               </tr>
             ))}
           </tbody>

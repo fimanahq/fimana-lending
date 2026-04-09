@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/constants'
 import { createSession, jsonError } from '@/lib/server/backend'
+import { readJsonBody } from '@/lib/server/request'
 import type { User } from '@/lib/types'
 
 interface AuthPayload {
@@ -10,11 +11,22 @@ interface AuthPayload {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
+  const body = await readJsonBody<{ email?: unknown; password?: unknown }>(request)
+  if (!body) {
+    return jsonError('Invalid request body', 400)
+  }
+
+  const email = typeof body.email === 'string' ? body.email.trim() : ''
+  const password = typeof body.password === 'string' ? body.password : ''
+
+  if (!email || !password) {
+    return jsonError('Email and password are required', 400)
+  }
+
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ email, password }),
     cache: 'no-store',
   })
 

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { apiRequest } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { getStatusClassName } from '@/lib/status'
 import type { Loan, UpcomingLoanReminder } from '@/lib/types'
 
 export function DashboardOverview() {
@@ -87,7 +88,7 @@ export function DashboardOverview() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div>{formatCurrency(loan.totalPayment, loan.currency)}</div>
-                    <div className={`status-pill ${loan.status === 'completed' ? '' : 'pending'}`}>{loan.status}</div>
+                    <div className={getStatusClassName(loan.status)}>{loan.status}</div>
                   </div>
                 </div>
               </Link>

@@ -117,6 +117,7 @@ export function LoanCalculator() {
                 id="calculatorGives"
                 type="number"
                 min="1"
+                step="1"
                 value={form.gives}
                 onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
               />

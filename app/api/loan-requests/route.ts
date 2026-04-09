@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildPaymentDays } from '@/lib/loan-schedule'
 import { getSessionUser, jsonError } from '@/lib/server/backend'
 import { createLoanRequest, listLoanRequests } from '@/lib/server/loan-requests'
+import { readJsonBody } from '@/lib/server/request'
 import type { LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
 
 function isPaymentFrequency(value: unknown): value is PaymentFrequency {
@@ -22,7 +23,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null
+  const body = await readJsonBody<Record<string, unknown>>(request)
   if (!body) {
     return jsonError('Invalid request body', 400)
   }
@@ -52,8 +53,8 @@ export async function POST(request: NextRequest) {
     return jsonError('Requested amount must be greater than zero', 400)
   }
 
-  if (!Number.isFinite(gives) || gives < 1) {
-    return jsonError('Number of gives must be at least 1', 400)
+  if (!Number.isInteger(gives) || gives < 1) {
+    return jsonError('Number of gives must be a whole number of at least 1', 400)
   }
 
   if (!isPaymentFrequency(paymentFrequency)) {
