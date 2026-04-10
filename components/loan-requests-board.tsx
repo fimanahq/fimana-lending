@@ -51,10 +51,10 @@ export function LoanRequestsBoard() {
   return (
     <div className="stack">
       <section className="card panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
+        <div className="row-between-center">
           <div>
             <div className="eyebrow">Loan requests</div>
-            <h1 className="section-title" style={{ marginTop: '0.75rem' }}>Public intake queue</h1>
+            <h1 className="section-title title-offset">Public intake queue</h1>
             <p className="muted">Approve the requests that should become real borrower records and issued loans.</p>
           </div>
           <Link href="/loans/new" className="button-secondary">Create loan manually</Link>
@@ -67,7 +67,7 @@ export function LoanRequestsBoard() {
         <div className="card panel stack">
           <div>
             <div className="eyebrow">Pending</div>
-            <h2 className="section-title" style={{ marginTop: '0.75rem' }}>{pending.length} waiting for review</h2>
+            <h2 className="section-title title-offset">{pending.length} waiting for review</h2>
           </div>
 
           {loading ? <div className="muted">Loading requests...</div> : null}
@@ -76,7 +76,7 @@ export function LoanRequestsBoard() {
             <article key={request.id} className="request-card">
               <div className="request-meta">
                 <div>
-                  <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: '1.1rem' }}>
+                  <div className="data-card__title">
                     {request.firstName} {request.lastName}
                   </div>
                   <div className="muted">Submitted {formatDate(request.createdAt)}</div>
@@ -133,14 +133,14 @@ export function LoanRequestsBoard() {
         <div className="card panel stack">
           <div>
             <div className="eyebrow">Reviewed</div>
-            <h2 className="section-title" style={{ marginTop: '0.75rem' }}>Recent decisions</h2>
+            <h2 className="section-title title-offset">Recent decisions</h2>
           </div>
 
           {reviewed.map((request) => (
             <article key={request.id} className="request-card">
               <div className="request-meta">
                 <div>
-                  <div style={{ fontFamily: 'var(--font-heading), sans-serif', fontSize: '1.1rem' }}>
+                  <div className="data-card__title">
                     {request.firstName} {request.lastName}
                   </div>
                   <div className="muted">

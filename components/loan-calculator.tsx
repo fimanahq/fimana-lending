@@ -89,7 +89,7 @@ export function LoanCalculator() {
     <div className="stack">
       <section className="card panel">
         <div className="eyebrow">Calculator</div>
-        <h1 className="section-title" style={{ marginTop: '0.8rem' }}>Loan schedule calculator</h1>
+        <h1 className="section-title title-offset">Loan schedule calculator</h1>
         <p className="muted">
           Enter the amount, term, payment dates, and interest setup to generate the cutoff table instantly.
         </p>
@@ -274,8 +274,8 @@ export function LoanCalculator() {
           </div>
 
           <div className="grid two">
-            <div className="card panel stack" style={{ boxShadow: 'none' }}>
-              <div className="section-title" style={{ fontSize: '1rem' }}>Small loan rates</div>
+            <div className="data-card stack">
+              <div className="section-title subsection-title">Small loan rates</div>
               <div className="field">
                 <label htmlFor="smallOneGive">1 give (%)</label>
                 <input
@@ -323,8 +323,8 @@ export function LoanCalculator() {
               </div>
             </div>
 
-            <div className="card panel stack" style={{ boxShadow: 'none' }}>
-              <div className="section-title" style={{ fontSize: '1rem' }}>Large loan rates</div>
+            <div className="data-card stack">
+              <div className="section-title subsection-title">Large loan rates</div>
               <div className="field">
                 <label htmlFor="largeOneGive">1 give (%)</label>
                 <input

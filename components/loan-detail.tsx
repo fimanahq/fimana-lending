@@ -53,7 +53,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
     <div className="stack">
       <section className="card panel">
         <div className="eyebrow">Loan detail</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.85rem' }}>
+        <div className="row-between-start title-offset">
           <div>
             <h1 className="section-title">{loan.borrower?.fullName || 'Borrower'}</h1>
             <p className="muted">
@@ -64,9 +64,9 @@ export function LoanDetail({ loanId }: { loanId: string }) {
             <p className="muted">First payment date: {formatDate(loan.firstPaymentDate)}</p>
           </div>
 
-          <div style={{ textAlign: 'right' }}>
+          <div className="text-right">
             <div className={getStatusClassName(loan.status)}>{loan.status}</div>
-            <div style={{ marginTop: '0.6rem' }}>{formatCurrency(loan.totalPayment, loan.currency)} total</div>
+            <div className="detail-offset">{formatCurrency(loan.totalPayment, loan.currency)} total</div>
           </div>
         </div>
       </section>
@@ -89,7 +89,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
       <section className="grid two">
         <div className="card panel">
           <div className="section-title">Borrower profile</div>
-          <div className="stack" style={{ marginTop: '0.9rem' }}>
+          <div className="stack detail-offset">
             <div><strong>Email:</strong> {loan.borrower?.email || 'Not set'}</div>
             <div><strong>Phone:</strong> {loan.borrower?.phone || 'Not set'}</div>
             <div><strong>Notes:</strong> {loan.notes || 'No notes'}</div>
@@ -98,12 +98,12 @@ export function LoanDetail({ loanId }: { loanId: string }) {
 
         <div className="card panel">
           <div className="section-title">Upcoming reminders</div>
-          <div className="stack" style={{ marginTop: '0.9rem' }}>
+          <div className="stack detail-offset">
             {loan.reminders.filter((reminder) => reminder.status === 'pending').map((reminder) => (
-              <div key={reminder._id} className="card panel" style={{ boxShadow: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+              <div key={reminder._id} className="data-card">
+                <div className="row-between-start">
                   <div>
-                    <div style={{ fontFamily: 'var(--font-heading), sans-serif' }}>
+                    <div className="data-card__title">
                       Installment #{reminder.installmentSequence}
                     </div>
                     <div className="muted">{formatDate(reminder.scheduledAt)} via {reminder.channel}</div>
@@ -118,7 +118,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
 
       <section className="card panel">
         <div className="section-title">Loan schedule table</div>
-        <div className="table-wrap" style={{ marginTop: '1rem' }}>
+        <div className="table-wrap table-offset">
           <table>
             <thead>
               <tr>

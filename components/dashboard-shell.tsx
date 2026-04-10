@@ -39,7 +39,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="brand-mark" />
             <div>
               <div className="eyebrow">FiMana Lending</div>
-              <h1 className="section-title" style={{ marginTop: '0.55rem' }}>
+              <h1 className="section-title title-offset-sm">
                 Lending operations with fixed rules and clean collections.
               </h1>
             </div>
@@ -47,12 +47,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
           <div className="inline-actions">
             {user ? (
-              <div className="card panel" style={{ minWidth: 220 }}>
-                <div className="muted" style={{ fontSize: '0.82rem' }}>Signed in as</div>
-                <div style={{ fontFamily: 'var(--font-heading), sans-serif', marginTop: '0.35rem' }}>
+              <div className="card panel stack-tight user-card">
+                <div className="muted micro-copy">Signed in as</div>
+                <div className="font-heading">
                   {user.firstName} {user.lastName}
                 </div>
-                <button className="button-ghost" style={{ marginTop: '0.4rem' }} onClick={handleLogout}>
+                <button className="button-ghost" onClick={handleLogout}>
                   Log out
                 </button>
               </div>
@@ -64,10 +64,10 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <aside className="card panel">
             <div className="stack">
               <div className="hero-card card">
-                <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.18)', color: 'white' }}>
+                <div className="eyebrow eyebrow-inverse">
                   Protected workspace
                 </div>
-                <h2 className="section-title" style={{ marginTop: '0.8rem' }}>
+                <h2 className="section-title title-offset">
                   Keep borrower details, due dates, and table-ready schedules in one place.
                 </h2>
               </div>

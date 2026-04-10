@@ -106,11 +106,11 @@ export function LoanForm() {
       <section className="card panel stack">
         <div>
           <div className="eyebrow">New loan</div>
-          <h1 className="section-title" style={{ marginTop: '0.8rem' }}>Create a lending schedule</h1>
+          <h1 className="section-title title-offset">Create a lending schedule</h1>
           <p className="muted">
             Freeze the interest rate, lock the payment dates, and generate the full table immediately.
           </p>
-          <div style={{ marginTop: '0.85rem' }}>
+          <div className="actions-offset">
             <Link href="/calculator" className="button-ghost">Open calculator first</Link>
           </div>
         </div>
@@ -279,7 +279,7 @@ export function LoanForm() {
       <section className="card panel stack">
         <div>
           <div className="eyebrow">Borrower intake</div>
-          <h2 className="section-title" style={{ marginTop: '0.8rem' }}>Create a borrower record</h2>
+          <h2 className="section-title title-offset">Create a borrower record</h2>
           <p className="muted">Use the existing contacts entity in the API and assign the new loan immediately.</p>
         </div>
 

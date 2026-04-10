@@ -98,7 +98,7 @@ export default function LandingPage() {
 
           <div className="landing-homepage__separator" aria-hidden="true" data-node-id="2003:30" />
 
-          <section className="grid two" style={{ marginBottom: '3rem' }}>
+          <section className="grid two landing-homepage__infoGrid">
             <article id="privacy-policy" className="card panel stack">
               <h2 className="section-title">Privacy Policy</h2>
               <p className="muted">

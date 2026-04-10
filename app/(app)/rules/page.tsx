@@ -5,7 +5,7 @@ export default function RulesPage() {
     <div className="stack">
       <section className="card panel stack">
         <div className="eyebrow">Policy document</div>
-        <h1 className="display-title" style={{ fontSize: 'clamp(2.2rem, 5vw, 4rem)' }}>
+        <h1 className="display-title">
           Loan business rules
         </h1>
         <p className="muted">
@@ -75,9 +75,9 @@ export default function RulesPage() {
           </tbody>
         </table>
 
-        <article className="card panel" style={{ boxShadow: 'none' }}>
+        <article className="formula-card">
           <h3 className="section-title">Formula</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
+          <pre>
 {`PMT = P * r * (1 + r)^n / ((1 + r)^n - 1)
 
 Where:

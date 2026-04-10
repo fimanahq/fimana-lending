@@ -46,6 +46,7 @@ export function RegisterForm() {
           <label htmlFor="firstName">First name</label>
           <input
             id="firstName"
+            autoComplete="given-name"
             value={form.firstName}
             onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
             required
@@ -55,6 +56,7 @@ export function RegisterForm() {
           <label htmlFor="lastName">Last name</label>
           <input
             id="lastName"
+            autoComplete="family-name"
             value={form.lastName}
             onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
             required
@@ -67,6 +69,7 @@ export function RegisterForm() {
         <input
           id="email"
           type="email"
+          autoComplete="email"
           value={form.email}
           onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
           required
@@ -78,6 +81,7 @@ export function RegisterForm() {
         <input
           id="password"
           type="password"
+          autoComplete="new-password"
           value={form.password}
           onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
           required
@@ -91,8 +95,9 @@ export function RegisterForm() {
         {submitting ? 'Creating account...' : 'Create account'}
       </button>
 
-      <div className="muted" style={{ fontSize: '0.95rem' }}>
-        Already registered? <Link href="/login" style={{ color: 'var(--accent-strong)' }}>Go to sign in</Link>
+      <div className="form-footer">
+        <span>Already registered?</span>
+        <Link href="/login">Go to sign in</Link>
       </div>
     </form>
   )

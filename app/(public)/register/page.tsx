@@ -14,14 +14,14 @@ export default async function RegisterPage() {
     <div className="auth-shell">
       <div className="card auth-card">
         <aside className="auth-hero">
-          <div className="eyebrow" style={{ background: 'rgba(255,255,255,0.16)', color: 'white' }}>FiMana Lending</div>
-          <h1 className="display-title" style={{ marginTop: '1rem' }}>
+          <div className="eyebrow eyebrow-inverse">FiMana Lending</div>
+          <h1 className="display-title title-offset">
             Register the right app, then start lending with policy-first defaults.
           </h1>
-          <p style={{ maxWidth: 420, color: 'rgba(255,255,255,0.8)' }}>
+          <p className="auth-hero-copy">
             Accounts created here are tagged for `fimana-lending` and can be extended to other FiMana apps later.
           </p>
-          <div className="inline-actions" style={{ marginTop: '1rem' }}>
+          <div className="inline-actions actions-offset">
             <Link href="/login" className="button-secondary">Already have an account?</Link>
             <Link href="/request-loan" className="button-secondary">Request a loan</Link>
           </div>
@@ -30,7 +30,7 @@ export default async function RegisterPage() {
         <section className="auth-body stack">
           <div>
             <div className="eyebrow">Create account</div>
-            <h2 className="section-title" style={{ marginTop: '0.8rem' }}>Set up your workspace</h2>
+            <h2 className="section-title title-offset">Set up your workspace</h2>
           </div>
           <RegisterForm />
         </section>

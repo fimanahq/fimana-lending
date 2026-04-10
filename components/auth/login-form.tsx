@@ -15,6 +15,8 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const nextPath = searchParams.get('next')
+  const destination = nextPath && nextPath.startsWith('/') ? nextPath : '/dashboard'
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -28,7 +30,7 @@ export function LoginForm() {
       })
 
       setUser(payload.user)
-      router.push(searchParams.get('next') || '/dashboard')
+      router.push(destination)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to sign in')
     } finally {
@@ -37,17 +39,25 @@ export function LoginForm() {
   }
 
   return (
-    <form className="stack" onSubmit={handleSubmit}>
-      <div className="field">
-        <label htmlFor="email">Email</label>
-        <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+    <form className="login-form" onSubmit={handleSubmit}>
+      <div className="login-form__field">
+        <label htmlFor="email">Email address</label>
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+        />
       </div>
 
-      <div className="field">
+      <div className="login-form__field">
         <label htmlFor="password">Password</label>
         <input
           id="password"
           type="password"
+          autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           required
@@ -56,12 +66,18 @@ export function LoginForm() {
 
       {error ? <div className="notice danger">{error}</div> : null}
 
-      <button className="button" type="submit" disabled={submitting}>
+      <div className="login-form__meta">
+        <span>Protected workspace session</span>
+        <span>{destination === '/dashboard' ? 'Direct dashboard access' : `Next: ${destination}`}</span>
+      </div>
+
+      <button className="login-form__submit" type="submit" disabled={submitting}>
         {submitting ? 'Signing in...' : 'Sign in'}
       </button>
 
-      <div className="muted" style={{ fontSize: '0.95rem' }}>
-        New to the lending app? <Link href="/register" style={{ color: 'var(--accent-strong)' }}>Create an account</Link>
+      <div className="login-form__footer">
+        <span className="muted">New to the lending app?</span>
+        <Link href="/register">Create an account</Link>
       </div>
     </form>
   )

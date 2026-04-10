@@ -38,14 +38,14 @@ export function DashboardOverview() {
     <div className="stack">
       <section className="card panel">
         <div className="eyebrow">Overview</div>
-        <h1 className="display-title" style={{ marginTop: '0.8rem' }}>
+        <h1 className="display-title title-offset">
           Originate faster. Collect on time. Keep every cutoff visible.
         </h1>
-        <p className="muted" style={{ fontSize: '1.05rem', maxWidth: 720 }}>
+        <p className="muted lead-copy">
           FiMana Lending keeps your borrower roster, payment frequency, equal amortization schedule,
           and reminders in one protected workspace.
         </p>
-        <div className="inline-actions" style={{ marginTop: '1rem' }}>
+        <div className="inline-actions actions-offset">
           <Link href="/loans/new" className="button">Create a new loan</Link>
           <Link href="/requests" className="button-secondary">Review requests</Link>
           <Link href="/rules" className="button-ghost">Open the rules page</Link>
@@ -74,10 +74,10 @@ export function DashboardOverview() {
           <div className="section-title">Recent loans</div>
           <div className="stack">
             {loans.slice(0, 5).map((loan) => (
-              <Link key={loan._id} href={`/loans/${loan._id}`} className="card panel" style={{ boxShadow: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+              <Link key={loan._id} href={`/loans/${loan._id}`} className="data-card">
+                <div className="row-between-start">
                   <div>
-                    <div style={{ fontFamily: 'var(--font-heading), sans-serif' }}>
+                    <div className="data-card__title">
                       {loan.borrower?.fullName || 'Borrower'}
                     </div>
                     <div className="muted">
@@ -86,7 +86,7 @@ export function DashboardOverview() {
                         : `Twice monthly on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                  <div className="data-card__aside">
                     <div>{formatCurrency(loan.totalPayment, loan.currency)}</div>
                     <div className={getStatusClassName(loan.status)}>{loan.status}</div>
                   </div>
@@ -100,10 +100,10 @@ export function DashboardOverview() {
           <div className="section-title">Next reminders</div>
           <div className="stack">
             {dueSoon.map((reminder) => (
-              <div key={`${reminder.loanId}-${reminder.installmentSequence}`} className="card panel" style={{ boxShadow: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+              <div key={`${reminder.loanId}-${reminder.installmentSequence}`} className="data-card">
+                <div className="row-between-start">
                   <div>
-                    <div style={{ fontFamily: 'var(--font-heading), sans-serif' }}>
+                    <div className="data-card__title">
                       {reminder.borrower?.fullName || 'Borrower'}
                     </div>
                     <div className="muted">

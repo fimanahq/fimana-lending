@@ -58,21 +58,23 @@ export function LoanRequestForm() {
   }
 
   return (
-    <form className="stack" onSubmit={handleSubmit}>
-      <div className="grid two">
-        <div className="field">
+    <form className="request-loan-form" onSubmit={handleSubmit}>
+      <div className="request-loan-form__grid">
+        <div className="request-loan-form__field">
           <label htmlFor="requestFirstName">First name</label>
           <input
             id="requestFirstName"
+            autoComplete="given-name"
             value={form.firstName}
             onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
             required
           />
         </div>
-        <div className="field">
+        <div className="request-loan-form__field">
           <label htmlFor="requestLastName">Last name</label>
           <input
             id="requestLastName"
+            autoComplete="family-name"
             value={form.lastName}
             onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
             required
@@ -80,45 +82,50 @@ export function LoanRequestForm() {
         </div>
       </div>
 
-      <div className="grid two">
-        <div className="field">
+      <div className="request-loan-form__grid">
+        <div className="request-loan-form__field">
           <label htmlFor="requestEmail">Email</label>
           <input
             id="requestEmail"
             type="email"
+            autoComplete="email"
             value={form.email}
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
           />
         </div>
-        <div className="field">
+        <div className="request-loan-form__field">
           <label htmlFor="requestPhone">Phone</label>
           <input
             id="requestPhone"
+            type="tel"
+            autoComplete="tel"
             value={form.phone}
             onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
           />
         </div>
       </div>
 
-      <div className="grid two">
-        <div className="field">
+      <div className="request-loan-form__grid">
+        <div className="request-loan-form__field">
           <label htmlFor="requestPrincipal">Requested amount</label>
           <input
             id="requestPrincipal"
             type="number"
             min="1"
+            inputMode="decimal"
             value={form.principal}
             onChange={(event) => setForm((current) => ({ ...current, principal: event.target.value }))}
             required
           />
         </div>
-        <div className="field">
+        <div className="request-loan-form__field">
           <label htmlFor="requestGives">Number of gives</label>
           <input
             id="requestGives"
             type="number"
             min="1"
             step="1"
+            inputMode="numeric"
             value={form.gives}
             onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
             required
@@ -126,7 +133,7 @@ export function LoanRequestForm() {
         </div>
       </div>
 
-      <div className="field">
+      <div className="request-loan-form__field">
         <label htmlFor="requestFrequency">Payment frequency</label>
         <select
           id="requestFrequency"
@@ -141,11 +148,12 @@ export function LoanRequestForm() {
           <option value="monthly">Monthly</option>
           <option value="twice_monthly">Twice monthly</option>
         </select>
+        <p className="request-loan-form__hint">Choose how often you expect to make payments.</p>
       </div>
 
       {form.paymentFrequency === 'twice_monthly' ? (
         <>
-          <div className="field">
+          <div className="request-loan-form__field">
             <label htmlFor="requestPreset">Schedule preset</label>
             <select
               id="requestPreset"
@@ -164,8 +172,8 @@ export function LoanRequestForm() {
           </div>
 
           {form.paymentPreset === 'custom' ? (
-            <div className="grid two">
-              <div className="field">
+            <div className="request-loan-form__grid">
+              <div className="request-loan-form__field">
                 <label htmlFor="requestFirstDay">First payment day</label>
                 <select
                   id="requestFirstDay"
@@ -180,7 +188,7 @@ export function LoanRequestForm() {
                 </select>
               </div>
 
-              <div className="field">
+              <div className="request-loan-form__field">
                 <label htmlFor="requestSecondDay">Second payment day</label>
                 <select
                   id="requestSecondDay"
@@ -198,7 +206,7 @@ export function LoanRequestForm() {
           ) : null}
         </>
       ) : (
-        <div className="field">
+        <div className="request-loan-form__field">
           <label htmlFor="requestMonthlyDay">Monthly payment day</label>
           <select
             id="requestMonthlyDay"
@@ -214,7 +222,7 @@ export function LoanRequestForm() {
         </div>
       )}
 
-      <div className="field">
+      <div className="request-loan-form__field">
         <label htmlFor="requestFirstPaymentDate">Preferred first payment date</label>
         <input
           id="requestFirstPaymentDate"
@@ -225,7 +233,7 @@ export function LoanRequestForm() {
         />
       </div>
 
-      <div className="field">
+      <div className="request-loan-form__field">
         <label htmlFor="requestNotes">Notes</label>
         <textarea
           id="requestNotes"
@@ -235,14 +243,20 @@ export function LoanRequestForm() {
         />
       </div>
 
-      {error ? <div className="notice danger">{error}</div> : null}
+      <div className="request-loan-form__summary">
+        <span className="request-loan-form__summaryLabel">Estimated cadence</span>
+        <strong>{paymentDays.map((day) => (day === 'month_end' ? 'month end' : day)).join(' + ')}</strong>
+        <p>Provide at least one contact method so the lender can follow up on your request.</p>
+      </div>
+
+      {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
       {success ? (
-        <div className="notice">
+        <div className="notice request-loan-form__notice">
           Request submitted for {success.firstName} {success.lastName}. Reference: {success.id}
         </div>
       ) : null}
 
-      <button className="button" type="submit" disabled={submitting}>
+      <button className="request-loan-form__submit" type="submit" disabled={submitting}>
         {submitting ? 'Submitting request...' : 'Submit request'}
       </button>
     </form>

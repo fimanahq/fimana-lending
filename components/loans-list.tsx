@@ -26,10 +26,10 @@ export function LoansList() {
   return (
     <div className="stack">
       <section className="card panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
+        <div className="row-between-center">
           <div>
             <div className="eyebrow">Loan roster</div>
-            <h1 className="section-title" style={{ marginTop: '0.75rem' }}>Issued loans</h1>
+            <h1 className="section-title title-offset">Issued loans</h1>
             <p className="muted">Borrowers, totals, schedules, and collection status.</p>
           </div>
           <Link href="/loans/new" className="button">Create loan</Link>
@@ -54,7 +54,7 @@ export function LoansList() {
             {loans.map((loan) => (
               <tr key={loan._id}>
                 <td>
-                  <Link href={`/loans/${loan._id}`} style={{ fontFamily: 'var(--font-heading), sans-serif' }}>
+                  <Link href={`/loans/${loan._id}`} className="data-card__titleLink">
                     {loan.borrower?.fullName || 'Borrower'}
                   </Link>
                 </td>
