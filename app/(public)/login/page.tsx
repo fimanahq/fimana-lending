@@ -1,8 +1,12 @@
 import { cookies } from 'next/headers'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { LoginForm } from '@/components/auth/login-form'
+import { PublicSiteFooter } from '@/components/public-site-footer'
+import { PublicSiteHeader } from '@/components/public-site-header'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
+
+const editorialImageUrl =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDHeYrglbki121-NaocI6nGIPChuYrk9xr8DfcJEtb17hOwdNGfeuu5U2Usr6Ks0O_TwbyusZi9PUzgVItDA9Q3vzlblkjzLD6nWsOMgA9CIWBONnaDEX12cyih1-HPmPpk-p95O-mxVoFRH6sJCD5sw5rh4T3qCbTM1wz6DsVjJ3JZ1qRuRZWdbfVfw1i9_VDOZ12nwh7QvhxmsnkWjAVhg5_cZdldNoymcT9PWzHyfDSswQOXCM-nxRDtyGhdz3k3tgL8_TTP5t0'
 
 export default async function LoginPage() {
   const cookieStore = await cookies()
@@ -11,113 +15,51 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="landing-homepage login-homepage">
-      <header className="landing-homepage__header">
-        <div className="page-wrap landing-homepage__container landing-homepage__headerContainer">
-          <Link href="/" className="landing-homepage__brand" aria-label="FiMana Lending home">
-            FiMana Lending
-          </Link>
+    <div className="signin-page">
+      <PublicSiteHeader
+        headerClassName="signin-page__topbar"
+        innerClassName="signin-page__topbarInner"
+        brandClassName="signin-page__brand"
+      />
 
-          <nav className="landing-homepage__nav" aria-label="Primary">
-            <Link href="/" className="landing-homepage__navLink">Home</Link>
-            <Link href="/request-loan" className="landing-homepage__navLink">Request Loan</Link>
-            <Link href="/register" className="landing-homepage__navLink">Register</Link>
-          </nav>
+      <main className="signin-page__main">
+        <section className="signin-page__editorial">
+          <div className="signin-page__editorialShade" />
+          <img
+            src={editorialImageUrl}
+            alt="Modern home office with lending dashboards open on devices."
+            className="signin-page__editorialImage"
+          />
 
-          <div className="landing-homepage__headerActions">
-            <span className="landing-homepage__signIn">Secure access</span>
-            <Link href="/register" className="landing-homepage__createAccount">
-              Create account
-            </Link>
+          <div className="signin-page__editorialContent">
+            <div className="signin-page__portalBadge">
+              <span className="signin-page__portalBadgeIcon" aria-hidden="true" />
+              <span>Secure financial portal</span>
+            </div>
+
+            <h1 className="signin-page__title">
+              Sign in and work the <span>next cutoff</span> with precision.
+            </h1>
+
+            <p className="signin-page__lede">
+              Access your curated ledger and streamline your lending workflow with editorial-grade tools.
+            </p>
           </div>
-        </div>
-      </header>
+        </section>
 
-      <main className="landing-homepage__main">
-        <div className="page-wrap landing-homepage__container">
-          <section className="landing-homepage__hero login-homepage__hero">
-            <div className="landing-homepage__copy login-homepage__copy">
-              <div className="landing-homepage__eyebrow">Protected workspace</div>
+        <section className="signin-page__panelColumn">
+          <div className="signin-page__panelIntro">
+            <h2>Welcome Back</h2>
+            <p>Manage your assets with FiMana&apos;s refined intelligence.</p>
+          </div>
 
-              <h1 className="landing-homepage__title login-homepage__title">
-                <span>Sign in to</span>
-                <span>review due</span>
-                <span>
-                  dates, borrowers, and <em>collections</em>
-                </span>
-              </h1>
-
-              <p className="landing-homepage__body login-homepage__body">
-                Use your FiMana workspace account to continue approving requests, monitoring issued loans, and preparing the next cutoff with a single protected view.
-              </p>
-
-              <div className="landing-homepage__actions">
-                <Link
-                  href="/register"
-                  className="landing-homepage__button landing-homepage__button--primary"
-                >
-                  Create account
-                </Link>
-                <Link
-                  href="/request-loan"
-                  className="landing-homepage__button landing-homepage__button--secondary"
-                >
-                  Public request form
-                </Link>
-              </div>
-
-              <div className="login-homepage__stats">
-                <article className="login-homepage__statCard">
-                  <span className="login-homepage__statLabel">Workflow</span>
-                  <strong className="login-homepage__statValue">Approval to collection</strong>
-                  <p>Move from intake to active loan tracking without leaving the workspace.</p>
-                </article>
-
-                <article className="login-homepage__statCard login-homepage__statCard--soft">
-                  <span className="login-homepage__statLabel">Access</span>
-                  <strong className="login-homepage__statValue">Session-backed routes</strong>
-                  <p>Protected pages stay behind authenticated cookies and internal API routes.</p>
-                </article>
-              </div>
-            </div>
-
-            <div className="landing-homepage__visual login-homepage__visual">
-              <div className="login-homepage__panel">
-                <div className="login-homepage__panelTop">
-                  <div className="landing-homepage__eyebrow login-homepage__panelEyebrow">Welcome back</div>
-                  <h2 className="login-homepage__panelTitle">Access the lending workspace</h2>
-                  <p className="login-homepage__panelBody">
-                    Enter your credentials to continue managing approvals, schedules, and borrower collections.
-                  </p>
-                </div>
-
-                <LoginForm />
-              </div>
-            </div>
-          </section>
-        </div>
+          <div className="signin-page__panelCard">
+            <LoginForm />
+          </div>
+        </section>
       </main>
 
-      <footer className="landing-homepage__footer">
-        <div className="page-wrap landing-homepage__container landing-homepage__footerContainer">
-          <div className="landing-homepage__footerBrand">
-            <strong>FiMana Lending</strong>
-            <span>Secure sign-in for the internal lending workspace.</span>
-          </div>
-
-          <nav className="landing-homepage__footerNav" aria-label="Footer">
-            <Link href="/" className="landing-homepage__footerLink landing-homepage__footerLink--emphasized">
-              Back to landing
-            </Link>
-            <Link href="/register" className="landing-homepage__footerLink">
-              Register
-            </Link>
-            <Link href="/request-loan" className="landing-homepage__footerLink">
-              Request loan
-            </Link>
-          </nav>
-        </div>
-      </footer>
+      <PublicSiteFooter footerClassName="signin-page__footer" />
     </div>
   )
 }

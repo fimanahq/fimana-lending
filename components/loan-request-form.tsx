@@ -1,18 +1,21 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { buildPaymentDays, paymentDayOptions } from '@/lib/loan-schedule'
+import { getLoanRequestValidationResult, validateLoanRequestInput } from '@/lib/loan-request-validation'
 import { apiRequest } from '@/lib/client-api'
-import type { LoanRequest, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
+import type { LoanRequest, LoanSchedulePreset } from '@/lib/types'
+
+const PHONE_PREFIX = '+63 '
+const REQUIRED_ERROR_SUFFIX = 'is required'
 
 const initialForm = {
   firstName: '',
   lastName: '',
   email: '',
-  phone: '',
-  principal: '5000',
-  gives: '2',
-  paymentFrequency: 'twice_monthly' as PaymentFrequency,
+  phone: PHONE_PREFIX,
+  principal: '',
+  gives: '12',
+  paymentFrequency: 'twice_monthly' as const,
   firstDay: '15',
   secondDay: 'month_end',
   paymentPreset: '15_month_end' as LoanSchedulePreset,
@@ -20,36 +23,148 @@ const initialForm = {
   notes: '',
 }
 
+function coercePhoneValue(value: string) {
+  const trimmedStart = value.replace(/^\s+/, '')
+  const compactValue = trimmedStart.replace(/\s+/g, '')
+
+  if (!compactValue || compactValue === '+' || compactValue === '+6' || compactValue === '+63' || compactValue === '6' || compactValue === '63') {
+    return PHONE_PREFIX
+  }
+
+  if (trimmedStart.startsWith(PHONE_PREFIX)) {
+    return trimmedStart
+  }
+
+  if (compactValue.startsWith('+63')) {
+    return `${PHONE_PREFIX}${compactValue.slice(3)}`
+  }
+
+  if (compactValue.startsWith('63')) {
+    return `${PHONE_PREFIX}${compactValue.slice(2)}`
+  }
+
+  if (compactValue.startsWith('+6')) {
+    return `${PHONE_PREFIX}${compactValue.slice(2)}`
+  }
+
+  if (compactValue.startsWith('6')) {
+    return `${PHONE_PREFIX}${compactValue.slice(1)}`
+  }
+
+  return `${PHONE_PREFIX}${trimmedStart}`
+}
+
+function isRequiredError(error: string) {
+  return error.endsWith(REQUIRED_ERROR_SUFFIX)
+}
+
 export function LoanRequestForm() {
   const [form, setForm] = useState(initialForm)
+  const [touchedFields, setTouchedFields] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    phone: false,
+    principal: false,
+    gives: false,
+    firstPaymentDate: false,
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<LoanRequest | null>(null)
-
-  const paymentDays = useMemo(
-    () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay, form.paymentPreset),
-    [form.firstDay, form.paymentFrequency, form.paymentPreset, form.secondDay],
+  const validation = useMemo(
+    () =>
+      getLoanRequestValidationResult({
+        ...form,
+        principal: Number(form.principal),
+        gives: Number(form.gives),
+      }),
+    [form],
   )
+  const emailValue = form.email.trim()
+  const emailIsDirty = touchedFields.email && emailValue.length > 0 && Boolean(validation.errors.email) && !isRequiredError(validation.errors.email)
+  const emailIsValid = touchedFields.email && emailValue.length > 0 && !validation.errors.email
+  const emailHasFormatError = emailIsDirty
+  const phoneDigits = form.phone.replace(/\D/g, '').replace(/^63/, '')
+  const phoneIsDirty = phoneDigits.length > 0
+  const phoneHasLengthError = touchedFields.phone && phoneIsDirty && Boolean(validation.errors.phone) && !isRequiredError(validation.errors.phone)
+
+  const markTouched = (field: keyof typeof touchedFields) => {
+    setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }))
+  }
+
+  const isMissingValue = (field: keyof typeof touchedFields) => {
+    switch (field) {
+      case 'firstName':
+        return form.firstName.trim().length === 0
+      case 'lastName':
+        return form.lastName.trim().length === 0
+      case 'email':
+        return form.email.trim().length === 0
+      case 'phone':
+        return form.phone.replace(/\s+/g, '') === '+63'
+      case 'principal':
+        return form.principal.trim().length === 0
+      case 'gives':
+        return form.gives.trim().length === 0
+      case 'firstPaymentDate':
+        return form.firstPaymentDate.trim().length === 0
+    }
+  }
+
+  const showDirtyField = (field: keyof typeof touchedFields, error: string) =>
+    touchedFields[field] && (isMissingValue(field) || isRequiredError(error))
+
+  const getVisibleError = (field: keyof typeof validation.errors, touched: boolean) => {
+    const error = validation.errors[field]
+    if (!touched || !error) {
+      return ''
+    }
+
+    if (field in touchedFields && isMissingValue(field as keyof typeof touchedFields)) {
+      return ''
+    }
+
+    if (isRequiredError(error)) {
+      return ''
+    }
+
+    return error
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSubmitting(true)
     setError('')
     setSuccess(null)
+    setSubmitting(true)
 
     try {
+      const validated = validateLoanRequestInput({
+        ...form,
+        principal: Number(form.principal),
+        gives: Number(form.gives),
+      })
+
       const created = await apiRequest<LoanRequest>('/api/loan-requests', {
         method: 'POST',
         body: JSON.stringify({
           ...form,
-          principal: Number(form.principal),
-          gives: Number(form.gives),
-          paymentDays,
+          ...validated,
+          paymentDays: validated.paymentDays,
         }),
       })
 
       setSuccess(created)
       setForm(initialForm)
+      setTouchedFields({
+        firstName: false,
+        lastName: false,
+        email: false,
+        phone: false,
+        principal: false,
+        gives: false,
+        firstPaymentDate: false,
+      })
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit request')
     } finally {
@@ -65,20 +180,32 @@ export function LoanRequestForm() {
           <input
             id="requestFirstName"
             autoComplete="given-name"
+            placeholder="e.g., Julian"
+            className={showDirtyField('firstName', validation.errors.firstName) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('firstName', touchedFields.firstName))}
             value={form.firstName}
+            onBlur={() => markTouched('firstName')}
             onChange={(event) => setForm((current) => ({ ...current, firstName: event.target.value }))}
-            required
           />
+          {getVisibleError('firstName', touchedFields.firstName) ? (
+            <p className="request-loan-form__error">{getVisibleError('firstName', touchedFields.firstName)}</p>
+          ) : null}
         </div>
         <div className="request-loan-form__field">
           <label htmlFor="requestLastName">Last name</label>
           <input
             id="requestLastName"
             autoComplete="family-name"
+            placeholder="e.g., Sterling"
+            className={showDirtyField('lastName', validation.errors.lastName) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('lastName', touchedFields.lastName))}
             value={form.lastName}
+            onBlur={() => markTouched('lastName')}
             onChange={(event) => setForm((current) => ({ ...current, lastName: event.target.value }))}
-            required
           />
+          {getVisibleError('lastName', touchedFields.lastName) ? (
+            <p className="request-loan-form__error">{getVisibleError('lastName', touchedFields.lastName)}</p>
+          ) : null}
         </div>
       </div>
 
@@ -89,9 +216,18 @@ export function LoanRequestForm() {
             id="requestEmail"
             type="email"
             autoComplete="email"
+            placeholder="julian@example.com"
+            className={`request-loan-form__input${emailIsDirty || showDirtyField('email', validation.errors.email)
+              ? ' request-loan-form__input--dirty'
+              : ''}${emailIsValid ? ' request-loan-form__input--valid' : ''}`}
+            aria-invalid={false}
             value={form.email}
+            onBlur={() => markTouched('email')}
             onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
           />
+          {!emailHasFormatError && getVisibleError('email', touchedFields.email) ? (
+            <p className="request-loan-form__error">{getVisibleError('email', touchedFields.email)}</p>
+          ) : null}
         </div>
         <div className="request-loan-form__field">
           <label htmlFor="requestPhone">Phone</label>
@@ -99,154 +235,101 @@ export function LoanRequestForm() {
             id="requestPhone"
             type="tel"
             autoComplete="tel"
+            className={phoneHasLengthError || showDirtyField('phone', validation.errors.phone) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={false}
             value={form.phone}
-            onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
+            onBlur={() => markTouched('phone')}
+            onChange={(event) => setForm((current) => ({ ...current, phone: coercePhoneValue(event.target.value) }))}
           />
+          {!phoneHasLengthError && getVisibleError('phone', touchedFields.phone) ? (
+            <p className="request-loan-form__error">{getVisibleError('phone', touchedFields.phone)}</p>
+          ) : null}
         </div>
       </div>
 
       <div className="request-loan-form__grid">
-        <div className="request-loan-form__field">
+        <div className="request-loan-form__field request-loan-form__field--full">
           <label htmlFor="requestPrincipal">Requested amount</label>
           <input
             id="requestPrincipal"
             type="number"
             min="1"
             inputMode="decimal"
+            placeholder="0.00"
+            className={showDirtyField('principal', validation.errors.principal) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('principal', touchedFields.principal))}
             value={form.principal}
+            onBlur={() => markTouched('principal')}
             onChange={(event) => setForm((current) => ({ ...current, principal: event.target.value }))}
-            required
           />
+          {getVisibleError('principal', touchedFields.principal) ? (
+            <p className="request-loan-form__error">{getVisibleError('principal', touchedFields.principal)}</p>
+          ) : null}
         </div>
+      </div>
+
+      <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
           <label htmlFor="requestGives">Number of gives</label>
           <input
             id="requestGives"
             type="number"
             min="1"
-            step="1"
             inputMode="numeric"
+            className={showDirtyField('gives', validation.errors.gives) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('gives', touchedFields.gives))}
             value={form.gives}
+            onBlur={() => markTouched('gives')}
             onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
-            required
           />
-        </div>
-      </div>
-
-      <div className="request-loan-form__field">
-        <label htmlFor="requestFrequency">Payment frequency</label>
-        <select
-          id="requestFrequency"
-          value={form.paymentFrequency}
-          onChange={(event) =>
-            setForm((current) => ({
-              ...current,
-              paymentFrequency: event.target.value as PaymentFrequency,
-            }))
-          }
-        >
-          <option value="monthly">Monthly</option>
-          <option value="twice_monthly">Twice monthly</option>
-        </select>
-        <p className="request-loan-form__hint">Choose how often you expect to make payments.</p>
-      </div>
-
-      {form.paymentFrequency === 'twice_monthly' ? (
-        <>
-          <div className="request-loan-form__field">
-            <label htmlFor="requestPreset">Schedule preset</label>
-            <select
-              id="requestPreset"
-              value={form.paymentPreset}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  paymentPreset: event.target.value as LoanSchedulePreset,
-                }))
-              }
-            >
-              <option value="15_month_end">15th + month end</option>
-              <option value="5_20">5th + 20th</option>
-              <option value="custom">Custom dates</option>
-            </select>
-          </div>
-
-          {form.paymentPreset === 'custom' ? (
-            <div className="request-loan-form__grid">
-              <div className="request-loan-form__field">
-                <label htmlFor="requestFirstDay">First payment day</label>
-                <select
-                  id="requestFirstDay"
-                  value={form.firstDay}
-                  onChange={(event) => setForm((current) => ({ ...current, firstDay: event.target.value }))}
-                >
-                  {paymentDayOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option === 'month_end' ? 'Month end' : option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="request-loan-form__field">
-                <label htmlFor="requestSecondDay">Second payment day</label>
-                <select
-                  id="requestSecondDay"
-                  value={form.secondDay}
-                  onChange={(event) => setForm((current) => ({ ...current, secondDay: event.target.value }))}
-                >
-                  {paymentDayOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option === 'month_end' ? 'Month end' : option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          {getVisibleError('gives', touchedFields.gives) ? (
+            <p className="request-loan-form__error">{getVisibleError('gives', touchedFields.gives)}</p>
           ) : null}
-        </>
-      ) : (
+        </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestMonthlyDay">Monthly payment day</label>
+          <label htmlFor="requestPreset">Schedule preset</label>
           <select
-            id="requestMonthlyDay"
-            value={form.firstDay}
-            onChange={(event) => setForm((current) => ({ ...current, firstDay: event.target.value }))}
+            id="requestPreset"
+            value={form.paymentPreset}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                paymentPreset: event.target.value as LoanSchedulePreset,
+              }))
+            }
           >
-            {paymentDayOptions.map((option) => (
-              <option key={option} value={option}>
-                {option === 'month_end' ? 'Month end' : option}
-              </option>
-            ))}
+            <option value="15_month_end">15th + month end</option>
+            <option value="5_20">5th + 20th</option>
           </select>
         </div>
-      )}
+      </div>
 
-      <div className="request-loan-form__field">
+      <div className="request-loan-form__field request-loan-form__field--full">
         <label htmlFor="requestFirstPaymentDate">Preferred first payment date</label>
         <input
           id="requestFirstPaymentDate"
           type="date"
+          className={showDirtyField('firstPaymentDate', validation.errors.firstPaymentDate)
+            ? 'request-loan-form__input--dirty'
+            : ''}
+          aria-invalid={Boolean(getVisibleError('firstPaymentDate', touchedFields.firstPaymentDate))}
           value={form.firstPaymentDate}
+          onBlur={() => markTouched('firstPaymentDate')}
           onChange={(event) => setForm((current) => ({ ...current, firstPaymentDate: event.target.value }))}
-          required
         />
+        {getVisibleError('firstPaymentDate', touchedFields.firstPaymentDate) ? (
+          <p className="request-loan-form__error">{getVisibleError('firstPaymentDate', touchedFields.firstPaymentDate)}</p>
+        ) : null}
       </div>
 
       <div className="request-loan-form__field">
-        <label htmlFor="requestNotes">Notes</label>
+        <label htmlFor="requestNotes">Loan purpose</label>
         <textarea
           id="requestNotes"
           value={form.notes}
           onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-          placeholder="Tell the lender anything important about your request."
+          placeholder="Describe the intended use of the loan and any relevant repayment details."
         />
-      </div>
-
-      <div className="request-loan-form__summary">
-        <span className="request-loan-form__summaryLabel">Estimated cadence</span>
-        <strong>{paymentDays.map((day) => (day === 'month_end' ? 'month end' : day)).join(' + ')}</strong>
-        <p>Provide at least one contact method so the lender can follow up on your request.</p>
       </div>
 
       {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
@@ -256,9 +339,18 @@ export function LoanRequestForm() {
         </div>
       ) : null}
 
-      <button className="request-loan-form__submit" type="submit" disabled={submitting}>
-        {submitting ? 'Submitting request...' : 'Submit request'}
+      <button
+        className="request-loan-form__submit"
+        type="submit"
+        disabled={submitting || !validation.isValid}
+      >
+        <span>{submitting ? 'Submitting request...' : 'Submit request'}</span>
+        <span className="request-loan-form__submitArrow" aria-hidden="true">→</span>
       </button>
+
+      <p className="request-loan-form__finePrint">
+        By submitting, you agree to our curated ledger review process.
+      </p>
     </form>
   )
 }

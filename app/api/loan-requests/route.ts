@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildPaymentDays } from '@/lib/loan-schedule'
-import { getSessionUser, jsonError } from '@/lib/server/backend'
-import { createLoanRequest, listLoanRequests } from '@/lib/server/loan-requests'
+import {
+  isPaymentFrequency,
+  isPaymentPreset,
+  validateLoanRequestInput,
+} from '@/lib/loan-request-validation'
+import { API_BASE_URL } from '@/lib/constants'
+import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import type { LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
+import type { LoanRequest } from '@/lib/types'
 
-function isPaymentFrequency(value: unknown): value is PaymentFrequency {
-  return value === 'monthly' || value === 'twice_monthly'
-}
-
-function isPaymentPreset(value: unknown): value is LoanSchedulePreset {
-  return value === '15_month_end' || value === '5_20' || value === 'custom'
+interface BackendEnvelope<T> {
+  message?: string
+  data: T
 }
 
 export async function GET() {
-  const user = await getSessionUser()
-  if (!user) {
-    return jsonError('Unauthorized', 401)
+  try {
+    const requests = await authorizedBackendRequest<LoanRequest[]>('/loan-requests')
+    return NextResponse.json(requests)
+  } catch (caughtError) {
+    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan requests', 401)
   }
-
-  return NextResponse.json(await listLoanRequests())
 }
 
 export async function POST(request: NextRequest) {
@@ -65,25 +66,50 @@ export async function POST(request: NextRequest) {
     return jsonError('Invalid payment schedule preset', 400)
   }
 
-  if (!firstPaymentDate) {
-    return jsonError('Preferred first payment date is required', 400)
+  try {
+    const validated = validateLoanRequestInput({
+      firstName,
+      lastName,
+      email,
+      phone,
+      principal,
+      gives,
+      paymentFrequency,
+      firstDay,
+      secondDay,
+      paymentPreset,
+      firstPaymentDate,
+      notes,
+    })
+
+    const response = await fetch(`${API_BASE_URL}/loan-requests`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(validated),
+      cache: 'no-store',
+    })
+
+    const payload = (await response.json().catch(() => null)) as BackendEnvelope<LoanRequest> | { message?: string } | null
+    if (!response.ok) {
+      return jsonError(payload?.message || 'Unable to submit request', response.status)
+    }
+
+    const created = payload && 'data' in payload ? payload.data : null
+    if (!created) {
+      return jsonError('Unable to submit request', 502)
+    }
+
+    return NextResponse.json(created, { status: 201 })
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : 'Unable to submit request'
+
+    if (message === 'fetch failed') {
+      return jsonError(`Loan request API is unavailable at ${API_BASE_URL}`, 503)
+    }
+
+    return jsonError(message, 400)
   }
-
-  const paymentDays = buildPaymentDays(paymentFrequency, firstDay, secondDay, paymentPreset)
-
-  const created = await createLoanRequest({
-    firstName,
-    lastName,
-    email: email || undefined,
-    phone: phone || undefined,
-    principal,
-    gives,
-    paymentFrequency,
-    paymentDays,
-    paymentPreset,
-    firstPaymentDate,
-    notes: notes || undefined,
-  })
-
-  return NextResponse.json(created, { status: 201 })
 }

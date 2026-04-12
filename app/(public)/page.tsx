@@ -1,57 +1,48 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { PublicSiteFooter } from '@/components/public-site-footer'
+import { PublicSiteHeader } from '@/components/public-site-header'
 
 const HERO_IMAGE_URL = 'https://www.figma.com/api/mcp/asset/bd91ea1a-8716-481b-80a0-0bcb19290174'
-
-const primaryLinks = [
-  { href: '#vision', label: 'Our Vision' },
-  { href: '#lending-solutions', label: 'Lending Solutions' },
-  { href: '#about', label: 'About Us' },
-]
-
-const footerLinks = [
-  { href: '#privacy-policy', label: 'Privacy Policy', emphasized: true },
-  { href: '#terms-of-service', label: 'Terms of Service' },
-  { href: '#financial-security', label: 'Financial Security' },
-  { href: '#regulatory-disclosure', label: 'Regulatory Disclosure' },
-]
 
 export default function LandingPage() {
   return (
     <div className="landing-homepage">
-      <header className="landing-homepage__header" data-node-id="2003:45">
-        <div className="page-wrap landing-homepage__container landing-homepage__headerContainer">
-          <Link href="/" className="landing-homepage__brand" aria-label="FiMana Lending home" data-node-id="2003:47">
-            FiMana Lending
-          </Link>
+      <PublicSiteHeader
+        headerClassName="landing-homepage__header"
+        innerClassName="landing-homepage__headerContainer"
+        brandClassName="landing-homepage__brand"
+        actions={
+          <>
+            <div className="landing-homepage__headerActions" data-node-id="2003:56">
+              <Link href="/login" className="landing-homepage__signIn">
+                Sign in
+              </Link>
+            </div>
 
-          <nav className="landing-homepage__nav" aria-label="Primary" data-node-id="2003:49">
-            {primaryLinks.map((link) => (
-              <a key={link.href} href={link.href} className="landing-homepage__navLink">
-                {link.label}
-              </a>
-            ))}
-          </nav>
+            <details className="landing-homepage__mobileMenu">
+              <summary className="landing-homepage__mobileMenuSummary" aria-label="Open account actions">
+                <span className="landing-homepage__mobileMenuDots" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              </summary>
 
-          <div className="landing-homepage__headerActions" data-node-id="2003:56">
-            <Link href="/login" className="landing-homepage__signIn">
-              Sign in
-            </Link>
-            <Link href="/register" className="landing-homepage__createAccount" data-node-id="2003:60">
-              Create account
-            </Link>
-          </div>
-        </div>
-      </header>
+              <div className="landing-homepage__mobileMenuPanel">
+                <Link href="/login" className="landing-homepage__mobileMenuLink">
+                  Sign in
+                </Link>
+              </div>
+            </details>
+          </>
+        }
+      />
 
       <main className="landing-homepage__main">
         <div className="page-wrap landing-homepage__container">
           <section className="landing-homepage__hero" id="vision" data-node-id="2003:4">
             <div className="landing-homepage__copy" data-node-id="2003:17">
-              <div className="landing-homepage__eyebrow" data-node-id="2003:18">
-                The Curated Ledger
-              </div>
-
               <h1 className="landing-homepage__title" data-node-id="2003:20">
                 <span>Request a</span>
                 <span>loan online</span>
@@ -74,9 +65,6 @@ export default function LandingPage() {
                 >
                   Request loan
                 </Link>
-                <a href="#about" className="landing-homepage__button landing-homepage__button--secondary" data-node-id="2003:28">
-                  View rates
-                </a>
               </div>
             </div>
 
@@ -130,26 +118,7 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <footer className="landing-homepage__footer" id="about" data-node-id="2003:31">
-        <div className="page-wrap landing-homepage__container landing-homepage__footerContainer">
-          <div className="landing-homepage__footerBrand" data-node-id="2003:33">
-            <strong>FiMana Lending</strong>
-            <span>© 2024 FiMana Lending. All rights reserved.</span>
-          </div>
-
-          <nav className="landing-homepage__footerNav" aria-label="Footer" data-node-id="2003:36">
-            {footerLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`landing-homepage__footerLink${link.emphasized ? ' landing-homepage__footerLink--emphasized' : ''}`}
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </footer>
+      <PublicSiteFooter footerClassName="landing-homepage__footer" />
     </div>
   )
 }

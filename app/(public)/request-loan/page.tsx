@@ -1,130 +1,62 @@
-import Link from 'next/link'
 import { LoanRequestForm } from '@/components/loan-request-form'
+import { PublicSiteFooter } from '@/components/public-site-footer'
+import { PublicSiteHeader } from '@/components/public-site-header'
 
-const navLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/login', label: 'Sign in' },
-  { href: '/register', label: 'Register' },
-]
-
-const infoCards = [
-  {
-    title: 'What to prepare',
-    body: 'Bring the amount you need, your preferred cadence, and at least one reliable contact method before you submit.',
-  },
-  {
-    title: 'Review window',
-    body: 'Submitted requests land in the lender queue immediately so they can be reviewed and converted into an active loan.',
-  },
-  {
-    title: 'Protected follow-up',
-    body: 'Only the public intake is open. Approval and repayment tracking stay inside the secured FiMana workspace.',
-  },
-]
+const editorialImageUrl =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAk2wKt3CmqISCd14AYUzSwmx7gj6IjhhLeqzWmaEHi5JlehlPgnwt4wbPpEV0pZN1V2xejPqTiGCKm8XLU44sjKeow1tuB4wNWYaVoOFO4SwVpC2R5Qg8Lr09YS0ux9ZjDl1L9M66OeoEKMuHUl8XRIDNOi5tIpqzM54YWFdgCjklspZMst5skXFyWoQ75-IS3H81oJsX-p5LD8UfXphRtM8SSSvptP3HDeoy3EJMOvXZOabRAcXxVS6HiCtnQ47ZrRzOVbhFknGc'
 
 export default function RequestLoanPage() {
   return (
-    <div className="landing-homepage request-homepage">
-      <header className="landing-homepage__header">
-        <div className="page-wrap landing-homepage__container landing-homepage__headerContainer">
-          <Link href="/" className="landing-homepage__brand" aria-label="FiMana Lending home">
-            FiMana Lending
-          </Link>
+    <div className="request-homepage">
+      <PublicSiteHeader
+        headerClassName="request-homepage__topbar"
+        innerClassName="request-homepage__topbarInner"
+        brandClassName="request-homepage__brand"
+      />
 
-          <nav className="landing-homepage__nav" aria-label="Primary">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} className="landing-homepage__navLink">
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+      <main className="request-homepage__main">
+        <div className="request-homepage__layout">
+          <section className="request-homepage__editorial">
+            <div className="request-homepage__eyebrow">Lending journey</div>
 
-          <div className="landing-homepage__headerActions">
-            <span className="landing-homepage__signIn">Public intake</span>
-            <Link href="/register" className="landing-homepage__createAccount">
-              Create account
-            </Link>
-          </div>
-        </div>
-      </header>
+            <h1 className="request-homepage__title">
+              Crafting Your <span>Financial Future.</span>
+            </h1>
 
-      <main className="landing-homepage__main">
-        <div className="page-wrap landing-homepage__container">
-          <section className="landing-homepage__hero request-homepage__hero">
-            <div className="landing-homepage__copy request-homepage__copy">
-              <div className="landing-homepage__eyebrow">Loan request</div>
+            <p className="request-homepage__lede">
+              Complete your loan request below. Our curated approach ensures a bespoke lending experience tailored to
+              your unique portfolio.
+            </p>
 
-              <h1 className="landing-homepage__title request-homepage__title">
-                <span>Start your</span>
-                <span>application</span>
-                <span>
-                  with <em>FiMana</em>
-                </span>
-                <span className="landing-homepage__titleAccent">Lending.</span>
-              </h1>
+            <div className="request-homepage__imageCard">
+              <img
+                src={editorialImageUrl}
+                alt="Luxury minimalist office interior with warm wooden accents and soft sunlight."
+                className="request-homepage__image"
+              />
+              <div className="request-homepage__imageOverlay" />
 
-              <p className="landing-homepage__body request-homepage__body">
-                Share the amount you need, the repayment rhythm you prefer, and how to reach you. Approved requests move
-                directly into the lender workspace for review, scheduling, and follow-up.
-              </p>
-
-              <div className="landing-homepage__actions request-homepage__actions">
-                <Link href="/login" className="landing-homepage__button landing-homepage__button--primary">
-                  Lender sign in
-                </Link>
-                <Link href="/" className="landing-homepage__button landing-homepage__button--secondary">
-                  Back to landing
-                </Link>
-              </div>
-
-              <div className="request-homepage__highlights" aria-label="Request details">
-                {infoCards.map((card) => (
-                  <article key={card.title} className="request-homepage__highlightCard">
-                    <span className="request-homepage__highlightTitle">{card.title}</span>
-                    <p>{card.body}</p>
-                  </article>
-                ))}
+              <div className="request-homepage__statusCard">
+                <div className="request-homepage__statusIcon" aria-hidden="true">
+                  <span />
+                  <span />
+                </div>
+                <div>
+                  <strong>Secure Request</strong>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div className="landing-homepage__visual request-homepage__visual">
-              <section className="request-homepage__panel">
-                <div className="request-homepage__panelTop">
-                  <div className="landing-homepage__eyebrow request-homepage__panelEyebrow">Public intake</div>
-                  <h2 className="request-homepage__panelTitle">Request a loan</h2>
-                  <p className="request-homepage__panelBody">
-                    Complete the form below and the lender can review your request inside the protected FiMana lending
-                    workspace.
-                  </p>
-                </div>
-
-                <LoanRequestForm />
-              </section>
+          <section className="request-homepage__formColumn">
+            <div className="request-homepage__formCard">
+              <LoanRequestForm />
             </div>
           </section>
         </div>
       </main>
 
-      <footer className="landing-homepage__footer">
-        <div className="page-wrap landing-homepage__container landing-homepage__footerContainer">
-          <div className="landing-homepage__footerBrand">
-            <strong>FiMana Lending</strong>
-            <span>Public requests feed directly into the lender&apos;s secured review queue.</span>
-          </div>
-
-          <nav className="landing-homepage__footerNav" aria-label="Footer">
-            <Link href="/" className="landing-homepage__footerLink landing-homepage__footerLink--emphasized">
-              Home
-            </Link>
-            <Link href="/login" className="landing-homepage__footerLink">
-              Sign in
-            </Link>
-            <Link href="/register" className="landing-homepage__footerLink">
-              Register
-            </Link>
-          </nav>
-        </div>
-      </footer>
+      <PublicSiteFooter footerClassName="request-homepage__footer" />
     </div>
   )
 }

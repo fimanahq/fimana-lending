@@ -1,1 +1,48 @@
-[]
+[
+  {
+    "id": "5e255a62-e6e6-45fd-b856-bd9a775b83a8",
+    "firstName": "sweden1",
+    "lastName": "Magno",
+    "email": "joel@gmail.com",
+    "phone": "+63 9266162798",
+    "principal": 123,
+    "gives": 12,
+    "paymentFrequency": "twice_monthly",
+    "paymentDays": [
+      "15",
+      "month_end"
+    ],
+    "paymentPreset": "15_month_end",
+    "firstPaymentDate": "2026-04-30",
+    "notes": "test",
+    "status": "pending",
+    "createdAt": "2026-04-12T07:57:21.390Z",
+    "reviewedAt": null,
+    "reviewedBy": null,
+    "contactId": null,
+    "loanId": null
+  },
+  {
+    "id": "76400503-6845-4d60-974d-cf48e3f0bf85",
+    "firstName": "Joel",
+    "lastName": "Vergara",
+    "email": "joel@gmail.com",
+    "phone": "+63 9266162798",
+    "principal": 10004,
+    "gives": 12,
+    "paymentFrequency": "twice_monthly",
+    "paymentDays": [
+      "15",
+      "month_end"
+    ],
+    "paymentPreset": "15_month_end",
+    "firstPaymentDate": "2026-04-30",
+    "notes": "test",
+    "status": "pending",
+    "createdAt": "2026-04-12T07:10:42.526Z",
+    "reviewedAt": null,
+    "reviewedBy": null,
+    "contactId": null,
+    "loanId": null
+  }
+]
