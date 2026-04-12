@@ -73,8 +73,25 @@ async function setSessionCookies(payload: AuthPayload) {
 
 export async function clearSessionCookies() {
   const cookieStore = await cookies()
-  cookieStore.delete(ACCESS_COOKIE_NAME)
-  cookieStore.delete(REFRESH_COOKIE_NAME)
+  const expiredAt = new Date(0)
+
+  cookieStore.set(ACCESS_COOKIE_NAME, '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    expires: expiredAt,
+    maxAge: 0,
+  })
+
+  cookieStore.set(REFRESH_COOKIE_NAME, '', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    expires: expiredAt,
+    maxAge: 0,
+  })
 }
 
 export async function createSession(payload: AuthPayload) {

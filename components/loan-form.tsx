@@ -7,13 +7,19 @@ import { buildPaymentDays, paymentDayOptions } from '@/lib/loan-schedule'
 import { apiRequest } from '@/lib/client-api'
 import type { Contact, Loan, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
 export function LoanForm() {
   const router = useRouter()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loadingContacts, setLoadingContacts] = useState(true)
   const [error, setError] = useState('')
+  const [contactError, setContactError] = useState('')
   const [success, setSuccess] = useState('')
   const [creatingContact, setCreatingContact] = useState(false)
+  const [contactEmailTouched, setContactEmailTouched] = useState(false)
   const [form, setForm] = useState({
     contactId: '',
     principal: '5000',
@@ -53,21 +59,50 @@ export function LoanForm() {
     () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay, form.preset),
     [form.firstDay, form.paymentFrequency, form.preset, form.secondDay],
   )
+  const contactEmailValue = contactDraft.email.trim()
+  const contactEmailHasFormatError = contactEmailTouched && contactEmailValue.length > 0 && !isValidEmail(contactEmailValue)
+  const contactEmailIsValid = contactEmailTouched && contactEmailValue.length > 0 && isValidEmail(contactEmailValue)
 
   const handleCreateContact = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const trimmedDraft = {
+      firstName: contactDraft.firstName.trim(),
+      lastName: contactDraft.lastName.trim(),
+      email: contactDraft.email.trim(),
+      phone: contactDraft.phone.trim(),
+      notes: contactDraft.notes.trim(),
+    }
+
+    if (!trimmedDraft.firstName || !trimmedDraft.lastName) {
+      setContactError('Borrower first and last name are required.')
+      return
+    }
+
+    if (!trimmedDraft.email && !trimmedDraft.phone) {
+      setContactError('Provide at least an email address or phone number.')
+      return
+    }
+
+    if (trimmedDraft.email && !isValidEmail(trimmedDraft.email)) {
+      setContactError('Enter a valid email address for the borrower.')
+      return
+    }
+
     setCreatingContact(true)
+    setContactError('')
     setError('')
+    setSuccess('')
 
     try {
       const contact = await apiRequest<Contact>('/api/contacts', {
         method: 'POST',
-        body: JSON.stringify(contactDraft),
+        body: JSON.stringify(trimmedDraft),
       })
 
       setContacts((current) => [contact, ...current])
       setForm((current) => ({ ...current, contactId: contact._id }))
       setContactDraft({ firstName: '', lastName: '', email: '', phone: '', notes: '' })
+      setContactEmailTouched(false)
       setSuccess(`Borrower ${contact.firstName} ${contact.lastName} added.`)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to create borrower')
@@ -283,6 +318,8 @@ export function LoanForm() {
           <p className="muted">Use the existing contacts entity in the API and assign the new loan immediately.</p>
         </div>
 
+        {contactError ? <div className="notice danger">{contactError}</div> : null}
+
         <form className="stack" onSubmit={handleCreateContact}>
           <div className="grid two">
             <div className="field">
@@ -290,7 +327,10 @@ export function LoanForm() {
               <input
                 id="borrowerFirstName"
                 value={contactDraft.firstName}
-                onChange={(event) => setContactDraft((current) => ({ ...current, firstName: event.target.value }))}
+                onChange={(event) => {
+                  setContactError('')
+                  setContactDraft((current) => ({ ...current, firstName: event.target.value }))
+                }}
                 required
               />
             </div>
@@ -299,7 +339,10 @@ export function LoanForm() {
               <input
                 id="borrowerLastName"
                 value={contactDraft.lastName}
-                onChange={(event) => setContactDraft((current) => ({ ...current, lastName: event.target.value }))}
+                onChange={(event) => {
+                  setContactError('')
+                  setContactDraft((current) => ({ ...current, lastName: event.target.value }))
+                }}
                 required
               />
             </div>
@@ -311,26 +354,45 @@ export function LoanForm() {
               <input
                 id="borrowerEmail"
                 type="email"
+                autoComplete="email"
+                placeholder="julian@example.com"
                 value={contactDraft.email}
-                onChange={(event) => setContactDraft((current) => ({ ...current, email: event.target.value }))}
+                className={`loan-form__input${contactEmailHasFormatError ? ' loan-form__input--dirty' : ''}${contactEmailIsValid ? ' loan-form__input--valid' : ''}`}
+                aria-invalid={false}
+                onBlur={() => setContactEmailTouched(true)}
+                onChange={(event) => {
+                  setContactError('')
+                  setContactDraft((current) => ({ ...current, email: event.target.value }))
+                }}
               />
+              {contactEmailHasFormatError ? (
+                <p className="loan-form__error">Enter a valid email address for the borrower.</p>
+              ) : null}
             </div>
             <div className="field">
               <label htmlFor="borrowerPhone">Phone</label>
               <input
                 id="borrowerPhone"
                 value={contactDraft.phone}
-                onChange={(event) => setContactDraft((current) => ({ ...current, phone: event.target.value }))}
+                onChange={(event) => {
+                  setContactError('')
+                  setContactDraft((current) => ({ ...current, phone: event.target.value }))
+                }}
               />
             </div>
           </div>
+
+          <p className="muted micro-copy">Provide at least one contact method so the borrower record can be used immediately.</p>
 
           <div className="field">
             <label htmlFor="borrowerNotes">Notes</label>
             <textarea
               id="borrowerNotes"
               value={contactDraft.notes}
-              onChange={(event) => setContactDraft((current) => ({ ...current, notes: event.target.value }))}
+              onChange={(event) => {
+                setContactError('')
+                setContactDraft((current) => ({ ...current, notes: event.target.value }))
+              }}
             />
           </div>
 
