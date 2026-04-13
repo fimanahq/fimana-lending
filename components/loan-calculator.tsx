@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type WheelEvent } from 'react'
 import { defaultLoanInterestRules } from '@/content/rules'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
@@ -12,7 +12,23 @@ import {
 } from '@/lib/loan-schedule'
 import type { InterestMode, LoanInterestRulesConfig, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
 
+function getGivesBucketLabel(gives: number) {
+  if (gives <= 1) {
+    return '1 give'
+  }
+
+  if (gives === 2) {
+    return '2 gives'
+  }
+
+  return '3+ gives'
+}
+
 export function LoanCalculator() {
+  const preventWheelValueChange = (event: WheelEvent<HTMLInputElement>) => {
+    event.currentTarget.blur()
+  }
+
   const [form, setForm] = useState({
     principal: '5000',
     gives: '2',
@@ -85,6 +101,28 @@ export function LoanCalculator() {
     }
   }, [form, paymentDays, rules])
 
+  const appliedInterestDetail = useMemo(() => {
+    if (form.interestMode === 'manual') {
+      return 'Manual override from Interest per cutoff (%) input.'
+    }
+
+    const principal = Number(form.principal)
+    const gives = Number(form.gives)
+
+    if (!Number.isFinite(principal) || principal <= 0 || !Number.isInteger(gives) || gives <= 0) {
+      return 'Enter a valid loan amount and gives to resolve the configured rule.'
+    }
+
+    const bandLabel = principal <= rules.thresholdAmount
+      ? `Small loan (≤ ${formatCurrency(rules.thresholdAmount)})`
+      : `Large loan (> ${formatCurrency(rules.thresholdAmount)})`
+
+    const givesLabel = getGivesBucketLabel(gives)
+    const appliedRate = getInterestRateFromRules(principal, gives, rules)
+
+    return `Using ${bandLabel}, ${givesLabel} rule = ${appliedRate}%.`
+  }, [form.gives, form.interestMode, form.principal, rules])
+
   return (
     <div className="stack">
       <section className="card panel">
@@ -107,6 +145,7 @@ export function LoanCalculator() {
                 type="number"
                 min="1"
                 step="0.01"
+                onWheel={preventWheelValueChange}
                 value={form.principal}
                 onChange={(event) => setForm((current) => ({ ...current, principal: event.target.value }))}
               />
@@ -118,6 +157,7 @@ export function LoanCalculator() {
                 type="number"
                 min="1"
                 step="1"
+                onWheel={preventWheelValueChange}
                 value={form.gives}
                 onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
               />
@@ -246,6 +286,7 @@ export function LoanCalculator() {
                 type="number"
                 min="0"
                 step="0.01"
+                onWheel={preventWheelValueChange}
                 value={form.manualInterestRate}
                 onChange={(event) => setForm((current) => ({ ...current, manualInterestRate: event.target.value }))}
               />
@@ -266,6 +307,7 @@ export function LoanCalculator() {
               type="number"
               min="1"
               step="0.01"
+              onWheel={preventWheelValueChange}
               value={rules.thresholdAmount}
               onChange={(event) =>
                 setRules((current) => ({ ...current, thresholdAmount: Number(event.target.value) || 0 }))
@@ -280,8 +322,10 @@ export function LoanCalculator() {
                 <label htmlFor="smallOneGive">1 give (%)</label>
                 <input
                   id="smallOneGive"
+                  className="input-no-spinner"
                   type="number"
                   step="0.01"
+                  onWheel={preventWheelValueChange}
                   value={rules.smallLoanRates.oneGive}
                   onChange={(event) =>
                     setRules((current) => ({
@@ -295,8 +339,10 @@ export function LoanCalculator() {
                 <label htmlFor="smallTwoGives">2 gives (%)</label>
                 <input
                   id="smallTwoGives"
+                  className="input-no-spinner"
                   type="number"
                   step="0.01"
+                  onWheel={preventWheelValueChange}
                   value={rules.smallLoanRates.twoGives}
                   onChange={(event) =>
                     setRules((current) => ({
@@ -310,8 +356,10 @@ export function LoanCalculator() {
                 <label htmlFor="smallThreePlus">3+ gives (%)</label>
                 <input
                   id="smallThreePlus"
+                  className="input-no-spinner"
                   type="number"
                   step="0.01"
+                  onWheel={preventWheelValueChange}
                   value={rules.smallLoanRates.threePlusGives}
                   onChange={(event) =>
                     setRules((current) => ({
@@ -329,8 +377,10 @@ export function LoanCalculator() {
                 <label htmlFor="largeOneGive">1 give (%)</label>
                 <input
                   id="largeOneGive"
+                  className="input-no-spinner"
                   type="number"
                   step="0.01"
+                  onWheel={preventWheelValueChange}
                   value={rules.largeLoanRates.oneGive}
                   onChange={(event) =>
                     setRules((current) => ({
@@ -344,8 +394,10 @@ export function LoanCalculator() {
                 <label htmlFor="largeTwoGives">2 gives (%)</label>
                 <input
                   id="largeTwoGives"
+                  className="input-no-spinner"
                   type="number"
                   step="0.01"
+                  onWheel={preventWheelValueChange}
                   value={rules.largeLoanRates.twoGives}
                   onChange={(event) =>
                     setRules((current) => ({
@@ -359,8 +411,10 @@ export function LoanCalculator() {
                 <label htmlFor="largeThreePlus">3+ gives (%)</label>
                 <input
                   id="largeThreePlus"
+                  className="input-no-spinner"
                   type="number"
                   step="0.01"
+                  onWheel={preventWheelValueChange}
                   value={rules.largeLoanRates.threePlusGives}
                   onChange={(event) =>
                     setRules((current) => ({
@@ -379,6 +433,7 @@ export function LoanCalculator() {
         <div className="card summary-stat">
           <span className="muted">Applied interest</span>
           <strong>{calculation.interestRate ? `${calculation.interestRate}%` : '--'}</strong>
+          <span className="muted">{appliedInterestDetail}</span>
         </div>
         <div className="card summary-stat">
           <span className="muted">Total interest</span>

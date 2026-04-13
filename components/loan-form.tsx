@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type WheelEvent } from 'react'
 import { buildPaymentDays, paymentDayOptions } from '@/lib/loan-schedule'
 import { apiRequest } from '@/lib/client-api'
 import type { Contact, Loan, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
@@ -12,6 +12,10 @@ function isValidEmail(value: string) {
 }
 
 export function LoanForm() {
+  const preventWheelValueChange = (event: WheelEvent<HTMLInputElement>) => {
+    event.currentTarget.blur()
+  }
+
   const router = useRouter()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loadingContacts, setLoadingContacts] = useState(true)
@@ -20,6 +24,7 @@ export function LoanForm() {
   const [success, setSuccess] = useState('')
   const [creatingContact, setCreatingContact] = useState(false)
   const [contactEmailTouched, setContactEmailTouched] = useState(false)
+  const [contactEmailFocused, setContactEmailFocused] = useState(false)
   const [form, setForm] = useState({
     contactId: '',
     principal: '5000',
@@ -60,8 +65,10 @@ export function LoanForm() {
     [form.firstDay, form.paymentFrequency, form.preset, form.secondDay],
   )
   const contactEmailValue = contactDraft.email.trim()
-  const contactEmailHasFormatError = contactEmailTouched && contactEmailValue.length > 0 && !isValidEmail(contactEmailValue)
-  const contactEmailIsValid = contactEmailTouched && contactEmailValue.length > 0 && isValidEmail(contactEmailValue)
+  const showContactEmailValidation = contactEmailTouched && !contactEmailFocused
+  const contactEmailHasFormatError =
+    showContactEmailValidation && contactEmailValue.length > 0 && !isValidEmail(contactEmailValue)
+  const contactEmailIsValid = showContactEmailValidation && contactEmailValue.length > 0 && isValidEmail(contactEmailValue)
 
   const handleCreateContact = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -78,13 +85,12 @@ export function LoanForm() {
       return
     }
 
-    if (!trimmedDraft.email && !trimmedDraft.phone) {
-      setContactError('Provide at least an email address or phone number.')
+    if (!trimmedDraft.email || !trimmedDraft.phone) {
+      setContactError('Borrower email and phone are required.')
       return
     }
 
     if (trimmedDraft.email && !isValidEmail(trimmedDraft.email)) {
-      setContactError('Enter a valid email address for the borrower.')
       return
     }
 
@@ -103,6 +109,7 @@ export function LoanForm() {
       setForm((current) => ({ ...current, contactId: contact._id }))
       setContactDraft({ firstName: '', lastName: '', email: '', phone: '', notes: '' })
       setContactEmailTouched(false)
+      setContactEmailFocused(false)
       setSuccess(`Borrower ${contact.firstName} ${contact.lastName} added.`)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to create borrower')
@@ -177,9 +184,10 @@ export function LoanForm() {
               <label htmlFor="principal">Loan amount</label>
               <input
                 id="principal"
+                className="input-no-spinner"
                 type="number"
-                step="0.01"
                 min="1"
+                onWheel={preventWheelValueChange}
                 value={form.principal}
                 onChange={(event) => setForm((current) => ({ ...current, principal: event.target.value }))}
                 required
@@ -189,9 +197,10 @@ export function LoanForm() {
               <label htmlFor="gives">Number of gives</label>
               <input
                 id="gives"
+                className="input-no-spinner"
                 type="number"
                 min="1"
-                step="1"
+                onWheel={preventWheelValueChange}
                 value={form.gives}
                 onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
                 required
@@ -358,16 +367,18 @@ export function LoanForm() {
                 placeholder="julian@example.com"
                 value={contactDraft.email}
                 className={`loan-form__input${contactEmailHasFormatError ? ' loan-form__input--dirty' : ''}${contactEmailIsValid ? ' loan-form__input--valid' : ''}`}
-                aria-invalid={false}
-                onBlur={() => setContactEmailTouched(true)}
+                aria-invalid={contactEmailHasFormatError}
+                onFocus={() => setContactEmailFocused(true)}
+                onBlur={() => {
+                  setContactEmailFocused(false)
+                  setContactEmailTouched(true)
+                }}
                 onChange={(event) => {
                   setContactError('')
                   setContactDraft((current) => ({ ...current, email: event.target.value }))
                 }}
+                required
               />
-              {contactEmailHasFormatError ? (
-                <p className="loan-form__error">Enter a valid email address for the borrower.</p>
-              ) : null}
             </div>
             <div className="field">
               <label htmlFor="borrowerPhone">Phone</label>
@@ -378,11 +389,10 @@ export function LoanForm() {
                   setContactError('')
                   setContactDraft((current) => ({ ...current, phone: event.target.value }))
                 }}
+                required
               />
             </div>
           </div>
-
-          <p className="muted micro-copy">Provide at least one contact method so the borrower record can be used immediately.</p>
 
           <div className="field">
             <label htmlFor="borrowerNotes">Notes</label>

@@ -14,7 +14,6 @@ type IconName =
   | 'settings'
   | 'support'
   | 'bell'
-  | 'user'
   | 'plus'
 
 const navItems: Array<{ href: string; label: string; icon: IconName }> = [
@@ -23,12 +22,6 @@ const navItems: Array<{ href: string; label: string; icon: IconName }> = [
   { href: '/loans', label: 'Loans', icon: 'loans' },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
   { href: '/rules', label: 'Rules', icon: 'rules' },
-]
-
-const utilityItems: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: '/loans/new', label: 'New application', icon: 'plus' },
-  { href: '/rules', label: 'Settings', icon: 'settings' },
-  { href: '/requests', label: 'Support', icon: 'support' },
 ]
 
 function DashboardIcon({ name }: { name: IconName }) {
@@ -101,13 +94,6 @@ function DashboardIcon({ name }: { name: IconName }) {
           <path d="M10 18a2 2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       )
-    case 'user':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M5.5 19a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      )
     case 'plus':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -121,6 +107,16 @@ function DashboardIcon({ name }: { name: IconName }) {
 
 function isRouteActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function getAccountInitials(firstName?: string, lastName?: string, email?: string) {
+  const initials = `${firstName?.trim()[0] || ''}${lastName?.trim()[0] || ''}`.toUpperCase()
+
+  if (initials) {
+    return initials
+  }
+
+  return email?.trim()[0]?.toUpperCase() || ''
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -155,7 +151,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Team member'
-  const initials = user ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() : 'FM'
+  const initials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
 
   return (
     <div className="dashboard-shell">
@@ -179,21 +175,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="dashboard-shell__sidebarMeta">
-          {utilityItems.map((item) => (
-            <Link
-              key={`${item.href}-${item.label}`}
-              href={item.href}
-              className={`dashboard-shell__navLink dashboard-shell__navLink--subtle${isRouteActive(pathname, item.href) ? ' is-active' : ''}`}
-            >
-              <span className="dashboard-shell__navIcon">
-                <DashboardIcon name={item.icon} />
-              </span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </div>
-
         <Link href="/loans/new" className="dashboard-shell__sidebarCta">
           <span className="dashboard-shell__ctaIcon">
             <DashboardIcon name="plus" />
@@ -212,9 +193,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
             <button className="dashboard-shell__accountButton" type="button" aria-label={fullName}>
               <span className="dashboard-shell__accountAvatar">{initials}</span>
-              <span className="dashboard-shell__accountIcon">
-                <DashboardIcon name="user" />
-              </span>
             </button>
 
             <button className="dashboard-shell__logout" type="button" onClick={handleLogout} disabled={isLoggingOut}>

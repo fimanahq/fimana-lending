@@ -25,7 +25,7 @@ function toInstallmentDateISOString(value: string) {
   return new Date(`${value}T12:00:00.000Z`).toISOString()
 }
 
-export function LoanDetail({ loanId }: { loanId: string }) {
+export function LoanScheduleDetail({ loanId }: { loanId: string }) {
   const [loan, setLoan] = useState<Loan | null>(null)
   const [loadError, setLoadError] = useState('')
   const [actionError, setActionError] = useState('')
@@ -39,7 +39,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
       try {
         setLoan(await apiRequest<Loan>(`/api/lendings/${loanId}`))
       } catch (caughtError) {
-        setLoadError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan')
+        setLoadError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan schedule')
       }
     }
 
@@ -132,7 +132,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
   }
 
   if (!loan) {
-    return <div className="card panel muted">Loading loan details...</div>
+    return <div className="card panel muted">Loading loan schedule...</div>
   }
 
   return (
@@ -141,88 +141,37 @@ export function LoanDetail({ loanId }: { loanId: string }) {
       {actionMessage ? <div className="notice">{actionMessage}</div> : null}
 
       <section className="card panel">
-        <div className="eyebrow">Loan detail</div>
-        <div className="row-between-start title-offset">
+        <div className="row-between-start title-offset-sm">
           <div>
-            <h1 className="section-title">{loan.borrower?.fullName || 'Borrower'}</h1>
+            <div className="eyebrow">Schedule detail</div>
+            <h1 className="section-title title-offset">{loan.borrower?.fullName || 'Borrower'} loan schedule</h1>
             <p className="muted">
               {loan.paymentFrequency === 'monthly'
                 ? `Monthly on ${loan.paymentDays.map(formatPaymentDay).join(', ')}`
                 : `Twice monthly on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`}
             </p>
-            <p className="muted">First payment date: {formatDate(loan.firstPaymentDate)}</p>
           </div>
-
-          <div className="text-right">
-            <div className={getStatusClassName(loan.status)}>{loan.status}</div>
-            <div className="detail-offset">{formatCurrency(loan.totalPayment, loan.currency)} total</div>
-          </div>
-        </div>
-      </section>
-
-      <section className="summary-grid">
-        <div className="card summary-stat">
-          <span className="muted">Principal</span>
-          <strong>{formatCurrency(loan.principal, loan.currency)}</strong>
-        </div>
-        <div className="card summary-stat">
-          <span className="muted">Interest total</span>
-          <strong>{formatCurrency(loan.totalInterest, loan.currency)}</strong>
-        </div>
-        <div className="card summary-stat">
-          <span className="muted">Rate</span>
-          <strong>{loan.interestRate}%</strong>
-        </div>
-      </section>
-
-      <section className="grid two">
-        <div className="card panel">
-          <div className="section-title">Borrower profile</div>
-          <div className="stack detail-offset">
-            <div><strong>Email:</strong> {loan.borrower?.email || 'Not set'}</div>
-            <div><strong>Phone:</strong> {loan.borrower?.phone || 'Not set'}</div>
-            <div><strong>Notes:</strong> {loan.notes || 'No notes'}</div>
-          </div>
-        </div>
-
-        <div className="card panel">
-          <div className="section-title">Upcoming reminders</div>
-          <div className="stack detail-offset">
-            {loan.reminders.filter((reminder) => reminder.status === 'pending').map((reminder) => (
-              <div key={reminder._id} className="data-card">
-                <div className="row-between-start">
-                  <div>
-                    <div className="data-card__title">
-                      Installment #{reminder.installmentSequence}
-                    </div>
-                    <div className="muted">{formatDate(reminder.scheduledAt)} via {reminder.channel}</div>
-                  </div>
-                  <span className={getStatusClassName(reminder.status)}>{reminder.status}</span>
-                </div>
-              </div>
-            ))}
+          <div className="inline-actions">
+            <Link href={`/loans/${loanId}`} className="button-ghost">Back to loan detail</Link>
           </div>
         </div>
       </section>
 
       <section className="card panel">
-        <div className="row-between-start title-offset-sm">
-          <div>
-            <div className="section-title">Loan schedule summary</div>
-            <p className="muted">Use the summary for quick updates or open the full schedule for the full breakdown.</p>
-          </div>
-          <Link href={`/loans/${loanId}/schedule`} className="button-ghost">
-            Open full schedule
-          </Link>
-        </div>
+        <div className="section-title">Loan schedule details</div>
+        <p className="muted">Generated cutoff dates stay fixed here. Use payment date to capture when the borrower actually paid.</p>
 
         <div className="table-wrap table-offset">
           <table>
             <thead>
               <tr>
                 <th>Cutoff</th>
-                <th>Status</th>
+                <th>Beginning Balance</th>
+                <th>Interest</th>
+                <th>Principal Paid</th>
+                <th>Ending Balance</th>
                 <th>Total Payment</th>
+                <th>Status</th>
                 <th>Payment Date</th>
                 <th>Action</th>
               </tr>
@@ -234,10 +183,14 @@ export function LoanDetail({ loanId }: { loanId: string }) {
                     #{installment.sequence}
                     <div className="muted">{formatDate(installment.dueDate)}</div>
                   </td>
+                  <td>{formatCurrency(installment.beginningBalance, loan.currency)}</td>
+                  <td>{formatCurrency(installment.interest, loan.currency)}</td>
+                  <td>{formatCurrency(installment.principalPaid, loan.currency)}</td>
+                  <td>{formatCurrency(installment.endingBalance, loan.currency)}</td>
+                  <td>{formatCurrency(installment.totalPayment, loan.currency)}</td>
                   <td>
                     <span className={getStatusClassName(installment.status)}>{installment.status}</span>
                   </td>
-                  <td>{formatCurrency(installment.totalPayment, loan.currency)}</td>
                   <td className="loan-schedule__dateCell">
                     <input
                       className="loan-schedule__dateInput"
