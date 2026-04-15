@@ -31,8 +31,9 @@ export function LoanScheduleDetail({ loanId }: { loanId: string }) {
   const [actionError, setActionError] = useState('')
   const [actionMessage, setActionMessage] = useState('')
   const [collectingId, setCollectingId] = useState<string | null>(null)
-  const [savingDateId, setSavingDateId] = useState<string | null>(null)
+  const [savingId, setSavingId] = useState<string | null>(null)
   const [paymentDateDrafts, setPaymentDateDrafts] = useState<Record<string, string>>({})
+  const [paymentAmountDrafts, setPaymentAmountDrafts] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const load = async () => {
@@ -54,6 +55,12 @@ export function LoanScheduleDetail({ loanId }: { loanId: string }) {
     setPaymentDateDrafts(
       Object.fromEntries(
         loan.installments.map((installment) => [installment._id, toDateInputValue(installment.paidAt)]),
+      ),
+    )
+
+    setPaymentAmountDrafts(
+      Object.fromEntries(
+        loan.installments.map((installment) => [installment._id, String(installment.totalPayment)]),
       ),
     )
   }, [loan])
@@ -83,47 +90,52 @@ export function LoanScheduleDetail({ loanId }: { loanId: string }) {
     }
   }
 
-  const handlePaymentDateSave = async (installmentId: string) => {
+  const handleSave = async (installmentId: string) => {
     if (!loan) {
       return
     }
 
     const installment = loan.installments.find((row) => row._id === installmentId)
     const paymentDate = paymentDateDrafts[installmentId]
+    const newAmount = paymentAmountDrafts[installmentId]
 
     if (!installment) {
       return
     }
 
-    setSavingDateId(installmentId)
+    const parsedAmount = Number(newAmount)
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setActionError('Payment amount must be a valid positive number')
+      return
+    }
+
+    setSavingId(installmentId)
     setActionError('')
     setActionMessage('')
 
     try {
-      const updated = await apiRequest<Loan>(`/api/lendings/${loanId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          installments: loan.installments.map((row) =>
-            row._id === installmentId
-              ? {
-                ...row,
-                paidAt: paymentDate ? toInstallmentDateISOString(paymentDate) : null,
-              }
-              : row,
-          ),
-        }),
-      })
+      const updated = await apiRequest<Loan>(
+        `/api/lendings/${loanId}/installments/${installmentId}/update-amount`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            totalPayment: parsedAmount,
+            ...(paymentDate ? { paidAt: toInstallmentDateISOString(paymentDate) } : {}),
+          }),
+        },
+      )
 
       setLoan(updated)
-      setActionMessage(
-        paymentDate
-          ? `Payment date updated for installment #${installment.sequence}.`
-          : `Payment date cleared for installment #${installment.sequence}.`,
-      )
+      setActionMessage(`Payment saved for installment #${installment.sequence}.`)
     } catch (caughtError) {
-      setActionError(caughtError instanceof Error ? caughtError.message : 'Unable to update payment date')
+      setActionError(caughtError instanceof Error ? caughtError.message : 'Unable to save payment')
+      // Restore the original amount on error
+      setPaymentAmountDrafts((current) => ({
+        ...current,
+        [installmentId]: String(installment.totalPayment),
+      }))
     } finally {
-      setSavingDateId(null)
+      setSavingId(null)
     }
   }
 
@@ -173,6 +185,7 @@ export function LoanScheduleDetail({ loanId }: { loanId: string }) {
                 <th>Total Payment</th>
                 <th>Status</th>
                 <th>Payment Date</th>
+                <th>Payment Amount</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -202,36 +215,84 @@ export function LoanScheduleDetail({ loanId }: { loanId: string }) {
                           [installment._id]: event.target.value,
                         }))
                       }
-                      disabled={savingDateId === installment._id}
+                      disabled={savingId === installment._id}
                       aria-label={`Payment date for installment ${installment.sequence}`}
                     />
                     <div className="loan-schedule__dateMeta muted">
                       {paymentDateDrafts[installment._id] ? 'Actual payment date' : 'Not paid yet'}
                     </div>
                   </td>
+                  <td className="loan-schedule__amountCell">
+                    <input
+                      className="loan-schedule__amountInput"
+                      type="number"
+                      step="0.01"
+                      value={paymentAmountDrafts[installment._id] || ''}
+                      onChange={(event) =>
+                        setPaymentAmountDrafts((current) => ({
+                          ...current,
+                          [installment._id]: event.target.value,
+                        }))
+                      }
+                      disabled={savingId === installment._id}
+                      aria-label={`Payment amount for installment ${installment.sequence}`}
+                    />
+                    <div className="loan-schedule__amountMeta muted">
+                      {loan.currency}
+                    </div>
+                  </td>
                   <td className="loan-schedule__actionCell">
                     <div className="loan-schedule__actions">
                       <button
                         type="button"
-                        className="button-ghost loan-schedule__saveButton"
+                        className="button-ghost loan-schedule__iconButton"
                         disabled={
-                          savingDateId === installment._id
-                          || paymentDateDrafts[installment._id] === toDateInputValue(installment.paidAt)
+                          savingId === installment._id
+                          || (paymentDateDrafts[installment._id] === toDateInputValue(installment.paidAt)
+                          && String(installment.totalPayment) === paymentAmountDrafts[installment._id])
                         }
-                        onClick={() => handlePaymentDateSave(installment._id)}
+                        onClick={() => handleSave(installment._id)}
+                        title={savingId === installment._id ? 'Saving...' : 'Save'}
+                        aria-label={`Save payment for installment ${installment.sequence}`}
                       >
-                        {savingDateId === installment._id ? 'Saving...' : 'Save date'}
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path
+                            d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinejoin="round"
+                          />
+                          <polyline points="17 21 17 13 7 13 7 21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                          <polyline points="7 3 7 8 15 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                       </button>
                       {installment.status === 'paid' ? (
-                        <span className="muted">Collected</span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" className="loan-schedule__collectedIcon">
+                          <path
+                            d="M22 11.08V12a10 10 0 1 1-5.93-9.14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
                       ) : (
                         <button
                           type="button"
-                          className="button-ghost"
+                          className="button-ghost loan-schedule__iconButton"
                           disabled={collectingId === installment._id}
                           onClick={() => handleCollect(installment._id, installment.totalPayment)}
+                          title={collectingId === installment._id ? 'Saving...' : 'Mark paid'}
+                          aria-label={`Mark installment ${installment.sequence} as paid`}
                         >
-                          {collectingId === installment._id ? 'Saving...' : 'Mark paid'}
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="1" fill="currentColor" />
+                            <path d="M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                            <path d="M12 5v7l4 2.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                          </svg>
                         </button>
                       )}
                     </div>
