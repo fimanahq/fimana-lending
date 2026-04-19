@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
+import { classNames } from '@/utils/class-names'
 
 type IconName =
   | 'borrowers'
@@ -12,24 +13,46 @@ type IconName =
   | 'reports'
   | 'requests'
   | 'loans'
-  | 'calculator'
-  | 'rules'
   | 'settings'
-  | 'support'
   | 'bell'
+  | 'menu'
   | 'plus'
+  | 'x'
 
-const navItems: Array<{ href: string; label: string; icon: IconName }> = [
-  { href: '/dashboard', label: 'Overview', icon: 'overview' },
-  { href: '/loan-applications', label: 'Applications', icon: 'requests' },
+interface NavItem {
+  href: string
+  label: string
+  icon: IconName
+  aliases?: string[]
+}
+
+interface BreadcrumbItem {
+  href?: string
+  label: string
+}
+
+const navItems: NavItem[] = [
+  { href: '/dashboard', label: 'Dashboard', icon: 'overview' },
   { href: '/borrowers', label: 'Borrowers', icon: 'borrowers' },
+  { href: '/loan-applications', label: 'Loan Applications', icon: 'requests', aliases: ['/requests'] },
   { href: '/loans', label: 'Loans', icon: 'loans' },
   { href: '/payments', label: 'Payments', icon: 'payments' },
   { href: '/reports', label: 'Reports', icon: 'reports' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
-  { href: '/calculator', label: 'Calculator', icon: 'calculator' },
-  { href: '/rules', label: 'Rules', icon: 'rules' },
 ]
+
+const pathLabels: Record<string, string> = {
+  borrowers: 'Borrowers',
+  dashboard: 'Dashboard',
+  'loan-applications': 'Loan Applications',
+  loans: 'Loans',
+  new: 'New Loan',
+  payments: 'Payments',
+  reports: 'Reports',
+  requests: 'Loan Applications',
+  schedule: 'Schedule',
+  settings: 'Settings',
+}
 
 function DashboardIcon({ name }: { name: IconName }) {
   switch (name) {
@@ -83,17 +106,10 @@ function DashboardIcon({ name }: { name: IconName }) {
           <path d="M5 10v8M10 10v8M14 10v8M19 10v8M3 19h18" fill="none" stroke="currentColor" strokeWidth="1.8" />
         </svg>
       )
-    case 'calculator':
+    case 'menu':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="5" y="3.5" width="14" height="17" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M8 8h8M8.5 12h2M13.5 12h2M8.5 16h2M13.5 16h2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      )
-    case 'rules':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m5 18 4-4m0 0 2-2 7 7M9 14 4 9l2.5-2.5L12 12m1-7 5 5-2 2-5-5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )
     case 'settings':
@@ -109,14 +125,6 @@ function DashboardIcon({ name }: { name: IconName }) {
           <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
         </svg>
       )
-    case 'support':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-.9.8-1.7 1.3-1.7 2.7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <circle cx="12" cy="16.8" r="1" fill="currentColor" />
-        </svg>
-      )
     case 'bell':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -130,13 +138,23 @@ function DashboardIcon({ name }: { name: IconName }) {
           <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       )
+    case 'x':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )
     default:
       return null
   }
 }
 
-function isRouteActive(pathname: string, href: string) {
+function isPathMatch(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function isRouteActive(pathname: string, item: NavItem) {
+  return [item.href, ...(item.aliases || [])].some((href) => isPathMatch(pathname, href))
 }
 
 function getAccountInitials(firstName?: string, lastName?: string, email?: string) {
@@ -149,17 +167,63 @@ function getAccountInitials(firstName?: string, lastName?: string, email?: strin
   return email?.trim()[0]?.toUpperCase() || ''
 }
 
+function formatDynamicSegment(segment: string) {
+  if (/^[a-f\d]{24}$/i.test(segment) || segment.length > 12) {
+    return 'Loan Detail'
+  }
+
+  return segment
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
+  const segments = pathname.split('/').filter(Boolean)
+
+  if (segments.length === 0) {
+    return [{ label: 'Dashboard', href: '/dashboard' }]
+  }
+
+  return segments.map((segment, index) => {
+    const href = `/${segments.slice(0, index + 1).join('/')}`
+    const isLast = index === segments.length - 1
+
+    return {
+      href: isLast ? undefined : href,
+      label: pathLabels[segment] || formatDynamicSegment(segment),
+    }
+  })
+}
+
+function getPageTitle(pathname: string) {
+  const activeItem = navItems.find((item) => isRouteActive(pathname, item))
+
+  if (activeItem) {
+    return activeItem.label
+  }
+
+  const breadcrumbs = getBreadcrumbs(pathname)
+  return breadcrumbs[breadcrumbs.length - 1]?.label || 'Dashboard'
+}
+
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { loading, user, setUser } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login')
     }
   }, [loading, router, user])
+
+  useEffect(() => {
+    setIsSidebarOpen(false)
+  }, [pathname])
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -182,20 +246,40 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Team member'
   const initials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
+  const breadcrumbs = getBreadcrumbs(pathname)
+  const pageTitle = getPageTitle(pathname)
 
   return (
-    <div className="dashboard-shell">
-      <aside className="dashboard-shell__sidebar">
-        <Link href="/dashboard" className="dashboard-shell__sidebarBrand" aria-label="FiMana dashboard home">
-          FiMana
-        </Link>
+    <div className={classNames('dashboard-shell', isSidebarOpen && 'dashboard-shell--sidebar-open')}>
+      <div
+        className="dashboard-shell__backdrop"
+        role="presentation"
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      <aside className="dashboard-shell__sidebar" aria-label="Application navigation">
+        <div className="dashboard-shell__sidebarHeader">
+          <Link href="/dashboard" className="dashboard-shell__sidebarBrand" aria-label="FiMana dashboard home">
+            FiMana
+          </Link>
+
+          <button
+            className="dashboard-shell__sidebarClose"
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <DashboardIcon name="x" />
+          </button>
+        </div>
 
         <nav className="dashboard-shell__nav" aria-label="Primary">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`dashboard-shell__navLink${isRouteActive(pathname, item.href) ? ' is-active' : ''}`}
+              className={classNames('dashboard-shell__navLink', isRouteActive(pathname, item) && 'is-active')}
+              aria-current={isRouteActive(pathname, item) ? 'page' : undefined}
             >
               <span className="dashboard-shell__navIcon">
                 <DashboardIcon name={item.icon} />
@@ -215,14 +299,43 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <div className="dashboard-shell__workspace">
         <header className="dashboard-shell__topbar">
-          <div className="dashboard-shell__actions">
-            <button className="dashboard-shell__iconButton" type="button" aria-label="Notifications">
-              <DashboardIcon name="bell" />
-              <span className="dashboard-shell__notificationDot" />
+          <div className="dashboard-shell__pageHeading">
+            <button
+              className="dashboard-shell__menuButton"
+              type="button"
+              aria-label="Open navigation"
+              aria-expanded={isSidebarOpen}
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <DashboardIcon name="menu" />
             </button>
 
-            <button className="dashboard-shell__accountButton" type="button" aria-label={fullName}>
+            <div>
+              <nav className="dashboard-shell__breadcrumbs" aria-label="Breadcrumb">
+                <ol>
+                  {breadcrumbs.map((item, index) => (
+                    <li key={`${item.label}-${index}`}>
+                      {item.href ? <Link href={item.href}>{item.label}</Link> : <span>{item.label}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+              <div className="dashboard-shell__pageTitle">{pageTitle}</div>
+            </div>
+          </div>
+
+          <div className="dashboard-shell__actions">
+            <button className="dashboard-shell__notificationButton" type="button" aria-label="Notifications placeholder">
+              <DashboardIcon name="bell" />
+              <span>0</span>
+            </button>
+
+            <button className="dashboard-shell__accountButton" type="button" aria-label={`${fullName} menu placeholder`}>
               <span className="dashboard-shell__accountAvatar">{initials}</span>
+              <span className="dashboard-shell__accountCopy">
+                <span>{fullName}</span>
+                <span>{user?.email || 'User menu'}</span>
+              </span>
             </button>
 
             <button className="dashboard-shell__logout" type="button" onClick={handleLogout} disabled={isLoggingOut}>
@@ -231,7 +344,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="dashboard-shell__main">{children}</main>
+        <main className="dashboard-shell__main">
+          <div className="dashboard-shell__content">{children}</div>
+        </main>
 
         <footer className="dashboard-shell__footer">
           <span>&copy; {new Date().getFullYear()} FiMana Lending. All rights reserved.</span>
