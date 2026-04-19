@@ -114,6 +114,12 @@ textarea:focus-visible {
   margin: 0 auto;
 }
 
+.page-container {
+  display: grid;
+  width: 100%;
+  gap: 1rem;
+}
+
 .card {
   background:
     linear-gradient(180deg, rgba(255, 252, 245, 0.88) 0%, rgba(255, 249, 239, 0.78) 100%);
@@ -125,6 +131,11 @@ textarea:focus-visible {
 
 .panel {
   padding: 1.4rem;
+}
+
+.card-wrapper {
+  display: grid;
+  gap: 1rem;
 }
 
 .card-flat {
@@ -423,6 +434,115 @@ h4 {
   text-align: right;
 }
 
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.section-header__copy {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.section-header__title,
+.section-header__description {
+  margin: 0;
+}
+
+.section-header__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.state-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: var(--shadow-sm);
+}
+
+.state-card strong {
+  display: block;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1rem;
+}
+
+.state-card p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.state-card__action {
+  flex: 0 0 auto;
+}
+
+.state-card--error {
+  border-color: rgba(143, 51, 38, 0.18);
+  background: rgba(143, 51, 38, 0.08);
+}
+
+.state-card--error strong {
+  color: var(--danger);
+}
+
+.state-card--loading {
+  justify-content: flex-start;
+}
+
+.state-card__spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  border: 2px solid rgba(146, 75, 16, 0.18);
+  border-top-color: var(--accent-strong);
+  border-radius: 999px;
+  animation: spin 900ms linear infinite;
+}
+
+.module-scaffold {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.module-scaffold__steps {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.module-scaffold__steps ul {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.module-scaffold__steps h3 {
+  margin: 0;
+  font-family: var(--font-heading), sans-serif;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .formula-card {
   margin: 0;
   padding: 1.1rem 1.2rem;
@@ -441,6 +561,14 @@ h4 {
 
 .table-wrap {
   overflow-x: auto;
+  border-radius: calc(var(--radius-card) - 4px);
+}
+
+.table-wrapper {
+  overflow: hidden;
+}
+
+.table-wrapper .table-wrap {
   border-radius: calc(var(--radius-card) - 4px);
 }
 
@@ -3316,6 +3444,7 @@ th {
   .auth-card,
   .grid.two,
   .grid.three,
+  .module-scaffold,
   .summary-grid,
   .landing-pillars,
   .landing-stats-grid,
@@ -3332,6 +3461,17 @@ th {
 
   .request-grid {
     grid-template-columns: 1fr;
+  }
+
+  .section-header,
+  .state-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .section-header__actions,
+  .state-card__action {
+    width: 100%;
   }
 
   .landing-topbar,

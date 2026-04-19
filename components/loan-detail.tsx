@@ -160,12 +160,6 @@ export function LoanDetail({ loanId }: { loanId: string }) {
               <div><strong>Email:</strong> {loan.borrower?.email || 'Not set'}</div>
               <div><strong>Phone:</strong> {loan.borrower?.phone || 'Not set'}</div>
             </div>
-            <p className="muted" style={{ fontSize: '0.875rem', marginTop: '0.5rem', marginBottom: '0.25rem' }}>
-              {loan.paymentFrequency === 'monthly'
-                ? `Monthly on ${loan.paymentDays.map(formatPaymentDay).join(', ')}`
-                : `Twice monthly on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`}
-            </p>
-            <p className="muted" style={{ fontSize: '0.875rem', marginBottom: 0 }}>First payment: {formatDate(loan.firstPaymentDate)}</p>
           </div>
 
           <div className="text-right">
@@ -217,8 +211,10 @@ export function LoanDetail({ loanId }: { loanId: string }) {
               {loan.installments.map((installment) => (
                 <tr key={installment._id}>
                   <td>
-                    #{installment.sequence}
-                    <div className="muted">{formatDate(installment.dueDate)}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>#{installment.sequence}</span>
+                      <span className="muted">{formatDate(installment.dueDate)}</span>
+                    </div>
                   </td>
                   <td>
                     <span className={getStatusClassName(installment.status)}>{installment.status}</span>
@@ -238,9 +234,6 @@ export function LoanDetail({ loanId }: { loanId: string }) {
                       disabled={savingId === installment._id}
                       aria-label={`Payment date for installment ${installment.sequence}`}
                     />
-                    <div className="loan-schedule__dateMeta muted">
-                      {paymentDateDrafts[installment._id] ? 'Actual payment date' : 'Not paid yet'}
-                    </div>
                   </td>
                   <td className="loan-schedule__amountCell">
                     <input
@@ -257,9 +250,6 @@ export function LoanDetail({ loanId }: { loanId: string }) {
                       disabled={savingId === installment._id}
                       aria-label={`Payment amount for installment ${installment.sequence}`}
                     />
-                    <div className="loan-schedule__amountMeta muted">
-                      {loan.currency}
-                    </div>
                   </td>
                   <td className="loan-schedule__actionCell">
                     <div className="loan-schedule__actions">

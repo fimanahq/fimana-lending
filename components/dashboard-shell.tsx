@@ -6,7 +6,10 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 
 type IconName =
+  | 'borrowers'
   | 'overview'
+  | 'payments'
+  | 'reports'
   | 'requests'
   | 'loans'
   | 'calculator'
@@ -18,18 +21,45 @@ type IconName =
 
 const navItems: Array<{ href: string; label: string; icon: IconName }> = [
   { href: '/dashboard', label: 'Overview', icon: 'overview' },
-  { href: '/requests', label: 'Requests', icon: 'requests' },
+  { href: '/loan-applications', label: 'Applications', icon: 'requests' },
+  { href: '/borrowers', label: 'Borrowers', icon: 'borrowers' },
   { href: '/loans', label: 'Loans', icon: 'loans' },
+  { href: '/payments', label: 'Payments', icon: 'payments' },
+  { href: '/reports', label: 'Reports', icon: 'reports' },
+  { href: '/settings', label: 'Settings', icon: 'settings' },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
   { href: '/rules', label: 'Rules', icon: 'rules' },
 ]
 
 function DashboardIcon({ name }: { name: IconName }) {
   switch (name) {
+    case 'borrowers':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8.5 11a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4ZM15.8 10a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M3.5 19c.7-3.6 2.6-5.4 5-5.4s4.3 1.8 5 5.4M13.7 14.1c2.7.1 4.5 1.8 5 4.9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      )
     case 'overview':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor" />
+        </svg>
+      )
+    case 'payments':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3.8" y="6.2" width="16.4" height="11.6" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M3.8 10h16.4M8 15h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M15.5 14.8h1.8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+        </svg>
+      )
+    case 'reports':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 19V5M5 19h14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M8.5 15.5v-4M12 15.5v-7M15.5 15.5v-5.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <path d="m8.5 8.2 3.4-2.6 3.6 1.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     case 'requests':

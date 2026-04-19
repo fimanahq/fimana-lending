@@ -85,9 +85,9 @@ export function LoansList() {
             <tr>
               <th>Borrower</th>
               <th>Principal</th>
-              <th>Interest</th>
-              <th>Schedule</th>
-              <th>First payment</th>
+              <th>Interest Rate</th>
+              <th>Total Interest</th>
+              <th>Total Payment</th>
               <th>Status</th>
               <th>Action</th>
             </tr>
@@ -120,8 +120,8 @@ export function LoansList() {
                   </td>
                   <td>{formatCurrency(loan.principal, loan.currency)}</td>
                   <td>{loan.interestRate}% / cutoff</td>
-                  <td>{loan.paymentDays.map(formatPaymentDay).join(' and ')}</td>
-                  <td>{formatDate(loan.firstPaymentDate)}</td>
+                  <td>{formatCurrency(loan.totalInterest, loan.currency)}</td>
+                  <td>{formatCurrency(loan.totalPayment, loan.currency)}</td>
                   <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
                   <td className="loans-list__actionCell">
                     <button

@@ -19,7 +19,7 @@ function getRequestPlan(request: LoanRequest) {
 }
 
 function getRequestHref(request: LoanRequest) {
-  return request.loanId ? `/loans/${request.loanId}` : '/requests'
+  return request.loanId ? `/loans/${request.loanId}` : '/loan-applications'
 }
 
 function getReminderTone(index: number) {
@@ -379,7 +379,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <p>Start a fresh origination flow for a borrower ready to move into underwriting and issuance.</p>
           </Link>
 
-          <Link href="/requests" className="dashboard-overview__actionCard">
+          <Link href="/loan-applications" className="dashboard-overview__actionCard">
             <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
               <OverviewGlyph name="requests" />
             </span>
@@ -404,7 +404,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           <div className="dashboard-overview__mainColumn">
             <div className="dashboard-overview__sectionHead">
               <h2>Recent Applications</h2>
-              <Link href="/requests">View all history</Link>
+              <Link href="/loan-applications">View all history</Link>
             </div>
 
             <div className="dashboard-overview__tableCard">

@@ -1,5 +1,5 @@
 import { LoanApplicationsModulePage } from '@/modules/loan-applications'
 
-export default function LoanRequestsPage() {
+export default function LoanApplicationsPage() {
   return <LoanApplicationsModulePage />
 }

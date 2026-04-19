@@ -1,5 +1,5 @@
-import { LoansList } from '@/components/loans-list'
+import { LoansModulePage } from '@/modules/loans'
 
 export default function LoansPage() {
-  return <LoansList />
+  return <LoansModulePage />
 }

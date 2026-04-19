@@ -1,5 +1,4 @@
-import { DashboardOverview } from '@/components/dashboard-overview'
-import { buildDashboardOverviewData, type DashboardDataSource } from '@/components/dashboard-overview-data'
+import { DashboardOverview, buildDashboardOverviewData, type DashboardDataSource } from '@/modules/dashboard'
 import { authorizedBackendRequest } from '@/lib/server/backend'
 import type { Loan, LoanRequest, UpcomingLoanReminder } from '@/lib/types'
 
