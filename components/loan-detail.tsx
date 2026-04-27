@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { apiRequest } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Loan } from '@/lib/types'
+import { collectLoanInstallment, getLoan, updateLoanInstallmentPayment } from '@/services'
 
 function toDateInputValue(value?: string | null) {
   if (!value) {
@@ -38,7 +38,7 @@ export function LoanDetail({ loanId }: { loanId: string }) {
   useEffect(() => {
     const load = async () => {
       try {
-        setLoan(await apiRequest<Loan>(`/api/lendings/${loanId}`))
+        setLoan(await getLoan(loanId))
       } catch (caughtError) {
         setLoadError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan')
       }
@@ -73,12 +73,9 @@ export function LoanDetail({ loanId }: { loanId: string }) {
     setActionMessage('')
 
     try {
-      const updated = await apiRequest<Loan>(`/api/lendings/${loanId}/installments/${installmentId}/collect`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          paidAmount: amount,
-          ...(paymentDate ? { paidAt: toInstallmentDateISOString(paymentDate) } : {}),
-        }),
+      const updated = await collectLoanInstallment(loanId, installmentId, {
+        paidAmount: amount,
+        ...(paymentDate ? { paidAt: toInstallmentDateISOString(paymentDate) } : {}),
       })
 
       setLoan(updated)
@@ -114,16 +111,10 @@ export function LoanDetail({ loanId }: { loanId: string }) {
     setActionMessage('')
 
     try {
-      const updated = await apiRequest<Loan>(
-        `/api/lendings/${loanId}/installments/${installmentId}/update-amount`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({
-            totalPayment: parsedAmount,
-            ...(paymentDate ? { paidAt: toInstallmentDateISOString(paymentDate) } : {}),
-          }),
-        },
-      )
+      const updated = await updateLoanInstallmentPayment(loanId, installmentId, {
+        totalPayment: parsedAmount,
+        ...(paymentDate ? { paidAt: toInstallmentDateISOString(paymentDate) } : {}),
+      })
 
       setLoan(updated)
       setActionMessage(`Payment saved for installment #${installment.sequence}.`)

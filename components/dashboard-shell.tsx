@@ -8,10 +8,11 @@ import { classNames } from '@/utils/class-names'
 
 type IconName =
   | 'borrowers'
+  | 'collections'
   | 'overview'
   | 'payments'
   | 'reports'
-  | 'requests'
+  | 'applications'
   | 'loans'
   | 'settings'
   | 'bell'
@@ -34,22 +35,24 @@ interface BreadcrumbItem {
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'overview' },
   { href: '/borrowers', label: 'Borrowers', icon: 'borrowers' },
-  { href: '/loan-applications', label: 'Loan Applications', icon: 'requests', aliases: ['/requests'] },
-  { href: '/loans', label: 'Loans', icon: 'loans' },
+  { href: '/loan-applications', label: 'Loan Applications', icon: 'applications' },
+  { href: '/active-loans', label: 'Active Loans', icon: 'loans', aliases: ['/loans'] },
   { href: '/payments', label: 'Payments', icon: 'payments' },
+  { href: '/collections', label: 'Collections', icon: 'collections' },
   { href: '/reports', label: 'Reports', icon: 'reports' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
 const pathLabels: Record<string, string> = {
+  'active-loans': 'Active Loans',
   borrowers: 'Borrowers',
+  collections: 'Collections',
   dashboard: 'Dashboard',
   'loan-applications': 'Loan Applications',
   loans: 'Loans',
   new: 'New Loan',
   payments: 'Payments',
   reports: 'Reports',
-  requests: 'Loan Applications',
   schedule: 'Schedule',
   settings: 'Settings',
 }
@@ -61,6 +64,14 @@ function DashboardIcon({ name }: { name: IconName }) {
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8.5 11a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4ZM15.8 10a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
           <path d="M3.5 19c.7-3.6 2.6-5.4 5-5.4s4.3 1.8 5 5.4M13.7 14.1c2.7.1 4.5 1.8 5 4.9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      )
+    case 'collections':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 5h12v14H6z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M17.5 14.5 20 17l-2.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     case 'overview':
@@ -85,7 +96,7 @@ function DashboardIcon({ name }: { name: IconName }) {
           <path d="m8.5 8.2 3.4-2.6 3.6 1.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
-    case 'requests':
+    case 'applications':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -167,8 +178,12 @@ function getAccountInitials(firstName?: string, lastName?: string, email?: strin
   return email?.trim()[0]?.toUpperCase() || ''
 }
 
-function formatDynamicSegment(segment: string) {
+function formatDynamicSegment(segment: string, previousSegment?: string) {
   if (/^[a-f\d]{24}$/i.test(segment) || segment.length > 12) {
+    if (previousSegment === 'borrowers') {
+      return 'Borrower Profile'
+    }
+
     return 'Loan Detail'
   }
 
@@ -189,10 +204,14 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
   return segments.map((segment, index) => {
     const href = `/${segments.slice(0, index + 1).join('/')}`
     const isLast = index === segments.length - 1
+    const previousSegment = segments[index - 1]
+    const label = previousSegment === 'borrowers' && segment === 'new'
+      ? 'New Borrower'
+      : pathLabels[segment] || formatDynamicSegment(segment, previousSegment)
 
     return {
       href: isLast ? undefined : href,
-      label: pathLabels[segment] || formatDynamicSegment(segment),
+      label,
     }
   })
 }
@@ -293,7 +312,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           <span className="dashboard-shell__ctaIcon">
             <DashboardIcon name="plus" />
           </span>
-          <span>New Application</span>
+          <span>New Loan</span>
         </Link>
       </aside>
 

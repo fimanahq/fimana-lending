@@ -3,22 +3,29 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import { apiRequest } from '@/lib/client-api'
-import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { formatCurrency } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Loan } from '@/lib/types'
+import { deleteLoan, listLoans } from '@/services'
 
-export function LoansList() {
+type LoansListScope = 'active' | 'all'
+
+interface LoansListProps {
+  scope?: LoansListScope
+}
+
+export function LoansList({ scope = 'all' }: LoansListProps) {
   const router = useRouter()
   const [loans, setLoans] = useState<Loan[]>([])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const visibleLoans = scope === 'active' ? loans.filter((loan) => loan.status === 'active') : loans
 
   useEffect(() => {
     const load = async () => {
       try {
-        setLoans(await apiRequest<Loan[]>('/api/lendings'))
+        setLoans(await listLoans())
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
       }
@@ -50,9 +57,7 @@ export function LoansList() {
     setMessage('')
 
     try {
-      await apiRequest<{ _id: string }>(`/api/lendings/${loan._id}`, {
-        method: 'DELETE',
-      })
+      await deleteLoan(loan._id)
 
       setLoans((current) => current.filter((currentLoan) => currentLoan._id !== loan._id))
       setMessage(`Deleted the loan for ${borrowerName}.`)
@@ -69,8 +74,14 @@ export function LoansList() {
         <div className="row-between-center">
           <div>
             <div className="eyebrow">Loan roster</div>
-            <h1 className="section-title title-offset">Issued loans</h1>
-            <p className="muted">Borrowers, totals, schedules, and collection status.</p>
+            <h1 className="section-title title-offset">
+              {scope === 'active' ? 'Active loans' : 'Issued loans'}
+            </h1>
+            <p className="muted">
+              {scope === 'active'
+                ? 'Open borrower obligations, totals, schedules, and collection status.'
+                : 'Borrowers, totals, schedules, and collection status.'}
+            </p>
           </div>
           <Link href="/loans/new" className="button">Create loan</Link>
         </div>
@@ -93,12 +104,14 @@ export function LoansList() {
             </tr>
           </thead>
           <tbody>
-            {loans.length === 0 ? (
+            {visibleLoans.length === 0 ? (
               <tr>
-                <td colSpan={7} className="muted">No issued loans yet.</td>
+                <td colSpan={7} className="muted">
+                  {scope === 'active' ? 'No active loans yet.' : 'No issued loans yet.'}
+                </td>
               </tr>
             ) : (
-              loans.map((loan) => (
+              visibleLoans.map((loan) => (
                 <tr
                   key={loan._id}
                   className="table-row-link"

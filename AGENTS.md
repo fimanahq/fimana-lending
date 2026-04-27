@@ -1,5 +1,3 @@
-# AGENT.md (Frontend)
-
 ## Project Overview
 This is a lending application frontend.
 
@@ -42,6 +40,9 @@ Prioritize:
 - Do not introduce new state libraries unless requested.
 - Do not rewrite large components unless necessary.
 - Always reuse existing UI patterns where possible.
+- Always check for existing shared/reusable components before creating a new one.
+- Do not duplicate common UI patterns such as buttons, inputs, modals, tables, cards, badges, and form controls.
+- If an existing shared component is close to the requirement, extend it in a maintainable way instead of creating a separate duplicate.
 - Do not change API request/response contracts without instruction.
 - Avoid unnecessary dependencies.
 
@@ -54,6 +55,9 @@ Prioritize:
 - Prefer composition over inheritance.
 - Keep forms modular.
 - Avoid duplicate logic across pages.
+- Reuse shared components for form fields, tables, modals, badges, cards, loading states, and empty states.
+- Before creating a new component, inspect shared/ and existing feature components for a reusable pattern.
+- Keep new feature components visually and behaviorally consistent with the shared component system.
 
 Example structure:
 

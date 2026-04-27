@@ -2,7 +2,19 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 
-const protectedPaths = ['/dashboard', '/loans', '/requests', '/calculator', '/rules']
+const protectedPaths = [
+  '/active-loans',
+  '/borrowers',
+  '/calculator',
+  '/collections',
+  '/dashboard',
+  '/loan-applications',
+  '/loans',
+  '/payments',
+  '/reports',
+  '/rules',
+  '/settings',
+]
 
 function isProtectedPath(pathname: string) {
   return protectedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`))

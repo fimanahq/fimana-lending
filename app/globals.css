@@ -948,7 +948,10 @@ th {
   color: var(--success);
 }
 
-.status-pill.pending {
+.status-pill.pending,
+.status-pill.draft,
+.status-pill.submitted,
+.status-pill.under_review {
   background: rgba(216, 108, 50, 0.12);
   color: var(--accent-strong);
 }
@@ -963,7 +966,9 @@ th {
 }
 
 .status-pill.rejected,
-.status-pill.cancelled {
+.status-pill.cancelled,
+.status-pill.withdrawn,
+.status-pill.expired {
   background: rgba(143, 51, 38, 0.12);
   color: var(--danger);
 }
@@ -1546,6 +1551,63 @@ th {
   align-items: flex-start;
 }
 
+.application-status-tabs {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.application-status-tabs button {
+  min-height: 2.35rem;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.application-status-tabs button:hover,
+.application-status-tabs button.is-active {
+  background: rgba(146, 75, 16, 0.1);
+  color: var(--accent-strong);
+}
+
+.application-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.application-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.application-summary-grid--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.application-summary-grid .data-card strong {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.05rem;
+}
+
+.application-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -1631,6 +1693,70 @@ th {
   font-family: var(--font-heading), sans-serif;
   font-size: 2rem;
   margin-top: 0.65rem;
+}
+
+.borrower-list__toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 420px);
+}
+
+.borrower-list__notes {
+  max-width: 24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.borrower-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(320px, 1.15fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.borrower-detail-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.borrower-detail-list div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.borrower-detail-list dt {
+  color: var(--muted);
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.borrower-detail-list dd {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.borrower-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.borrower-summary-card {
+  min-height: 9rem;
+}
+
+.borrower-summary-card strong {
+  display: block;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.borrower-summary-card span {
+  display: block;
+  margin-top: 0.45rem;
 }
 
 .loan-schedule__dateCell {
@@ -3588,6 +3714,39 @@ th {
   color: #b13a22;
 }
 
+.signin-form__field .signin-form__control {
+  min-height: 58px;
+  border: none;
+  border-radius: 18px;
+  background: #f9f4e3;
+  padding: 16px 18px;
+  color: #1d1c12;
+  font-family: 'Manrope', var(--font-body), serif;
+  font-size: 1rem;
+  box-shadow: inset 0 0 0 1px rgba(218, 194, 181, 0);
+  transition: box-shadow 150ms ease, background 150ms ease;
+}
+
+.signin-form__field .signin-form__control::placeholder {
+  color: #c2b2a4;
+}
+
+.signin-form__field .signin-form__control:focus {
+  background: #fcf7e9;
+  box-shadow: inset 0 0 0 2px var(--accent-strong);
+}
+
+.signin-form__field .signin-form__control--dirty {
+  background: #fbf7ea;
+  box-shadow: inset 0 0 0 2px rgba(146, 75, 16, 0.14);
+}
+
+.signin-form__field .signin-form__control[aria-invalid='true'],
+.signin-form__field .signin-form__control--invalid {
+  background: #fff2ec;
+  box-shadow: inset 0 0 0 2px rgba(177, 58, 34, 0.45);
+}
+
 .signin-form__fieldError {
   margin: 8px 0 0;
   color: #b13a22;
@@ -3893,7 +4052,12 @@ th {
   .grid.two,
   .grid.three,
   .module-scaffold,
+  .application-workspace-grid,
+  .application-summary-grid,
+  .application-summary-grid--compact,
   .summary-grid,
+  .borrower-profile-grid,
+  .borrower-summary-grid,
   .landing-pillars,
   .landing-stats-grid,
   .dashboard-overview__kpiGrid,

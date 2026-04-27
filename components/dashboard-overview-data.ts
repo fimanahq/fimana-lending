@@ -1,6 +1,6 @@
-import type { Loan, LoanRequest, UpcomingLoanReminder } from '@/lib/types'
+import type { Loan, LoanApplication, UpcomingLoanReminder } from '@/lib/types'
 
-export type DashboardDataSource = 'loans' | 'requests' | 'reminders'
+export type DashboardDataSource = 'loans' | 'applications' | 'reminders'
 
 export interface DashboardSummaryMetrics {
   profitCollected: number
@@ -26,21 +26,21 @@ export interface DashboardProgressSegment {
 export interface DashboardOverviewData {
   summary: DashboardSummaryMetrics
   progressSegments: DashboardProgressSegment[]
-  recentRequests: LoanRequest[]
+  recentApplications: LoanApplication[]
   dueSoon: UpcomingLoanReminder[]
   partialFailureNotice: string | null
 }
 
 interface BuildDashboardOverviewDataInput {
   loans: Loan[]
-  requests: LoanRequest[]
+  applications: LoanApplication[]
   reminders: UpcomingLoanReminder[]
   failedSources?: DashboardDataSource[]
 }
 
 const FAILED_SOURCE_LABELS: Record<DashboardDataSource, string> = {
   loans: 'loans',
-  requests: 'loan requests',
+  applications: 'loan applications',
   reminders: 'upcoming reminders',
 }
 
@@ -59,7 +59,7 @@ function buildPartialFailureNotice(failedSources: DashboardDataSource[]) {
 
 export function buildDashboardOverviewData({
   loans,
-  requests,
+  applications,
   reminders,
   failedSources = [],
 }: BuildDashboardOverviewDataInput): DashboardOverviewData {
@@ -84,7 +84,9 @@ export function buildDashboardOverviewData({
   const recoveredPrincipal = Math.max(0, totalIssuedPrincipal - capitalOutstanding)
   const remainingProjectedInterest = Math.max(0, totalProfitBooked - profitCollected)
   const totalProjectedValue = recoveredPrincipal + capitalOutstanding + remainingProjectedInterest
-  const pendingReviews = requests.filter((request) => request.status === 'pending').length
+  const pendingReviews = applications.filter((application) =>
+    application.status === 'pending' || application.status === 'submitted' || application.status === 'under_review',
+  ).length
 
   const progressSegments: DashboardProgressSegment[] = [
     {
@@ -126,7 +128,7 @@ export function buildDashboardOverviewData({
       pendingReviews,
     },
     progressSegments,
-    recentRequests: [...requests].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
+    recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
     dueSoon: [...reminders].sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt)).slice(0, 3),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }

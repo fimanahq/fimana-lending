@@ -90,7 +90,7 @@ export default function LandingPage() {
             <article id="privacy-policy" className="card panel stack">
               <h2 className="section-title">Privacy Policy</h2>
               <p className="muted">
-                Borrower details are collected only to evaluate requests, create schedules, and support repayment operations.
+                Borrower details are collected only to evaluate applications, create schedules, and support repayment operations.
               </p>
             </article>
 

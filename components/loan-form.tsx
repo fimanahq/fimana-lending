@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, type WheelEvent } from 'react'
 import { buildPaymentDays, paymentDayOptions } from '@/lib/loan-schedule'
-import { apiRequest } from '@/lib/client-api'
-import type { Contact, Loan, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
+import type { Contact, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
+import { createBorrower, createLoan, listBorrowers } from '@/services'
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -47,7 +47,7 @@ export function LoanForm() {
   useEffect(() => {
     const loadContacts = async () => {
       try {
-        const rows = await apiRequest<Contact[]>('/api/contacts')
+        const rows = await listBorrowers()
         setContacts(rows)
         setForm((current) => ({ ...current, contactId: current.contactId || rows[0]?._id || '' }))
       } catch (caughtError) {
@@ -100,10 +100,7 @@ export function LoanForm() {
     setSuccess('')
 
     try {
-      const contact = await apiRequest<Contact>('/api/contacts', {
-        method: 'POST',
-        body: JSON.stringify(trimmedDraft),
-      })
+      const contact = await createBorrower(trimmedDraft)
 
       setContacts((current) => [contact, ...current])
       setForm((current) => ({ ...current, contactId: contact._id }))
@@ -124,17 +121,14 @@ export function LoanForm() {
     setSuccess('')
 
     try {
-      const loan = await apiRequest<Loan>('/api/lendings', {
-        method: 'POST',
-        body: JSON.stringify({
-          contactId: form.contactId,
-          principal: Number(form.principal),
-          gives: Number(form.gives),
-          paymentFrequency: form.paymentFrequency,
-          paymentDays,
-          firstPaymentDate: form.firstPaymentDate,
-          notes: form.notes,
-        }),
+      const loan = await createLoan({
+        contactId: form.contactId,
+        principal: Number(form.principal),
+        gives: Number(form.gives),
+        paymentFrequency: form.paymentFrequency,
+        paymentDays,
+        firstPaymentDate: form.firstPaymentDate,
+        notes: form.notes,
       })
 
       router.push(`/loans/${loan._id}`)

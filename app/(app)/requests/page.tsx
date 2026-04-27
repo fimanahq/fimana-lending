@@ -1,5 +1,0 @@
-import { LoanApplicationsModulePage } from '@/modules/loan-applications'
-
-export default function LoanRequestsPage() {
-  return <LoanApplicationsModulePage />
-}

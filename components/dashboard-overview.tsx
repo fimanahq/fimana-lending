@@ -1,25 +1,33 @@
 import Link from 'next/link'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
-import { getStatusClassName } from '@/lib/status'
-import type { LoanRequest } from '@/lib/types'
+import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
+import type { LoanApplication } from '@/lib/types'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard-overview-data'
 
 function formatPercentage(value: number) {
   return `${value.toFixed(2)}%`
 }
 
-function getInitials(firstName?: string, lastName?: string) {
-  return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'FM'
+function getNameInitials(name: string) {
+  const parts = name.split(/\s+/).filter(Boolean)
+  return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || 'FM'
 }
 
-function getRequestPlan(request: LoanRequest) {
-  const frequency = request.paymentFrequency === 'monthly' ? 'Monthly' : 'Twice monthly'
-  const days = request.paymentDays.map(formatPaymentDay).join(' and ')
-  return `${frequency} · ${days}`
+function getApplicationPlan(application: LoanApplication) {
+  const frequency = application.paymentType || application.paymentFrequency
+  const frequencyLabel = frequency === 'monthly' ? 'Monthly' : 'Semi-monthly'
+  const days = application.paymentDays.map(formatPaymentDay).join(' and ')
+  return `${frequencyLabel} · ${days}`
 }
 
-function getRequestHref(request: LoanRequest) {
-  return request.loanId ? `/loans/${request.loanId}` : '/loan-applications'
+function getApplicationHref(application: LoanApplication) {
+  return `/loan-applications/${application.id}`
+}
+
+function getApplicationName(application: LoanApplication) {
+  return application.borrower?.displayName
+    || `${application.firstName || ''} ${application.lastName || ''}`.trim()
+    || 'Borrower'
 }
 
 function getReminderTone(index: number) {
@@ -42,7 +50,7 @@ function getProgressToneColor(tone: DashboardProgressSegment['tone']) {
 function OverviewGlyph({
   name,
 }: {
-  name: 'plus' | 'requests' | 'rules' | 'trend' | 'money' | 'shield' | 'note' | 'alert'
+  name: 'plus' | 'applications' | 'rules' | 'trend' | 'money' | 'shield' | 'note' | 'alert'
 }) {
   switch (name) {
     case 'plus':
@@ -51,7 +59,7 @@ function OverviewGlyph({
           <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
         </svg>
       )
-    case 'requests':
+    case 'applications':
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 6h10M7 12h10M7 18h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -257,7 +265,7 @@ function DashboardProgressGraphic({
 }
 
 export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
-  const { summary, progressSegments, recentRequests, dueSoon, partialFailureNotice } = data
+  const { summary, progressSegments, recentApplications, dueSoon, partialFailureNotice } = data
 
   return (
     <div className="dashboard-overview stack">
@@ -331,7 +339,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               Active loans currently under management
             </span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
-              <OverviewGlyph name="requests" />
+              <OverviewGlyph name="applications" />
             </div>
           </article>
         </section>
@@ -381,9 +389,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
 
           <Link href="/loan-applications" className="dashboard-overview__actionCard">
             <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
-              <OverviewGlyph name="requests" />
+              <OverviewGlyph name="applications" />
             </span>
-            <h2>Review requests</h2>
+            <h2>Review applications</h2>
             <p>
               {summary.pendingReviews > 0
                 ? `${summary.pendingReviews} pending application${summary.pendingReviews === 1 ? '' : 's'} need a review decision.`
@@ -408,7 +416,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
 
             <div className="dashboard-overview__tableCard">
-              {recentRequests.length > 0 ? (
+              {recentApplications.length > 0 ? (
                 <table className="dashboard-overview__table">
                   <thead>
                     <tr>
@@ -419,24 +427,29 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentRequests.map((request) => (
-                      <tr key={request.id}>
+                    {recentApplications.map((application) => (
+                      <tr key={application.id}>
                         <td>
-                          <Link href={getRequestHref(request)} className="dashboard-overview__clientCell">
+                          <Link href={getApplicationHref(application)} className="dashboard-overview__clientCell">
                             <span className="dashboard-overview__avatar">
-                              {getInitials(request.firstName, request.lastName)}
+                              {getNameInitials(getApplicationName(application))}
                             </span>
                             <span className="dashboard-overview__clientName">
-                              {request.firstName} {request.lastName}
+                              {getApplicationName(application)}
                             </span>
                           </Link>
                         </td>
-                        <td>{getRequestPlan(request)}</td>
+                        <td>{getApplicationPlan(application)}</td>
                         <td className="dashboard-overview__tableAmount">
-                          {formatCurrency(request.principal).replace('.00', '')}
+                          {formatCurrency(
+                            (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
+                            application.loanProduct?.currency,
+                          ).replace('.00', '')}
                         </td>
                         <td className="dashboard-overview__tableStatus">
-                          <span className={getStatusClassName(request.status)}>{request.status}</span>
+                          <span className={getStatusClassName(application.status)}>
+                            {formatLoanApplicationStatus(application.status)}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -449,7 +462,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                   </span>
                   <div>
                     <strong>No applications yet</strong>
-                    <p>New borrower requests will appear here once the public intake form is used.</p>
+                    <p>New borrower applications will appear here once the public intake form is used.</p>
                   </div>
                 </div>
               )}

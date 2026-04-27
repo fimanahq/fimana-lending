@@ -1,105 +1,142 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
-import { apiRequest } from '@/lib/client-api'
-import type { User } from '@/lib/types'
+import { Button, Input } from '@/components/shared/forms'
+import { ApiRequestError } from '@/lib/client-api'
+import { login } from '@/services/auth'
+import { classNames } from '@/utils/class-names'
+
+interface LoginFormState {
+  identifier: string
+  password: string
+}
+
+type LoginFormErrors = Partial<Record<keyof LoginFormState, string>>
+
+const initialFormState: LoginFormState = {
+  identifier: '',
+  password: '',
+}
+
+function isLikelyEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+function validateLoginForm(form: LoginFormState) {
+  const errors: LoginFormErrors = {}
+  const identifier = form.identifier.trim()
+
+  if (!identifier) {
+    errors.identifier = 'Enter your email address or username.'
+  } else if (/\s/.test(identifier)) {
+    errors.identifier = 'Email or username cannot include spaces.'
+  } else if (identifier.includes('@') && !isLikelyEmail(identifier)) {
+    errors.identifier = 'Enter a valid email address or use your username.'
+  }
+
+  if (!form.password) {
+    errors.password = 'Enter your password.'
+  }
+
+  return errors
+}
 
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { setUser } = useAuth()
-  const emailInputRef = useRef<HTMLInputElement>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [emailIsValid, setEmailIsValid] = useState(true)
+  const [form, setForm] = useState<LoginFormState>(initialFormState)
+  const [fieldErrors, setFieldErrors] = useState<LoginFormErrors>({})
   const [error, setError] = useState('')
+  const [invalidCredentials, setInvalidCredentials] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const nextPath = searchParams.get('next')
-  const destination = nextPath && nextPath.startsWith('/') ? nextPath : '/dashboard'
-  const emailIsDirty = email.trim().length > 0
+  const destination = nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'
+
+  const updateField = (field: keyof LoginFormState, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }))
+    setFieldErrors((current) => ({ ...current, [field]: undefined }))
+    setError('')
+    setInvalidCredentials(false)
+  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
+    setInvalidCredentials(false)
 
-    if (!event.currentTarget.reportValidity()) {
-      setEmailIsValid(emailInputRef.current?.validity.valid ?? false)
+    const nextErrors = validateLoginForm(form)
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors)
       return
     }
 
     setSubmitting(true)
 
     try {
-      const payload = await apiRequest<{ user: User }>('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      })
-
+      const payload = await login(form)
       setUser(payload.user)
       router.push(destination)
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to sign in')
+      if (caughtError instanceof ApiRequestError && caughtError.status === 401) {
+        setInvalidCredentials(true)
+        setError('The email, username, or password you entered does not match our records.')
+      } else {
+        setError(caughtError instanceof Error ? caughtError.message : 'Unable to sign in')
+      }
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <form className="signin-form" onSubmit={handleSubmit}>
-      <div className="signin-form__field">
-        <label htmlFor="email">Work Email</label>
-        <div
-          className={`signin-form__inputShell${
-            emailIsDirty ? ' signin-form__inputShell--dirty' : ''
-          }${
-            emailIsDirty ? (emailIsValid ? ' signin-form__inputShell--valid' : ' signin-form__inputShell--invalid') : ''
-          }`}
-        >
-          <span className="signin-form__icon signin-form__icon--at" aria-hidden="true">@</span>
-          <input
-            ref={emailInputRef}
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="name@company.com"
-            value={email}
-            onChange={(event) => {
-              setEmail(event.target.value)
-              setEmailIsValid(event.currentTarget.validity.valid)
-            }}
-            aria-invalid={emailIsDirty && !emailIsValid}
-            required
-          />
-        </div>
-        {emailIsDirty && !emailIsValid ? <p className="signin-form__fieldError">Enter a valid email address</p> : null}
-      </div>
+    <form className="signin-form" onSubmit={handleSubmit} noValidate>
+      <Input
+        id="loginIdentifier"
+        label="Email or username"
+        autoComplete="username"
+        className="signin-form__field"
+        error={fieldErrors.identifier}
+        hint="Use the admin identity assigned to your lending workspace."
+        inputClassName={classNames(
+          'signin-form__control',
+          form.identifier.trim() && 'signin-form__control--dirty',
+          invalidCredentials && 'signin-form__control--invalid',
+        )}
+        value={form.identifier}
+        onChange={(event) => updateField('identifier', event.target.value)}
+        placeholder="admin@company.com"
+      />
 
-      <div className="signin-form__field">
-        <div className="signin-form__fieldRow">
-          <label htmlFor="password">Password</label>
-        </div>
-        <div className="signin-form__inputShell">
-          <span className="signin-form__icon signin-form__icon--lock" aria-hidden="true" />
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </div>
-      </div>
+      <Input
+        id="loginPassword"
+        label="Password"
+        type="password"
+        autoComplete="current-password"
+        className="signin-form__field"
+        error={fieldErrors.password}
+        inputClassName={classNames(
+          'signin-form__control',
+          form.password && 'signin-form__control--dirty',
+          invalidCredentials && 'signin-form__control--invalid',
+        )}
+        value={form.password}
+        onChange={(event) => updateField('password', event.target.value)}
+        placeholder="Enter password"
+      />
 
-      {error ? <div className="notice danger signin-form__notice">{error}</div> : null}
+      {error ? (
+        <div className="notice danger signin-form__notice" role="alert">
+          {error}
+        </div>
+      ) : null}
 
-      <button className="signin-form__submit" type="submit" disabled={submitting}>
+      <Button className="signin-form__submit" type="submit" disabled={submitting} fullWidth>
         <span>{submitting ? 'Signing in...' : 'Sign in to FiMana'}</span>
-        <span className="signin-form__submitArrow" aria-hidden="true">→</span>
-      </button>
+        <span className="signin-form__submitArrow" aria-hidden="true">-&gt;</span>
+      </Button>
     </form>
   )
 }

@@ -1,4 +1,4 @@
-import { LoanRequestForm } from '@/components/loan-request-form'
+import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
 
@@ -24,7 +24,7 @@ export default function RequestLoanPage() {
             </h1>
 
             <p className="request-homepage__lede">
-              Complete your loan request below. Our curated approach ensures a bespoke lending experience tailored to
+              Complete your loan application below. Our curated approach ensures a bespoke lending experience tailored to
               your unique portfolio.
             </p>
 
@@ -42,7 +42,7 @@ export default function RequestLoanPage() {
                   <span />
                 </div>
                 <div>
-                  <strong>Secure Request</strong>
+                  <strong>Secure Application</strong>
                 </div>
               </div>
             </div>
@@ -50,7 +50,7 @@ export default function RequestLoanPage() {
 
           <section className="request-homepage__formColumn">
             <div className="request-homepage__formCard">
-              <LoanRequestForm />
+              <LoanApplicationIntakeForm />
             </div>
           </section>
         </div>

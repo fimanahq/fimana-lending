@@ -2,6 +2,18 @@
 
 import type { ApiErrorPayload } from '@/lib/types'
 
+export class ApiRequestError extends Error {
+  status: number
+  payload: ApiErrorPayload | null
+
+  constructor(message: string, status: number, payload: ApiErrorPayload | null) {
+    super(message)
+    this.name = 'ApiRequestError'
+    this.status = status
+    this.payload = payload
+  }
+}
+
 export async function apiRequest<T>(input: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   if (init.body && !headers.has('Content-Type')) {
@@ -16,7 +28,8 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}) {
   const payload = (await response.json().catch(() => null)) as T | ApiErrorPayload | null
 
   if (!response.ok) {
-    throw new Error((payload as ApiErrorPayload | null)?.message || 'Request failed')
+    const errorPayload = payload as ApiErrorPayload | null
+    throw new ApiRequestError(errorPayload?.message || 'Request failed', response.status, errorPayload)
   }
 
   return payload as T

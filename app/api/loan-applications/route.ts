@@ -2,24 +2,47 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   isPaymentFrequency,
   isPaymentPreset,
-  validateLoanRequestInput,
-} from '@/lib/loan-request-validation'
+  validateLoanApplicationInput,
+} from '@/lib/loan-application-validation'
 import { API_BASE_URL } from '@/lib/constants'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import type { LoanRequest } from '@/lib/types'
+import type {
+  LoanApplication,
+  LoanApplicationDraftInput,
+} from '@/lib/types'
 
 interface BackendEnvelope<T> {
   message?: string
   data: T
 }
 
+function isDraftApplicationPayload(body: Record<string, unknown>) {
+  return 'borrowerId' in body || 'loanProductId' in body || 'loanAmountMinor' in body
+}
+
+function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInput {
+  return {
+    borrowerId: typeof body.borrowerId === 'string' ? body.borrowerId : '',
+    loanProductId: typeof body.loanProductId === 'string' ? body.loanProductId : '',
+    loanAmountMinor: Number(body.loanAmountMinor),
+    numberOfCutoffs: Number(body.numberOfCutoffs),
+    startDate: typeof body.startDate === 'string' ? body.startDate : '',
+    paymentType: body.paymentType === 'monthly' ? 'monthly' : 'semi_monthly',
+    cutoffPatternCode:
+      body.cutoffPatternCode === '5_20' || body.cutoffPatternCode === '15_30'
+        ? body.cutoffPatternCode
+        : null,
+    purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
+  }
+}
+
 export async function GET() {
   try {
-    const requests = await authorizedBackendRequest<LoanRequest[]>('/loan-requests')
-    return NextResponse.json(requests)
+    const applications = await authorizedBackendRequest<LoanApplication[]>('/loan-applications')
+    return NextResponse.json(applications)
   } catch (caughtError) {
-    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan requests', 401)
+    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan applications', 401)
   }
 }
 
@@ -27,6 +50,19 @@ export async function POST(request: NextRequest) {
   const body = await readJsonBody<Record<string, unknown>>(request)
   if (!body) {
     return jsonError('Invalid request body', 400)
+  }
+
+  if (isDraftApplicationPayload(body)) {
+    try {
+      const application = await authorizedBackendRequest<LoanApplication>('/loan-applications/drafts', {
+        method: 'POST',
+        body: JSON.stringify(getDraftPayload(body)),
+      })
+
+      return NextResponse.json(application, { status: 201 })
+    } catch (caughtError) {
+      return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to create loan application', 400)
+    }
   }
 
   const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : ''
@@ -67,7 +103,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const validated = validateLoanRequestInput({
+    const validated = validateLoanApplicationInput({
       firstName,
       lastName,
       email,
@@ -82,7 +118,7 @@ export async function POST(request: NextRequest) {
       notes,
     })
 
-    const response = await fetch(`${API_BASE_URL}/loan-requests`, {
+    const response = await fetch(`${API_BASE_URL}/loan-applications`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -92,22 +128,22 @@ export async function POST(request: NextRequest) {
       cache: 'no-store',
     })
 
-    const payload = (await response.json().catch(() => null)) as BackendEnvelope<LoanRequest> | { message?: string } | null
+    const payload = (await response.json().catch(() => null)) as BackendEnvelope<LoanApplication> | { message?: string } | null
     if (!response.ok) {
-      return jsonError(payload?.message || 'Unable to submit request', response.status)
+      return jsonError(payload?.message || 'Unable to submit application', response.status)
     }
 
-    const created = payload && 'data' in payload ? payload.data : null
+    const created = payload && 'data' in payload ? payload.data : payload as LoanApplication | null
     if (!created) {
-      return jsonError('Unable to submit request', 502)
+      return jsonError('Unable to submit application', 502)
     }
 
     return NextResponse.json(created, { status: 201 })
   } catch (caughtError) {
-    const message = caughtError instanceof Error ? caughtError.message : 'Unable to submit request'
+    const message = caughtError instanceof Error ? caughtError.message : 'Unable to submit application'
 
     if (message === 'fetch failed') {
-      return jsonError(`Loan request API is unavailable at ${API_BASE_URL}`, 503)
+      return jsonError(`Fimana API is unavailable at ${API_BASE_URL}`, 503)
     }
 
     return jsonError(message, 400)

@@ -1,5 +1,5 @@
-import { LoansModulePage } from '@/modules/loans'
+import { redirect } from 'next/navigation'
 
 export default function LoansPage() {
-  return <LoansModulePage />
+  redirect('/active-loans')
 }

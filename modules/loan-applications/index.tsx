@@ -1,5 +1,5 @@
-import { LoanRequestsBoard } from '@/components/loan-requests-board'
+import { LoanApplicationList } from '@/components/loan-applications/loan-application-list'
 
 export function LoanApplicationsModulePage() {
-  return <LoanRequestsBoard />
+  return <LoanApplicationList />
 }

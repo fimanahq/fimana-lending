@@ -1,7 +1,7 @@
 import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
 import type { LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
 
-export interface LoanRequestValidationInput {
+export interface LoanApplicationValidationInput {
   firstName: string
   lastName: string
   email: string
@@ -16,7 +16,7 @@ export interface LoanRequestValidationInput {
   notes: string
 }
 
-export interface ValidatedLoanRequestInput {
+export interface ValidatedLoanApplicationInput {
   firstName: string
   lastName: string
   email?: string
@@ -30,7 +30,7 @@ export interface ValidatedLoanRequestInput {
   notes?: string
 }
 
-export interface LoanRequestValidationErrors {
+export interface LoanApplicationValidationErrors {
   firstName: string
   lastName: string
   email: string
@@ -41,8 +41,8 @@ export interface LoanRequestValidationErrors {
   firstPaymentDate: string
 }
 
-export interface LoanRequestValidationResult {
-  errors: LoanRequestValidationErrors
+export interface LoanApplicationValidationResult {
+  errors: LoanApplicationValidationErrors
   normalized: {
     firstName: string
     lastName: string
@@ -55,7 +55,7 @@ export interface LoanRequestValidationResult {
   isValid: boolean
 }
 
-const EMPTY_ERRORS: LoanRequestValidationErrors = {
+const EMPTY_ERRORS: LoanApplicationValidationErrors = {
   firstName: '',
   lastName: '',
   email: '',
@@ -96,7 +96,7 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-function getFirstValidationError(errors: LoanRequestValidationErrors) {
+function getFirstValidationError(errors: LoanApplicationValidationErrors) {
   return (
     errors.firstName ||
     errors.lastName ||
@@ -109,7 +109,7 @@ function getFirstValidationError(errors: LoanRequestValidationErrors) {
   )
 }
 
-export function getLoanRequestValidationResult(input: LoanRequestValidationInput): LoanRequestValidationResult {
+export function getLoanApplicationValidationResult(input: LoanApplicationValidationInput): LoanApplicationValidationResult {
   const firstName = input.firstName.trim()
   const lastName = input.lastName.trim()
   const email = input.email.trim()
@@ -193,8 +193,8 @@ export function getLoanRequestValidationResult(input: LoanRequestValidationInput
   }
 }
 
-export function validateLoanRequestInput(input: LoanRequestValidationInput): ValidatedLoanRequestInput {
-  const validation = getLoanRequestValidationResult(input)
+export function validateLoanApplicationInput(input: LoanApplicationValidationInput): ValidatedLoanApplicationInput {
+  const validation = getLoanApplicationValidationResult(input)
   const firstError = getFirstValidationError(validation.errors)
 
   if (firstError) {

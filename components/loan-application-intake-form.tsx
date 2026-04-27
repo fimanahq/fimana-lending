@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { getLoanRequestValidationResult, validateLoanRequestInput } from '@/lib/loan-request-validation'
-import { apiRequest } from '@/lib/client-api'
-import type { LoanRequest, LoanSchedulePreset } from '@/lib/types'
+import { getLoanApplicationValidationResult, validateLoanApplicationInput } from '@/lib/loan-application-validation'
+import type { LoanApplication, LoanSchedulePreset } from '@/lib/types'
+import { createPublicLoanApplication } from '@/services'
 
 const PHONE_PREFIX = '+63 '
 const REQUIRED_ERROR_SUFFIX = 'is required'
@@ -58,7 +58,7 @@ function isRequiredError(error: string) {
   return error.endsWith(REQUIRED_ERROR_SUFFIX)
 }
 
-export function LoanRequestForm() {
+export function LoanApplicationIntakeForm() {
   const [form, setForm] = useState(initialForm)
   const [touchedFields, setTouchedFields] = useState({
     firstName: false,
@@ -71,10 +71,10 @@ export function LoanRequestForm() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState<LoanRequest | null>(null)
+  const [success, setSuccess] = useState<LoanApplication | null>(null)
   const validation = useMemo(
     () =>
-      getLoanRequestValidationResult({
+      getLoanApplicationValidationResult({
         ...form,
         principal: Number(form.principal),
         gives: Number(form.gives),
@@ -139,19 +139,16 @@ export function LoanRequestForm() {
     setSubmitting(true)
 
     try {
-      const validated = validateLoanRequestInput({
+      const validated = validateLoanApplicationInput({
         ...form,
         principal: Number(form.principal),
         gives: Number(form.gives),
       })
 
-      const created = await apiRequest<LoanRequest>('/api/loan-requests', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...form,
-          ...validated,
-          paymentDays: validated.paymentDays,
-        }),
+      const created = await createPublicLoanApplication({
+        ...form,
+        principal: validated.principal,
+        gives: validated.gives,
       })
 
       setSuccess(created)
@@ -166,7 +163,7 @@ export function LoanRequestForm() {
         firstPaymentDate: false,
       })
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit request')
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit application')
     } finally {
       setSubmitting(false)
     }
@@ -335,7 +332,7 @@ export function LoanRequestForm() {
       {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
       {success ? (
         <div className="notice request-loan-form__notice">
-          Request submitted for {success.firstName} {success.lastName}. Reference: {success.id}
+          Application submitted for {success.borrower?.displayName || `${form.firstName} ${form.lastName}`.trim()}. Reference: {success.applicationNumber || success.id}
         </div>
       ) : null}
 
@@ -344,7 +341,7 @@ export function LoanRequestForm() {
         type="submit"
         disabled={submitting || !validation.isValid}
       >
-        <span>{submitting ? 'Submitting request...' : 'Submit request'}</span>
+        <span>{submitting ? 'Submitting application...' : 'Submit application'}</span>
         <span className="request-loan-form__submitArrow" aria-hidden="true">→</span>
       </button>
 

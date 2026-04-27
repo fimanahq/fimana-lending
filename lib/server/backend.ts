@@ -15,11 +15,15 @@ interface AuthPayload {
 }
 
 function getErrorMessage(payload: unknown, fallback: string) {
-  if (typeof payload === 'object' && payload !== null && 'message' in payload && typeof payload.message === 'string') {
-    return payload.message
+  if (typeof payload !== 'object' || payload === null || !('message' in payload) || typeof payload.message !== 'string') {
+    return fallback
   }
 
-  return fallback
+  if ('errors' in payload && Array.isArray(payload.errors) && payload.errors.every((error) => typeof error === 'string')) {
+    return `${payload.message}: ${payload.errors.join('; ')}`
+  }
+
+  return payload.message
 }
 
 async function parseBackendResponse<T>(response: Response): Promise<T> {

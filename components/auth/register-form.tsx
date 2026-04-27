@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
-import { apiRequest } from '@/lib/client-api'
-import type { User } from '@/lib/types'
+import { register } from '@/services'
 
 export function RegisterForm() {
   const router = useRouter()
@@ -25,10 +24,7 @@ export function RegisterForm() {
     setError('')
 
     try {
-      const payload = await apiRequest<{ user: User }>('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ ...form, appCode: 'fimana-lending' }),
-      })
+      const payload = await register({ ...form, appCode: 'fimana-lending' })
 
       setUser(payload.user)
       router.push('/dashboard')
