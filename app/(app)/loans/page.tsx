@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import { LoansList } from '@/components/loans-list'
 
 export default function LoansPage() {
-  redirect('/active-loans')
+  return <LoansList />
 }

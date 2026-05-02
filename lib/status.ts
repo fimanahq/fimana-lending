@@ -1,4 +1,10 @@
-import type { LoanInstallmentStatus, LoanApplicationRecordStatus, LoanStatus, LoanReminderStatus } from '@/lib/types'
+import type {
+  LoanInstallmentStatus,
+  LoanApplicationRecordStatus,
+  LoanScheduleRowStatus,
+  LoanStatus,
+  LoanReminderStatus,
+} from '@/lib/types'
 
 export function normalizeLoanApplicationStatus(status: LoanApplicationRecordStatus) {
   return status === 'pending' ? 'submitted' : status
@@ -20,7 +26,7 @@ export function formatLoanApplicationStatus(status: LoanApplicationRecordStatus)
 }
 
 export function getStatusClassName(
-  status: LoanStatus | LoanInstallmentStatus | LoanReminderStatus | LoanApplicationRecordStatus,
+  status: LoanStatus | LoanInstallmentStatus | LoanScheduleRowStatus | LoanReminderStatus | LoanApplicationRecordStatus,
 ) {
   return `status-pill ${status === 'pending' ? 'submitted' : status}`
 }

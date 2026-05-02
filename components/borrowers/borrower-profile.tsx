@@ -94,7 +94,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         actions={(
           <>
             <Link href="/borrowers" className="button-secondary">Back to borrowers</Link>
-            <Link href="/loans/new" className="button">Create loan</Link>
+            <Link href="/loan-applications/new" className="button">New application</Link>
           </>
         )}
       />

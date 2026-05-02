@@ -1,12 +1,13 @@
 'use client'
 
-import { useMemo, useState, type WheelEvent } from 'react'
+import { useEffect, useMemo, useState, type WheelEvent } from 'react'
 import { defaultLoanInterestRules } from '@/content/rules'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
   buildLoanDueDates,
   buildLoanSchedule,
   buildPaymentDays,
+  getRecommendedFirstPaymentDate,
   getInterestRateFromRules,
   paymentDayOptions,
 } from '@/lib/loan-schedule'
@@ -40,12 +41,26 @@ export function LoanCalculator() {
     interestMode: 'rules' as InterestMode,
     manualInterestRate: '9',
   })
+  const [firstPaymentDateIsAuto, setFirstPaymentDateIsAuto] = useState(true)
   const [rules, setRules] = useState<LoanInterestRulesConfig>(defaultLoanInterestRules)
 
   const paymentDays = useMemo(
     () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay, form.preset),
     [form.firstDay, form.paymentFrequency, form.preset, form.secondDay],
   )
+
+  useEffect(() => {
+    if (!firstPaymentDateIsAuto) {
+      return
+    }
+
+    const recommendedDate = getRecommendedFirstPaymentDate(form.paymentFrequency, paymentDays)
+    setForm((current) =>
+      current.firstPaymentDate === recommendedDate
+        ? current
+        : { ...current, firstPaymentDate: recommendedDate },
+    )
+  }, [firstPaymentDateIsAuto, form.paymentFrequency, paymentDays])
 
   const calculation = useMemo(() => {
     if (!form.firstPaymentDate) {
@@ -257,7 +272,11 @@ export function LoanCalculator() {
               id="calculatorFirstPaymentDate"
               type="date"
               value={form.firstPaymentDate}
-              onChange={(event) => setForm((current) => ({ ...current, firstPaymentDate: event.target.value }))}
+              onChange={(event) => {
+                const nextValue = event.target.value
+                setFirstPaymentDateIsAuto(nextValue.length === 0)
+                setForm((current) => ({ ...current, firstPaymentDate: nextValue }))
+              }}
             />
           </div>
 

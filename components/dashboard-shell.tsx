@@ -3,15 +3,16 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { AppLogo } from '@/components/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { classNames } from '@/utils/class-names'
 
 type IconName =
   | 'borrowers'
+  | 'calculator'
   | 'collections'
   | 'overview'
   | 'payments'
-  | 'reports'
   | 'applications'
   | 'loans'
   | 'settings'
@@ -36,23 +37,22 @@ const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'overview' },
   { href: '/borrowers', label: 'Borrowers', icon: 'borrowers' },
   { href: '/loan-applications', label: 'Loan Applications', icon: 'applications' },
-  { href: '/active-loans', label: 'Active Loans', icon: 'loans', aliases: ['/loans'] },
+  { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
+  { href: '/calculator', label: 'Calculator', icon: 'calculator' },
   { href: '/payments', label: 'Payments', icon: 'payments' },
   { href: '/collections', label: 'Collections', icon: 'collections' },
-  { href: '/reports', label: 'Reports', icon: 'reports' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
 const pathLabels: Record<string, string> = {
-  'active-loans': 'Active Loans',
   borrowers: 'Borrowers',
+  calculator: 'Calculator',
   collections: 'Collections',
   dashboard: 'Dashboard',
   'loan-applications': 'Loan Applications',
   loans: 'Loans',
-  new: 'New Loan',
+  new: 'New Application',
   payments: 'Payments',
-  reports: 'Reports',
   schedule: 'Schedule',
   settings: 'Settings',
 }
@@ -64,6 +64,14 @@ function DashboardIcon({ name }: { name: IconName }) {
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8.5 11a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4ZM15.8 10a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
           <path d="M3.5 19c.7-3.6 2.6-5.4 5-5.4s4.3 1.8 5 5.4M13.7 14.1c2.7.1 4.5 1.8 5 4.9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+      )
+    case 'calculator':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="3.8" width="14" height="16.4" rx="2.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M8 7.8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
         </svg>
       )
     case 'collections':
@@ -86,14 +94,6 @@ function DashboardIcon({ name }: { name: IconName }) {
           <rect x="3.8" y="6.2" width="16.4" height="11.6" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
           <path d="M3.8 10h16.4M8 15h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           <path d="M15.5 14.8h1.8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-        </svg>
-      )
-    case 'reports':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 19V5M5 19h14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M8.5 15.5v-4M12 15.5v-7M15.5 15.5v-5.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          <path d="m8.5 8.2 3.4-2.6 3.6 1.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     case 'applications':
@@ -279,7 +279,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <aside className="dashboard-shell__sidebar" aria-label="Application navigation">
         <div className="dashboard-shell__sidebarHeader">
           <Link href="/dashboard" className="dashboard-shell__sidebarBrand" aria-label="FiMana dashboard home">
-            FiMana
+            <AppLogo />
           </Link>
 
           <button
@@ -308,11 +308,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <Link href="/loans/new" className="dashboard-shell__sidebarCta">
+        <Link href="/loan-applications/new" className="dashboard-shell__sidebarCta">
           <span className="dashboard-shell__ctaIcon">
             <DashboardIcon name="plus" />
           </span>
-          <span>New Loan</span>
+          <span>New Application</span>
         </Link>
       </aside>
 
@@ -329,17 +329,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <DashboardIcon name="menu" />
             </button>
 
-            <div>
+            <div className="dashboard-shell__headingCopy">
               <nav className="dashboard-shell__breadcrumbs" aria-label="Breadcrumb">
                 <ol>
-                  {breadcrumbs.map((item, index) => (
-                    <li key={`${item.label}-${index}`}>
-                      {item.href ? <Link href={item.href}>{item.label}</Link> : <span>{item.label}</span>}
-                    </li>
-                  ))}
+                  {breadcrumbs.map((item, index) => {
+                    const isLast = index === breadcrumbs.length - 1
+
+                    return (
+                      <li
+                        key={`${item.label}-${index}`}
+                        className={classNames(isLast && 'dashboard-shell__breadcrumbItem--current')}
+                      >
+                        {item.href ? <Link href={item.href}>{item.label}</Link> : <span>{item.label}</span>}
+                      </li>
+                    )
+                  })}
                 </ol>
               </nav>
-              <div className="dashboard-shell__pageTitle">{pageTitle}</div>
             </div>
           </div>
 

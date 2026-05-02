@@ -1,10 +1,17 @@
 export type UserAppCode = 'fimana-lending' | 'fimana-web'
+export const settingsCurrencyValues = ['PHP', 'USD', 'EUR'] as const
+export type SettingsCurrency = (typeof settingsCurrencyValues)[number]
 export type PaymentFrequency = 'monthly' | 'twice_monthly'
 export type LoanApplicationPaymentType = 'monthly' | 'semi_monthly'
 export type LoanApplicationCutoffPatternCode = '5_20' | '15_30'
-export type LoanStatus = 'active' | 'completed' | 'cancelled'
+export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled'
 export type LoanInstallmentStatus = 'pending' | 'partial' | 'paid'
 export type LoanReminderStatus = 'pending' | 'sent' | 'cancelled'
+export type LoanDisbursementMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'check' | 'internal_transfer' | 'general'
+export type LoanPaymentMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'internal_offset'
+export type LoanPaymentAllocationStatus = 'unallocated' | 'partially_allocated' | 'fully_allocated'
+export type LoanPaymentStatus = 'posted' | 'reversed'
+export type LoanScheduleRowStatus = 'pending' | 'partial' | 'paid' | 'cancelled'
 export type LoanApplicationStatus =
   | 'draft'
   | 'submitted'
@@ -20,6 +27,18 @@ export type InterestMode = 'rules' | 'manual'
 
 export interface ApiErrorPayload {
   message: string
+}
+
+export interface Settings {
+  _id: string
+  userId: string
+  defaultCurrency: SettingsCurrency
+  startOfMonth: number
+  accountsCellMode: boolean
+  transactionsCellMode: boolean
+  startingCapital: number
+  createdAt: string | Date
+  updatedAt?: string | Date
 }
 
 export interface LoanInterestRulesConfig {
@@ -118,6 +137,151 @@ export interface LoanReminder {
   sentAt?: string | null
 }
 
+export interface LoanRecordBorrower {
+  id: string
+  borrowerNumber: string
+  displayName: string
+  mobileNumber: string
+  email: string
+}
+
+export interface LoanRecordProduct {
+  id: string
+  code: string
+  name: string
+  currency: string
+  productType: string
+  version: number
+  matchedPricingRuleId: string | null
+}
+
+export interface LoanRecordBalances {
+  principalOutstandingAmountMinor: number
+  interestOutstandingAmountMinor: number
+  totalOutstandingAmountMinor: number
+  principalPaidAmountMinor: number
+  interestPaidAmountMinor: number
+  totalPaidAmountMinor: number
+}
+
+export interface LoanDisbursementDeduction {
+  code: string
+  description: string
+  amountMinor: number
+}
+
+export interface LoanDisbursementRecord {
+  disbursedAt?: string | null
+  releaseAmountMinor: number
+  deductions: LoanDisbursementDeduction[]
+  totalDeductionsAmountMinor: number
+  netReleasedAmountMinor: number
+  releaseMethod?: LoanDisbursementMethod | null
+  referenceNo: string
+  notes: string
+}
+
+export interface LoanScheduleRow {
+  id: string
+  sequence: number
+  dueDate: string
+  openingPrincipalBalanceMinor: number
+  scheduledPrincipalAmountMinor: number
+  scheduledInterestAmountMinor: number
+  scheduledTotalAmountMinor: number
+  paidPrincipalAmountMinor: number
+  paidInterestAmountMinor: number
+  paidTotalAmountMinor: number
+  outstandingPrincipalAmountMinor: number
+  outstandingInterestAmountMinor: number
+  outstandingTotalAmountMinor: number
+  closingPrincipalBalanceMinor: number
+  status: LoanScheduleRowStatus
+  lastAppliedPaymentAt?: string | null
+  closedAt?: string | null
+}
+
+export interface LoanRecord {
+  id: string
+  loanNumber: string
+  loanApplicationId: string
+  borrowerId: string
+  loanProductId: string
+  borrower: LoanRecordBorrower
+  loanProduct: LoanRecordProduct
+  status: LoanStatus
+  principalAmountMinor: number
+  disbursedAmountMinor: number
+  installmentCount: number
+  paymentFrequency: LoanApplicationPaymentType
+  paymentDays: string[]
+  firstDueDate: string
+  nextDueDate?: string | null
+  maturityDate: string
+  balances: LoanRecordBalances
+  disbursement: LoanDisbursementRecord
+  createdAt: string
+  updatedAt?: string | null
+  scheduleVersion: number
+  schedule?: LoanScheduleRow[]
+}
+
+export interface LoanPaymentQueueItem {
+  loanId: string
+  loanNumber: string
+  borrowerId: string
+  borrowerNumber: string
+  borrowerDisplayName: string
+  currency: string
+  nextDueDate?: string | null
+  totalOutstandingAmountMinor: number
+  status: LoanStatus
+}
+
+export interface LoanPaymentAllocation {
+  loanScheduleId: string
+  sequence: number
+  principalAmountMinor: number
+  interestAmountMinor: number
+  totalAmountMinor: number
+}
+
+export interface LoanPaymentHistory {
+  id: string
+  loanId: string
+  borrowerId: string
+  receiptNumber: string
+  paymentDate: string
+  postedAt: string
+  amountMinor: number
+  currency: string
+  method: LoanPaymentMethod
+  referenceNo: string
+  allocationStatus: LoanPaymentAllocationStatus
+  allocations: LoanPaymentAllocation[]
+  unallocatedAmountMinor: number
+  status: LoanPaymentStatus
+}
+
+export interface LoanPaymentDetail {
+  loan: LoanRecord
+  payments: LoanPaymentHistory[]
+}
+
+export interface PostLoanPaymentInput {
+  paymentDate: string
+  amountMinor: number
+  method: LoanPaymentMethod
+  referenceNo?: string
+}
+
+export interface LoanPaymentPostResponse {
+  payment: LoanPaymentHistory
+  payments: LoanPaymentHistory[]
+  loan: LoanRecord
+  updatedScheduleRows: LoanScheduleRow[]
+}
+
 export interface Loan {
   _id: string
   userId: string
@@ -155,9 +319,9 @@ export interface LoanApplication {
   id: string
   applicationNumber?: string
   borrowerId?: string
-  loanProductId?: string
+  loanProductId?: string | null
   borrower?: LoanApplicationBorrowerSnapshot
-  loanProduct?: LoanApplicationProductSnapshot
+  loanProduct?: LoanApplicationProductSnapshot | null
   loanAmountMinor?: number
   numberOfCutoffs?: number
   startDate?: string
@@ -231,6 +395,7 @@ export interface LoanApplicationComputedPreviewSnapshot {
   paymentDays: string[]
   firstDueDate: string
   maturityDate: string
+  interestRate?: number | null
   interestConfig: {
     method: string
     rateBps: number
@@ -251,7 +416,7 @@ export interface LoanApplicationComputedPreviewSnapshot {
 
 export interface LoanApplicationDraftInput {
   borrowerId: string
-  loanProductId: string
+  loanProductId?: string
   loanAmountMinor: number
   numberOfCutoffs: number
   startDate: string

@@ -11,7 +11,6 @@ const protectedPaths = [
   '/loan-applications',
   '/loans',
   '/payments',
-  '/reports',
   '/rules',
   '/settings',
 ]

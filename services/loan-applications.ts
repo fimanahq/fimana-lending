@@ -4,7 +4,6 @@ import type { LoanApplicationDraftInput, LoanApplicationStatus, LoanApplication 
 
 export type CreateLoanApplicationInput = LoanApplicationDraftInput
 export type UpdateLoanApplicationDraftInput = Partial<LoanApplicationDraftInput>
-export type LoanApplicationReviewAction = 'approve' | 'reject'
 
 export function listLoanApplications() {
   return apiRequest<LoanApplication[]>('/api/loan-applications')
@@ -44,8 +43,4 @@ export function updateLoanApplicationStatus(
     method: 'PATCH',
     body: JSON.stringify({ status, reviewerRemarks }),
   })
-}
-
-export function reviewLoanApplication(applicationId: string, action: LoanApplicationReviewAction) {
-  return updateLoanApplicationStatus(applicationId, action === 'approve' ? 'approved' : 'rejected')
 }

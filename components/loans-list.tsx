@@ -1,159 +1,162 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import { formatCurrency } from '@/lib/format'
+import { useEffect, useMemo, useState } from 'react'
+import { Button, DataTable, EmptyState, ErrorState, LoadingState, SectionHeader, TableShell } from '@/components/shared'
+import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { Loan } from '@/lib/types'
-import { deleteLoan, listLoans } from '@/services'
+import type { LoanRecord, LoanStatus } from '@/lib/types'
+import { listLoanRecords } from '@/services'
 
-type LoansListScope = 'active' | 'all'
+type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement'
 
-interface LoansListProps {
-  scope?: LoansListScope
+const STATUS_FILTERS: Array<{ label: string; value: LoanListFilter }> = [
+  { label: 'All', value: 'all' },
+  { label: 'Active', value: 'active' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Pending Disbursement', value: 'pending_disbursement' },
+]
+
+function formatMinorCurrency(value: number, currency: string) {
+  return formatCurrency(value / 100, currency)
 }
 
-export function LoansList({ scope = 'all' }: LoansListProps) {
-  const router = useRouter()
-  const [loans, setLoans] = useState<Loan[]>([])
+function formatLoanStatus(status: LoanStatus) {
+  return status.split('_').map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ')
+}
+
+function formatLoanSchedule(loan: LoanRecord) {
+  const frequencyLabel = loan.paymentFrequency === 'monthly' ? 'Monthly' : 'Semi-monthly'
+  return `${frequencyLabel} on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`
+}
+
+export function LoansList() {
+  const [loans, setLoans] = useState<LoanRecord[]>([])
+  const [activeFilter, setActiveFilter] = useState<LoanListFilter>('all')
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const visibleLoans = scope === 'active' ? loans.filter((loan) => loan.status === 'active') : loans
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoans(await listLoans())
-      } catch (caughtError) {
-        setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
-      }
-    }
-
-    void load()
-  }, [])
-
-  const openLoanDetail = (loanId: string) => {
-    router.push(`/loans/${loanId}`)
-  }
-
-  const stopRowNavigation = (event: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-  }
-
-  const handleDelete = async (loan: Loan, event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-
-    const borrowerName = loan.borrower?.fullName || 'this borrower'
-    const confirmed = window.confirm(`Delete the issued loan for ${borrowerName}? This cannot be undone.`)
-
-    if (!confirmed) {
-      return
-    }
-
-    setDeletingId(loan._id)
+  const loadLoans = async () => {
+    setLoading(true)
     setError('')
-    setMessage('')
 
     try {
-      await deleteLoan(loan._id)
-
-      setLoans((current) => current.filter((currentLoan) => currentLoan._id !== loan._id))
-      setMessage(`Deleted the loan for ${borrowerName}.`)
+      setLoans(await listLoanRecords())
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to delete loan')
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
     } finally {
-      setDeletingId(null)
+      setLoading(false)
     }
   }
+
+  useEffect(() => {
+    void loadLoans()
+  }, [])
+
+  const visibleLoans = useMemo(() => {
+    const sorted = [...loans].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+
+    if (activeFilter === 'all') {
+      return sorted
+    }
+
+    return sorted.filter((loan) => loan.status === activeFilter)
+  }, [activeFilter, loans])
 
   return (
     <div className="stack">
-      <section className="card panel">
-        <div className="row-between-center">
-          <div>
-            <div className="eyebrow">Loan roster</div>
-            <h1 className="section-title title-offset">
-              {scope === 'active' ? 'Active loans' : 'Issued loans'}
-            </h1>
-            <p className="muted">
-              {scope === 'active'
-                ? 'Open borrower obligations, totals, schedules, and collection status.'
-                : 'Borrowers, totals, schedules, and collection status.'}
-            </p>
-          </div>
-          <Link href="/loans/new" className="button">Create loan</Link>
-        </div>
-      </section>
+      <SectionHeader
+        eyebrow="Loans"
+        title="Official loan records"
+        description="These are the issued loans created from approved applications. This page is read-only for the MVP flow."
+        actions={<Link href="/loan-applications" className="button-secondary">View applications</Link>}
+      />
 
-      {message ? <div className="notice">{message}</div> : null}
-      {error ? <div className="notice danger">{error}</div> : null}
+      <div className="application-status-tabs" aria-label="Loan status filters">
+        {STATUS_FILTERS.map((status) => (
+          <button
+            key={status.value}
+            type="button"
+            className={activeFilter === status.value ? 'is-active' : ''}
+            onClick={() => setActiveFilter(status.value)}
+          >
+            {status.label}
+          </button>
+        ))}
+      </div>
 
-      <section className="card panel table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Borrower</th>
-              <th>Principal</th>
-              <th>Interest Rate</th>
-              <th>Total Interest</th>
-              <th>Total Payment</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleLoans.length === 0 ? (
+      {error ? (
+        <ErrorState
+          title="Unable to load loans"
+          description={error}
+          action={<Button variant="secondary" onClick={() => void loadLoans()}>Retry</Button>}
+        />
+      ) : null}
+
+      {loading ? (
+        <LoadingState title="Loading loans" description="Fetching the official loan records." />
+      ) : null}
+
+      {!loading && !error && loans.length === 0 ? (
+        <EmptyState
+          title="No loans yet"
+          description="Approved applications appear here after they are converted and auto-disbursed."
+          action={<Link href="/loan-applications" className="button-secondary">Go to applications</Link>}
+        />
+      ) : null}
+
+      {!loading && !error && loans.length > 0 ? (
+        <TableShell label="Loans">
+          <DataTable>
+            <thead>
               <tr>
-                <td colSpan={7} className="muted">
-                  {scope === 'active' ? 'No active loans yet.' : 'No issued loans yet.'}
-                </td>
+                <th>Borrower</th>
+                <th>Loan</th>
+                <th>Principal</th>
+                <th>Outstanding</th>
+                <th>Next due</th>
+                <th>Status</th>
+                <th>Action</th>
               </tr>
-            ) : (
-              visibleLoans.map((loan) => (
-                <tr
-                  key={loan._id}
-                  className="table-row-link"
-                  tabIndex={0}
-                  role="link"
-                  aria-label={`Open loan details for ${loan.borrower?.fullName || 'Borrower'}`}
-                  onClick={() => openLoanDetail(loan._id)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault()
-                      openLoanDetail(loan._id)
-                    }
-                  }}
-                >
-                  <td>
-                    <span className="data-card__titleLink">
-                      {loan.borrower?.fullName || 'Borrower'}
-                    </span>
-                  </td>
-                  <td>{formatCurrency(loan.principal, loan.currency)}</td>
-                  <td>{loan.interestRate}% / cutoff</td>
-                  <td>{formatCurrency(loan.totalInterest, loan.currency)}</td>
-                  <td>{formatCurrency(loan.totalPayment, loan.currency)}</td>
-                  <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
-                  <td className="loans-list__actionCell">
-                    <button
-                      type="button"
-                      className="button-ghost loans-list__deleteButton"
-                      disabled={deletingId === loan._id}
-                      onClick={(event) => void handleDelete(loan, event)}
-                      onKeyDown={stopRowNavigation}
-                      aria-label={`Delete loan for ${loan.borrower?.fullName || 'Borrower'}`}
-                    >
-                      {deletingId === loan._id ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </td>
+            </thead>
+            <tbody>
+              {visibleLoans.length > 0 ? (
+                visibleLoans.map((loan) => (
+                  <tr key={loan.id}>
+                    <td>
+                      <Link className="data-card__titleLink" href={`/loans/${loan.id}`}>
+                        {loan.borrower.displayName}
+                      </Link>
+                      <div className="muted micro-copy">{loan.borrower.borrowerNumber}</div>
+                    </td>
+                    <td>
+                      <strong>{loan.loanNumber}</strong>
+                      <div className="muted micro-copy">{formatLoanSchedule(loan)}</div>
+                    </td>
+                    <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
+                    <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
+                    <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Completed'}</td>
+                    <td>
+                      <span className={getStatusClassName(loan.status)}>
+                        {formatLoanStatus(loan.status)}
+                      </span>
+                    </td>
+                    <td>
+                      <Link href={`/loans/${loan.id}`} className="button-ghost">
+                        Details
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="muted">No loans match this status.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
+              )}
+            </tbody>
+          </DataTable>
+        </TableShell>
+      ) : null}
     </div>
   )
 }

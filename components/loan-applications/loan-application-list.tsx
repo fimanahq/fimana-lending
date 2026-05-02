@@ -8,14 +8,13 @@ import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
 import { listLoanApplications } from '@/services'
 import { Button, DataTable, EmptyState, ErrorState, LoadingState, SectionHeader, TableShell } from '@/components/shared'
 
-const STATUS_FILTERS: Array<{ label: string; value: LoanApplicationStatus | 'all' }> = [
+type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
+
+const STATUS_FILTERS: Array<{ label: string; value: LoanApplicationQueueFilter }> = [
   { label: 'All', value: 'all' },
-  { label: 'Draft', value: 'draft' },
   { label: 'Submitted', value: 'submitted' },
-  { label: 'Under Review', value: 'under_review' },
   { label: 'Approved', value: 'approved' },
   { label: 'Rejected', value: 'rejected' },
-  { label: 'Cancelled', value: 'cancelled' },
 ]
 
 function getApplicantName(application: LoanApplication) {
@@ -32,7 +31,7 @@ function getApplicationSchedule(application: LoanApplication) {
 
 export function LoanApplicationList() {
   const [applications, setApplications] = useState<LoanApplication[]>([])
-  const [activeStatus, setActiveStatus] = useState<LoanApplicationStatus | 'all'>('all')
+  const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('all')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -60,7 +59,14 @@ export function LoanApplicationList() {
       return sorted
     }
 
-    return sorted.filter((application) => normalizeLoanApplicationStatus(application.status) === activeStatus)
+    return sorted.filter((application) => {
+      const normalizedStatus = normalizeLoanApplicationStatus(application.status)
+      if (activeStatus === 'submitted') {
+        return normalizedStatus === 'submitted' || normalizedStatus === 'under_review'
+      }
+
+      return normalizedStatus === activeStatus
+    })
   }, [activeStatus, applications])
 
   return (

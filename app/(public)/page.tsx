@@ -44,17 +44,15 @@ export default function LandingPage() {
           <section className="landing-homepage__hero" id="vision" data-node-id="2003:4">
             <div className="landing-homepage__copy" data-node-id="2003:17">
               <h1 className="landing-homepage__title" data-node-id="2003:20">
-                <span>Request a</span>
-                <span>loan online</span>
+                <span>Request a loan</span>
+                <span>online with</span>
                 <span>
-                  with <em>FiMana</em>
+                  <em>FiMana</em> <span className="landing-homepage__titleAccent">Lending.</span>
                 </span>
-                <span className="landing-homepage__titleAccent">Lending.</span>
               </h1>
 
               <p className="landing-homepage__body" data-node-id="2003:22">
-                Experience a sophisticated financial journey where modern lending meets artisanal precision. We
-                transform the transaction into a guided path toward your aspirations.
+                Apply online, share the essentials, and move through a clear lending process from request to repayment.
               </p>
 
               <div className="landing-homepage__actions" data-node-id="2003:24">

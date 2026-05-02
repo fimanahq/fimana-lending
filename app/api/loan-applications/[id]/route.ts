@@ -5,13 +5,13 @@ import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
 function getActionPath(status: LoanApplicationStatus) {
   return {
     approved: 'approve',
-    cancelled: 'cancel',
+    cancelled: null,
     draft: 'return-for-revision',
     expired: null,
     rejected: 'reject',
     submitted: 'submit',
-    under_review: 'mark-under-review',
-    withdrawn: 'cancel',
+    under_review: null,
+    withdrawn: null,
   }[status]
 }
 
@@ -51,11 +51,9 @@ export async function PATCH(
   }
 
   try {
-    const init: RequestInit = {
-      method: actionPath === 'submit' || actionPath === 'cancel' ? 'PATCH' : 'PATCH',
-    }
+    const init: RequestInit = { method: 'PATCH' }
 
-    if (actionPath !== 'submit' && actionPath !== 'cancel') {
+    if (actionPath !== 'submit') {
       init.body = JSON.stringify({ reviewerRemarks: body?.reviewerRemarks ?? '' })
     }
 

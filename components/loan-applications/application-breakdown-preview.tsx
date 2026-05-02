@@ -20,6 +20,14 @@ function formatMinorCurrency(value: number, currency: string) {
   return formatCurrency(value / 100, currency)
 }
 
+function toFiniteNumber(value: number | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function formatPercentage(value: number) {
+  return `${value.toFixed(2)}%`
+}
+
 function getSchedule(preview: LoanApplicationComputedPreviewSnapshot | LoanApplicationPreviewSnapshot): LoanSchedulePreviewRow[] {
   if (isComputedPreview(preview)) {
     return preview.installments.map((installment) => ({
@@ -59,9 +67,20 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
   const frequency = isComputedPreview(preview) ? preview.frequency : preview.paymentFrequency
   const paymentDays = preview.paymentDays
   const firstDueDate = isComputedPreview(preview) ? preview.firstDueDate : preview.firstPaymentDate
-  const interestRate = isComputedPreview(preview) ? preview.interestConfig.rateBps / 100 : preview.interestRate
-  const totalInterest = isComputedPreview(preview) ? preview.totalInterestAmountMinor / 100 : preview.totalInterest
-  const totalPayment = isComputedPreview(preview) ? preview.totalPaymentAmountMinor / 100 : preview.totalPayment
+  const interestRate = toFiniteNumber(
+    isComputedPreview(preview)
+      ? preview.interestRate ?? preview.interestConfig?.rateBps / 100
+      : preview.interestRate,
+  )
+  const totalInterest = toFiniteNumber(
+    isComputedPreview(preview) ? preview.totalInterestAmountMinor / 100 : preview.totalInterest,
+  )
+  const totalPayment = toFiniteNumber(
+    isComputedPreview(preview) ? preview.totalPaymentAmountMinor / 100 : preview.totalPayment,
+  )
+  const overallProfitPercentage = totalInterest !== null && principal > 0
+    ? (totalInterest / principal) * 100
+    : null
   const processingFee = isComputedPreview(preview) ? preview.processingFeeAmountMinor : null
   const netDisbursement = isComputedPreview(preview) ? preview.netDisbursementAmountMinor : null
   const schedule = getSchedule(preview)
@@ -78,15 +97,19 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
         </div>
         <div className="data-card">
           <span className="muted">Interest Rate</span>
-          <strong>{interestRate !== undefined ? `${interestRate}%` : 'Not returned'}</strong>
+          <strong>{interestRate !== null ? `${interestRate}%` : 'Not returned'}</strong>
         </div>
         <div className="data-card">
           <span className="muted">Total Interest</span>
-          <strong>{totalInterest !== undefined ? formatCurrency(totalInterest, currency) : 'Not returned'}</strong>
+          <strong>{totalInterest !== null ? formatCurrency(totalInterest, currency) : 'Not returned'}</strong>
+        </div>
+        <div className="data-card">
+          <span className="muted">Overall Profit %</span>
+          <strong>{overallProfitPercentage !== null ? formatPercentage(overallProfitPercentage) : 'Not returned'}</strong>
         </div>
         <div className="data-card">
           <span className="muted">Total Payment</span>
-          <strong>{totalPayment !== undefined ? formatCurrency(totalPayment, currency) : 'Not returned'}</strong>
+          <strong>{totalPayment !== null ? formatCurrency(totalPayment, currency) : 'Not returned'}</strong>
         </div>
       </div>
 

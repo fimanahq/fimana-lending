@@ -53,7 +53,7 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
         <EmptyState
           title="No loan history yet"
           description="This borrower does not have an issued loan in the lending service."
-          action={<Link href="/loans/new" className="button-secondary">Create loan</Link>}
+          action={<Link href="/loan-applications/new" className="button-secondary">New application</Link>}
         />
       ) : (
         <TableShell label={`${borrowerName} loan history`}>

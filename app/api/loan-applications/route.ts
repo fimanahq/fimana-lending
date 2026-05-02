@@ -24,7 +24,10 @@ function isDraftApplicationPayload(body: Record<string, unknown>) {
 function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInput {
   return {
     borrowerId: typeof body.borrowerId === 'string' ? body.borrowerId : '',
-    loanProductId: typeof body.loanProductId === 'string' ? body.loanProductId : '',
+    loanProductId:
+      typeof body.loanProductId === 'string' && body.loanProductId.trim().length > 0
+        ? body.loanProductId.trim()
+        : undefined,
     loanAmountMinor: Number(body.loanAmountMinor),
     numberOfCutoffs: Number(body.numberOfCutoffs),
     startDate: typeof body.startDate === 'string' ? body.startDate : '',

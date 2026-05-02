@@ -1,0 +1,259 @@
+'use client'
+
+import { useEffect, useState, type FormEvent } from 'react'
+import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SectionHeader, Select } from '@/components/shared'
+import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types'
+import { getSettings, updateSettings } from '@/services'
+
+interface SettingsFormState {
+  defaultCurrency: SettingsCurrency
+  startingCapital: string
+}
+
+type SettingsFormErrors = Partial<Record<keyof SettingsFormState, string>>
+
+function buildFormState(settings: Settings): SettingsFormState {
+  return {
+    defaultCurrency: settings.defaultCurrency,
+    startingCapital: settings.startingCapital.toString(),
+  }
+}
+
+function parseStartingCapital(value: string) {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return { error: 'Starting capital is required.' }
+  }
+
+  const parsed = Number(trimmed)
+
+  if (!Number.isFinite(parsed)) {
+    return { error: 'Enter a valid amount for starting capital.' }
+  }
+
+  if (parsed < 0) {
+    return { error: 'Starting capital cannot be negative.' }
+  }
+
+  return { value: parsed }
+}
+
+function validateForm(form: SettingsFormState): SettingsFormErrors {
+  const nextErrors: SettingsFormErrors = {}
+  const startingCapitalResult = parseStartingCapital(form.startingCapital)
+
+  if (startingCapitalResult.error) {
+    nextErrors.startingCapital = startingCapitalResult.error
+  }
+
+  if (!settingsCurrencyValues.includes(form.defaultCurrency)) {
+    nextErrors.defaultCurrency = 'Choose a supported workspace currency.'
+  }
+
+  return nextErrors
+}
+
+export function WorkspaceSettingsForm() {
+  const [settings, setSettings] = useState<Settings | null>(null)
+  const [form, setForm] = useState<SettingsFormState | null>(null)
+  const [errors, setErrors] = useState<SettingsFormErrors>({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [submitError, setSubmitError] = useState('')
+  const [saveMessage, setSaveMessage] = useState('')
+  const [reloadToken, setReloadToken] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      setLoading(true)
+      setLoadError('')
+
+      try {
+        const nextSettings = await getSettings()
+
+        if (cancelled) {
+          return
+        }
+
+        setSettings(nextSettings)
+        setForm(buildFormState(nextSettings))
+        setErrors({})
+      } catch (caughtError) {
+        if (cancelled) {
+          return
+        }
+
+        setLoadError(caughtError instanceof Error ? caughtError.message : 'Unable to load workspace settings.')
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [reloadToken])
+
+  const updateField = <Field extends keyof SettingsFormState>(field: Field, value: SettingsFormState[Field]) => {
+    setForm((current) => (current ? { ...current, [field]: value } : current))
+    setErrors((current) => ({ ...current, [field]: undefined }))
+    setSubmitError('')
+    setSaveMessage('')
+  }
+
+  if (loading) {
+    return (
+      <PageContainer className="stack">
+        <SectionHeader
+          eyebrow="Settings"
+          title="Workspace settings"
+          description="Set the baseline capital and reporting currency used by the lending dashboard."
+        />
+        <LoadingState
+          title="Loading settings"
+          description="Fetching your workspace preferences and current capital baseline."
+        />
+      </PageContainer>
+    )
+  }
+
+  if (loadError || !form || !settings) {
+    return (
+      <PageContainer className="stack">
+        <SectionHeader
+          eyebrow="Settings"
+          title="Workspace settings"
+          description="Set the baseline capital and reporting currency used by the lending dashboard."
+        />
+        <ErrorState
+          title="Unable to load settings"
+          description={loadError || 'The settings record is not available right now.'}
+          action={<Button onClick={() => setReloadToken((current) => current + 1)}>Try again</Button>}
+        />
+      </PageContainer>
+    )
+  }
+
+  const parsedStartingCapital = parseStartingCapital(form.startingCapital)
+  const initialForm = buildFormState(settings)
+  const hasChanges =
+    form.defaultCurrency !== initialForm.defaultCurrency
+    || form.startingCapital !== initialForm.startingCapital
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const nextErrors = validateForm(form)
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors)
+      return
+    }
+
+    setSaving(true)
+    setSubmitError('')
+    setSaveMessage('')
+
+    try {
+      const nextSettings = await updateSettings({
+        defaultCurrency: form.defaultCurrency,
+        startingCapital: parsedStartingCapital.value ?? settings.startingCapital,
+      })
+
+      setSettings(nextSettings)
+      setForm(buildFormState(nextSettings))
+      setErrors({})
+      setSaveMessage('Workspace settings saved.')
+    } catch (caughtError) {
+      setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to save workspace settings.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <PageContainer className="stack">
+      <SectionHeader
+        eyebrow="Settings"
+        title="Workspace settings"
+        description="Set the baseline capital and reporting currency used by the lending dashboard."
+      />
+
+      <div className="grid two">
+        <CardWrapper title="Capital baseline">
+          <form className="stack" onSubmit={handleSubmit} noValidate>
+            {submitError ? (
+              <ErrorBanner title="Settings were not saved" message={submitError} />
+            ) : null}
+            {saveMessage ? <div className="notice">{saveMessage}</div> : null}
+
+            <Select
+              id="workspace-default-currency"
+              label="Default currency"
+              value={form.defaultCurrency}
+              error={errors.defaultCurrency}
+              hint="Used to format dashboard totals and lending amounts by default."
+              onChange={(event) => updateField('defaultCurrency', event.target.value as SettingsCurrency)}
+            >
+              {settingsCurrencyValues.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
+            </Select>
+
+            <Input
+              id="workspace-starting-capital"
+              label="Starting capital"
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.startingCapital}
+              error={errors.startingCapital}
+              hint="This is the original capital pool before any collected interest is added back."
+              inputClassName="input-no-spinner"
+              onChange={(event) => updateField('startingCapital', event.target.value)}
+              required
+            />
+
+            <div className="inline-actions">
+              <Button type="submit" disabled={saving || !hasChanges}>
+                {saving ? 'Saving settings...' : 'Save settings'}
+              </Button>
+            </div>
+          </form>
+        </CardWrapper>
+
+        <CardWrapper title="How the dashboard computes capital">
+          <div className="stack">
+            <div className="data-card">
+              <div className="subsection-title">Current capital</div>
+              <div className="muted">Starting capital + collected interest</div>
+            </div>
+
+            <div className="data-card">
+              <div className="subsection-title">Cash on hand</div>
+              <div className="muted">Current capital - principal still with borrowers</div>
+            </div>
+
+            <div className="data-card">
+              <div className="subsection-title">Money with borrowers</div>
+              <div className="muted">Outstanding principal only, excluding projected and uncollected interest</div>
+            </div>
+
+            <div className="notice">
+              Collected interest increases your current capital. Projected interest stays out of the cash position until it is actually collected.
+            </div>
+          </div>
+        </CardWrapper>
+      </div>
+    </PageContainer>
+  )
+}

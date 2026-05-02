@@ -30,7 +30,6 @@ import { ApplicationBreakdownPreview } from '@/components/loan-applications/appl
 
 const initialForm = {
   borrowerId: '',
-  loanProductId: '',
   loanAmount: '',
   numberOfCutoffs: '2',
   startDate: '',
@@ -46,7 +45,6 @@ function pesosToMinor(value: string) {
 function getDraftPayload(form: typeof initialForm): LoanApplicationDraftInput {
   return {
     borrowerId: form.borrowerId,
-    loanProductId: form.loanProductId.trim(),
     loanAmountMinor: pesosToMinor(form.loanAmount),
     numberOfCutoffs: Number(form.numberOfCutoffs),
     startDate: form.startDate,
@@ -59,10 +57,6 @@ function getDraftPayload(form: typeof initialForm): LoanApplicationDraftInput {
 function validateForm(form: typeof initialForm) {
   if (!form.borrowerId) {
     return 'Borrower is required'
-  }
-
-  if (!form.loanProductId.trim()) {
-    return 'Loan product ID is required'
   }
 
   const amountMinor = pesosToMinor(form.loanAmount)
@@ -121,7 +115,7 @@ export function LoanApplicationForm() {
     setError('')
   }
 
-  const handlePreview = async () => {
+  const handleSaveDraft = async () => {
     setShowValidation(true)
     setError('')
 
@@ -155,7 +149,7 @@ export function LoanApplicationForm() {
     }
 
     if (!draft) {
-      setError('Run the backend calculation preview before submitting this application.')
+      setError('Save the application as a draft before submitting it.')
       return
     }
 
@@ -176,7 +170,7 @@ export function LoanApplicationForm() {
       <SectionHeader
         eyebrow="New Application"
         title="Create loan application"
-        description="Create a draft to compute the backend preview, then submit it for review."
+        description="Create a draft application record, then submit it for review."
       />
 
       {error ? <ErrorState title="Application not ready" description={error} /> : null}
@@ -209,14 +203,6 @@ export function LoanApplicationForm() {
                 </option>
               ))}
             </Select>
-
-            <Input
-              id="applicationLoanProduct"
-              label="Loan product ID"
-              value={form.loanProductId}
-              hint="The updated API requires an active loanProductId. Add a product picker when the backend exposes loan products."
-              onChange={(event) => updateForm({ loanProductId: event.target.value })}
-            />
 
             <div className="grid two">
               <Input
@@ -292,9 +278,9 @@ export function LoanApplicationForm() {
                 type="button"
                 variant="secondary"
                 disabled={previewing || submitting || borrowers.length === 0}
-                onClick={() => void handlePreview()}
+                onClick={() => void handleSaveDraft()}
               >
-                {previewing ? 'Previewing...' : draft ? 'Refresh preview' : 'Preview breakdown'}
+                {previewing ? 'Saving...' : draft ? 'Update draft' : 'Save draft'}
               </Button>
               <Button type="submit" disabled={submitting || !draft}>
                 {submitting ? 'Submitting...' : 'Submit application'}
@@ -303,7 +289,8 @@ export function LoanApplicationForm() {
 
             {draft ? (
               <p className="muted micro-copy">
-                Draft {draft.applicationNumber || draft.id} has a backend-computed preview snapshot.
+                Draft {draft.applicationNumber || draft.id} saved.
+                {preview ? ' A backend preview is available.' : ' Preview could not be generated for these terms.'}
               </p>
             ) : null}
           </form>

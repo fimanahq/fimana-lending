@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { AppLogo } from '@/components/app-logo'
 
 type PublicSiteHeaderProps = {
   headerClassName?: string
@@ -26,7 +27,7 @@ export function PublicSiteHeader({
           className={joinClasses('public-site-header__brand', brandClassName)}
           aria-label="FiMana Lending home"
         >
-          FiMana Lending
+          <AppLogo suffix="Lending" />
         </Link>
 
         {actions}

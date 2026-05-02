@@ -7,6 +7,7 @@ import type {
 } from '@/lib/types'
 
 export const paymentDayOptions = Array.from({ length: 31 }, (_, index) => String(index + 1)).concat('month_end')
+const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000
 
 export function buildPaymentDays(
   paymentFrequency: PaymentFrequency,
@@ -39,6 +40,14 @@ function parseDateOnly(value: string) {
     throw new Error('Enter a valid first payment date')
   }
   return date
+}
+
+function formatDateOnly(value: Date) {
+  return value.toISOString().slice(0, 10)
+}
+
+function toDateOnlyFromLocalDate(value: Date) {
+  return new Date(Date.UTC(value.getFullYear(), value.getMonth(), value.getDate(), 12))
 }
 
 function getLastDayOfMonth(year: number, month: number) {
@@ -105,6 +114,42 @@ export function getInterestRateFromRules(
   }
 
   return band.threePlusGives
+}
+
+export function getRecommendedFirstPaymentDate(
+  paymentFrequency: PaymentFrequency,
+  paymentDays: string[],
+  options: {
+    fromDate?: Date
+    minimumLeadDays?: number
+  } = {},
+) {
+  const normalizedPaymentDays = normalizePaymentDays(paymentFrequency, paymentDays)
+  const minimumLeadDays = options.minimumLeadDays ?? 15
+  const anchorDate = toDateOnlyFromLocalDate(options.fromDate ?? new Date())
+  let cursorYear = anchorDate.getUTCFullYear()
+  let cursorMonth = anchorDate.getUTCMonth()
+
+  while (true) {
+    const monthDates = normalizedPaymentDays
+      .map((paymentDay) => resolveMonthDate(cursorYear, cursorMonth, paymentDay))
+      .filter((date) => date.getTime() >= anchorDate.getTime())
+      .filter((date, index, dates) => dates.findIndex((candidate) => sameDay(candidate, date)) === index)
+      .sort((left, right) => left.getTime() - right.getTime())
+
+    for (const dueDate of monthDates) {
+      const leadDays = Math.round((dueDate.getTime() - anchorDate.getTime()) / DAY_IN_MILLISECONDS)
+      if (leadDays >= minimumLeadDays) {
+        return formatDateOnly(dueDate)
+      }
+    }
+
+    cursorMonth += 1
+    if (cursorMonth > 11) {
+      cursorMonth = 0
+      cursorYear += 1
+    }
+  }
 }
 
 export function buildLoanDueDates(

@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
-import type { LoanApplication } from '@/lib/types'
+import type { LoanApplication, LoanApplicationStatus } from '@/lib/types'
 import { getLoanApplication, updateLoanApplicationStatus } from '@/services'
-import { Button, Card, EmptyState, ErrorState, LoadingState, SectionHeader } from '@/components/shared'
+import { Button, Card, EmptyState, ErrorState, LoadingState, SectionHeader, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 
 interface LoanApplicationDetailProps {
@@ -19,23 +20,29 @@ function getApplicantName(application: LoanApplication) {
     || 'Unnamed applicant'
 }
 
-function canCancel(application: LoanApplication) {
-  const status = normalizeLoanApplicationStatus(application.status)
-  return status !== 'approved' && status !== 'rejected' && status !== 'cancelled'
+function isTerminalStatus(status: LoanApplicationStatus) {
+  return status === 'approved' || status === 'rejected' || status === 'cancelled' || status === 'withdrawn' || status === 'expired'
 }
 
 export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailProps) {
+  const router = useRouter()
   const [application, setApplication] = useState<LoanApplication | null>(null)
+  const [decisionNotes, setDecisionNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [savingStatus, setSavingStatus] = useState(false)
+  const [message, setMessage] = useState('')
+  const [savingStatus, setSavingStatus] = useState<LoanApplicationStatus | null>(null)
 
   const loadApplication = useCallback(async () => {
     setError('')
     setLoading(true)
 
     try {
-      setApplication(await getLoanApplication(applicationId))
+      const loaded = await getLoanApplication(applicationId)
+      setApplication(loaded)
+      setDecisionNotes(
+        loaded.reviewerRemarks || loaded.decisionNotes || loaded.approvalNotes || loaded.rejectionReason || '',
+      )
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load application')
     } finally {
@@ -47,25 +54,31 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
     void loadApplication()
   }, [loadApplication])
 
-  const handleCancel = async () => {
+  const handleDecision = async (status: Extract<LoanApplicationStatus, 'approved' | 'rejected'>) => {
     if (!application) {
       return
     }
 
-    const confirmed = window.confirm(`Cancel the application for ${getApplicantName(application)}?`)
-    if (!confirmed) {
-      return
-    }
-
-    setSavingStatus(true)
+    setSavingStatus(status)
     setError('')
+    setMessage('')
 
     try {
-      setApplication(await updateLoanApplicationStatus(application.id, 'cancelled'))
+      const updated = await updateLoanApplicationStatus(application.id, status, decisionNotes.trim() || undefined)
+      setApplication(updated)
+      setDecisionNotes(
+        updated.reviewerRemarks || updated.decisionNotes || updated.approvalNotes || updated.rejectionReason || decisionNotes,
+      )
+      if (status === 'approved' && updated.loanId) {
+        router.push(`/loans/${updated.loanId}`)
+        return
+      }
+
+      setMessage(`Application marked ${formatLoanApplicationStatus(updated.status)}.`)
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to cancel application')
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to update application')
     } finally {
-      setSavingStatus(false)
+      setSavingStatus(null)
     }
   }
 
@@ -99,6 +112,12 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
     )
   }
 
+  const normalizedStatus = normalizeLoanApplicationStatus(application.status)
+  const terminal = isTerminalStatus(normalizedStatus)
+  const hasPreview = Boolean(application.computedPreviewSnapshot || application.previewSnapshot)
+  const canReview = normalizedStatus === 'submitted' || normalizedStatus === 'under_review'
+  const reviewDisabled = terminal || !hasPreview || !canReview || Boolean(savingStatus)
+
   return (
     <div className="stack">
       <SectionHeader
@@ -107,12 +126,13 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         description="Review the application-stage record and backend preview snapshot before taking approval action."
         actions={
           <>
+            {application.loanId ? <Link href={`/loans/${application.loanId}`} className="button">Open loan</Link> : null}
             <Link href="/loan-applications" className="button-secondary">Back</Link>
-            <Link href={`/loan-applications/${application.id}/approval`} className="button">Approval</Link>
           </>
         }
       />
 
+      {message ? <div className="notice">{message}</div> : null}
       {error ? <ErrorState title="Unable to update application" description={error} /> : null}
 
       <Card
@@ -179,10 +199,30 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           </div>
         ) : null}
 
-        {canCancel(application) ? (
+        {!hasPreview ? (
+          <div className="notice danger">
+            This application has no backend preview snapshot. Recreate or update it before taking a decision.
+          </div>
+        ) : null}
+
+        {terminal ? (
+          <div className="notice">This application already has a final decision.</div>
+        ) : null}
+
+        <Textarea
+          id="applicationDecisionNotes"
+          label="Decision notes"
+          value={decisionNotes}
+          onChange={(event) => setDecisionNotes(event.target.value)}
+        />
+
+        {canReview ? (
           <div className="inline-actions">
-            <Button variant="danger" disabled={savingStatus} onClick={() => void handleCancel()}>
-              {savingStatus ? 'Cancelling...' : 'Cancel application'}
+            <Button disabled={reviewDisabled} onClick={() => void handleDecision('approved')}>
+              {savingStatus === 'approved' ? 'Approving...' : 'Approve application'}
+            </Button>
+            <Button variant="danger" disabled={reviewDisabled} onClick={() => void handleDecision('rejected')}>
+              {savingStatus === 'rejected' ? 'Rejecting...' : 'Reject application'}
             </Button>
           </div>
         ) : null}

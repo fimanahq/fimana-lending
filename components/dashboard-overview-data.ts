@@ -1,21 +1,23 @@
-import type { Loan, LoanApplication, UpcomingLoanReminder } from '@/lib/types'
+import type { Loan, LoanApplication, SettingsCurrency, UpcomingLoanReminder } from '@/lib/types'
 
-export type DashboardDataSource = 'loans' | 'applications' | 'reminders'
+export type DashboardDataSource = 'loans' | 'applications' | 'reminders' | 'settings'
 
 export interface DashboardSummaryMetrics {
+  currency: SettingsCurrency
+  startingCapital: number
   profitCollected: number
-  totalProfitBooked: number
+  capitalBasis: number
+  availableCash: number
   capitalOutstanding: number
-  recoveredPrincipal: number
+  totalProfitBooked: number
   remainingProjectedInterest: number
-  totalProjectedValue: number
   totalIssuedPrincipal: number
   activeLoans: number
   pendingReviews: number
 }
 
 export interface DashboardProgressSegment {
-  key: 'recovered_principal' | 'capital_outstanding' | 'remaining_projected_interest'
+  key: 'available_cash' | 'principal_on_borrowers'
   label: string
   description: string
   value: number
@@ -35,6 +37,10 @@ interface BuildDashboardOverviewDataInput {
   loans: Loan[]
   applications: LoanApplication[]
   reminders: UpcomingLoanReminder[]
+  settings?: {
+    defaultCurrency?: SettingsCurrency
+    startingCapital?: number
+  } | null
   failedSources?: DashboardDataSource[]
 }
 
@@ -42,6 +48,7 @@ const FAILED_SOURCE_LABELS: Record<DashboardDataSource, string> = {
   loans: 'loans',
   applications: 'loan applications',
   reminders: 'upcoming reminders',
+  settings: 'workspace settings',
 }
 
 function formatFailedSources(failedSources: DashboardDataSource[]) {
@@ -61,6 +68,7 @@ export function buildDashboardOverviewData({
   loans,
   applications,
   reminders,
+  settings,
   failedSources = [],
 }: BuildDashboardOverviewDataInput): DashboardOverviewData {
   const nonCancelledLoans = loans.filter((loan) => loan.status !== 'cancelled')
@@ -81,48 +89,45 @@ export function buildDashboardOverviewData({
   }, 0)
 
   const totalIssuedPrincipal = nonCancelledLoans.reduce((sum, loan) => sum + loan.principal, 0)
-  const recoveredPrincipal = Math.max(0, totalIssuedPrincipal - capitalOutstanding)
+  const currency = settings?.defaultCurrency || 'PHP'
+  const startingCapital = Math.max(0, settings?.startingCapital || 0)
   const remainingProjectedInterest = Math.max(0, totalProfitBooked - profitCollected)
-  const totalProjectedValue = recoveredPrincipal + capitalOutstanding + remainingProjectedInterest
+  const capitalBasis = startingCapital + profitCollected
+  const availableCash = capitalBasis - capitalOutstanding
+  const capitalPositionTotal = capitalOutstanding + Math.max(0, availableCash)
   const pendingReviews = applications.filter((application) =>
     application.status === 'pending' || application.status === 'submitted' || application.status === 'under_review',
   ).length
 
   const progressSegments: DashboardProgressSegment[] = [
     {
-      key: 'recovered_principal',
-      label: 'Recovered Principal',
-      description: 'Capital already returned through fully paid installments.',
-      value: recoveredPrincipal,
-      percentage: totalProjectedValue > 0 ? (recoveredPrincipal / totalProjectedValue) * 100 : 0,
+      key: 'available_cash',
+      label: 'Cash on Hand',
+      description: 'Starting capital plus collected interest, less principal currently out with borrowers.',
+      value: Math.max(0, availableCash),
+      percentage: capitalPositionTotal > 0 ? (Math.max(0, availableCash) / capitalPositionTotal) * 100 : 0,
       tone: 'green',
     },
     {
-      key: 'capital_outstanding',
-      label: 'Outstanding Principal',
-      description: 'Unpaid capital still scheduled across active loan installments.',
+      key: 'principal_on_borrowers',
+      label: 'Money with Borrowers',
+      description: 'Principal still outstanding across active loans, excluding projected and uncollected interest.',
       value: capitalOutstanding,
-      percentage: totalProjectedValue > 0 ? (capitalOutstanding / totalProjectedValue) * 100 : 0,
+      percentage: capitalPositionTotal > 0 ? (capitalOutstanding / capitalPositionTotal) * 100 : 0,
       tone: 'amber',
-    },
-    {
-      key: 'remaining_projected_interest',
-      label: 'Remaining Projected Interest',
-      description: 'Expected interest not yet realized from issued non-cancelled loans.',
-      value: remainingProjectedInterest,
-      percentage: totalProjectedValue > 0 ? (remainingProjectedInterest / totalProjectedValue) * 100 : 0,
-      tone: 'olive',
     },
   ]
 
   return {
     summary: {
+      currency,
+      startingCapital,
       profitCollected,
-      totalProfitBooked,
+      capitalBasis,
+      availableCash,
       capitalOutstanding,
-      recoveredPrincipal,
+      totalProfitBooked,
       remainingProjectedInterest,
-      totalProjectedValue,
       totalIssuedPrincipal,
       activeLoans: activeLoans.length,
       pendingReviews,

@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import { DashboardPortfolioChart } from '@/components/dashboard-portfolio-chart'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types'
-import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard-overview-data'
+import type { DashboardOverviewData } from '@/components/dashboard-overview-data'
 
 function formatPercentage(value: number) {
   return `${value.toFixed(2)}%`
@@ -34,23 +35,10 @@ function getReminderTone(index: number) {
   return ['amber', 'green', 'olive'][index % 3]
 }
 
-function getProgressToneColor(tone: DashboardProgressSegment['tone']) {
-  switch (tone) {
-    case 'green':
-      return '#2d6b59'
-    case 'amber':
-      return '#b96d2a'
-    case 'olive':
-      return '#5f7153'
-    default:
-      return '#b96d2a'
-  }
-}
-
 function OverviewGlyph({
   name,
 }: {
-  name: 'plus' | 'applications' | 'rules' | 'trend' | 'money' | 'shield' | 'note' | 'alert'
+  name: 'plus' | 'applications' | 'calculator' | 'rules' | 'trend' | 'money' | 'shield' | 'note' | 'alert'
 }) {
   switch (name) {
     case 'plus':
@@ -64,6 +52,14 @@ function OverviewGlyph({
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M7 6h10M7 12h10M7 18h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           <path d="M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      )
+    case 'calculator':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="3.8" width="14" height="16.4" rx="2.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M8 7.8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
         </svg>
       )
     case 'rules':
@@ -160,112 +156,9 @@ function OverviewGlyph({
   }
 }
 
-function DashboardProgressGraphic({
-  segments,
-  totalProjectedValue,
-}: {
-  segments: DashboardProgressSegment[]
-  totalProjectedValue: number
-}) {
-  if (totalProjectedValue <= 0) {
-    return (
-      <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-        <span className="dashboard-overview__emptyIcon">
-          <OverviewGlyph name="trend" />
-        </span>
-        <div>
-          <strong>No portfolio progress yet</strong>
-          <p>Issue a loan to start tracking recovered principal, open capital, and remaining projected interest.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const geometry = segments.reduce<Array<DashboardProgressSegment & { x: number; width: number }>>((all, segment) => {
-    const previous = all[all.length - 1]
-    const x = previous ? previous.x + previous.width : 0
-    all.push({
-      ...segment,
-      x,
-      width: segment.percentage,
-    })
-    return all
-  }, [])
-
-  const ariaLabel = segments
-    .map((segment) => `${segment.label}: ${formatPercentage(segment.percentage)}, ${formatCurrency(segment.value)}`)
-    .join('. ')
-
-  return (
-    <div className="dashboard-overview__progressBody">
-      <div className="dashboard-overview__progressBarShell">
-        <svg
-          className="dashboard-overview__progressBar"
-          viewBox="0 0 100 14"
-          preserveAspectRatio="none"
-          role="img"
-          aria-label={ariaLabel}
-        >
-          <defs>
-            <clipPath id="dashboard-overview-progress-clip">
-              <rect x="0" y="0" width="100" height="14" rx="7" ry="7" />
-            </clipPath>
-          </defs>
-          <rect x="0" y="0" width="100" height="14" rx="7" ry="7" fill="rgba(111, 93, 61, 0.12)" />
-          <g clipPath="url(#dashboard-overview-progress-clip)">
-            {geometry.map((segment) => (
-              <rect
-                key={segment.key}
-                x={segment.x}
-                y="0"
-                width={segment.width}
-                height="14"
-                fill={getProgressToneColor(segment.tone)}
-              />
-            ))}
-          </g>
-          {geometry.map((segment) => (
-            segment.width >= 12 ? (
-              <text
-                key={`${segment.key}-label`}
-                x={segment.x + (segment.width / 2)}
-                y="8.9"
-                textAnchor="middle"
-                fill="#fffaf4"
-                fontSize="3.1"
-                fontWeight="700"
-              >
-                {formatPercentage(segment.percentage)}
-              </text>
-            ) : null
-          ))}
-        </svg>
-      </div>
-
-      <div className="dashboard-overview__progressLegend">
-        {segments.map((segment) => (
-          <article
-            key={segment.key}
-            className={`dashboard-overview__progressLegendItem dashboard-overview__progressLegendItem--${segment.tone}`}
-          >
-            <div className="dashboard-overview__progressLegendTop">
-              <span className="dashboard-overview__progressLegendLabel">
-                <span className="dashboard-overview__progressLegendSwatch" />
-                {segment.label}
-              </span>
-              <strong>{formatPercentage(segment.percentage)}</strong>
-            </div>
-            <div className="dashboard-overview__progressLegendValue">{formatCurrency(segment.value)}</div>
-            <p>{segment.description}</p>
-          </article>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const { summary, progressSegments, recentApplications, dueSoon, partialFailureNotice } = data
+  const dashboardCurrency = summary.currency
 
   return (
     <div className="dashboard-overview stack">
@@ -273,9 +166,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         <div className="dashboard-overview__executiveHeader">
           <div>
             <div className="eyebrow">Executive summary</div>
-            <h1 className="section-title title-offset">Business health and portfolio progress</h1>
+            <h1 className="section-title title-offset">Capital position and lending exposure</h1>
             <p className="muted">
-              Track realized returns, expected yield, capital still on the street, and the current portfolio load at a glance.
+              Track starting capital, collected interest, cash on hand, and principal currently deployed to borrowers.
             </p>
           </div>
         </div>
@@ -284,59 +177,63 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
 
         <section className="dashboard-overview__kpiGrid">
           <article className="dashboard-overview__statCard dashboard-overview__statCard--plain">
-            <span className="dashboard-overview__statLabel">Profit Collected</span>
+            <span className="dashboard-overview__statLabel">Starting Capital</span>
             <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.profitCollected)}
-            </strong>
-            <span className="dashboard-overview__statMeta dashboard-overview__statMeta--positive">
-              Realized interest from fully paid installments
-            </span>
-            <span className="dashboard-overview__statSubvalue">Exact realized interest</span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
-              <OverviewGlyph name="trend" />
-            </div>
-          </article>
-
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
-            <span className="dashboard-overview__statLabel">Total Profit Booked</span>
-            <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.totalProfitBooked)}
+              {formatCurrency(summary.startingCapital, dashboardCurrency)}
             </strong>
             <span className="dashboard-overview__statMeta">
-              Expected interest across issued non-cancelled loans
+              Baseline capital configured in workspace settings
             </span>
-            <span className="dashboard-overview__statSubvalue">Exact booked interest</span>
+            <span className="dashboard-overview__statSubvalue">Used as the base for current cash and exposure</span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="money" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--sage">
-            <span className="dashboard-overview__statLabel">Capital Outstanding</span>
+          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
+            <span className="dashboard-overview__statLabel">Collected Interest</span>
             <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.capitalOutstanding)}
+              {formatCurrency(summary.profitCollected, dashboardCurrency)}
             </strong>
             <span className="dashboard-overview__statMeta">
-              Unpaid principal only across active schedules
+              Realized interest from fully paid installments only
             </span>
-            <span className="dashboard-overview__statSubvalue">Exact unpaid principal</span>
+            <span className="dashboard-overview__statSubvalue">
+              {formatCurrency(summary.remainingProjectedInterest, dashboardCurrency)} still projected but not yet collected
+            </span>
+            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+              <OverviewGlyph name="trend" />
+            </div>
+          </article>
+
+          <article className="dashboard-overview__statCard dashboard-overview__statCard--sage">
+            <span className="dashboard-overview__statLabel">Cash on Hand</span>
+            <strong className="dashboard-overview__statValue">
+              {formatCurrency(summary.availableCash, dashboardCurrency)}
+            </strong>
+            <span className="dashboard-overview__statMeta">
+              Current capital minus principal still out with borrowers
+            </span>
+            <span className="dashboard-overview__statSubvalue">
+              {formatCurrency(summary.capitalBasis, dashboardCurrency)} capital basis from starting capital + collected interest
+            </span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="shield" />
             </div>
           </article>
 
           <article className="dashboard-overview__statCard dashboard-overview__statCard--ink">
-            <span className="dashboard-overview__statLabel">Portfolio Load</span>
+            <span className="dashboard-overview__statLabel">Money with Borrowers</span>
             <strong className="dashboard-overview__statValue">
-              {summary.activeLoans.toLocaleString('en-PH')}
+              {formatCurrency(summary.capitalOutstanding, dashboardCurrency)}
             </strong>
             <span className="dashboard-overview__statMeta dashboard-overview__statMeta--contrast">
-              {summary.pendingReviews > 0
-                ? `${summary.pendingReviews} pending review${summary.pendingReviews === 1 ? '' : 's'} in the intake queue`
-                : 'No pending reviews waiting in the intake queue'}
+              Principal outstanding only across {summary.activeLoans.toLocaleString('en-PH')} active loan{summary.activeLoans === 1 ? '' : 's'}
             </span>
             <span className="dashboard-overview__statSubvalue dashboard-overview__statSubvalue--contrast">
-              Active loans currently under management
+              {summary.pendingReviews > 0
+                ? `${summary.pendingReviews} pending review${summary.pendingReviews === 1 ? '' : 's'} still in the intake queue`
+                : 'No pending reviews waiting in the intake queue'}
             </span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="applications" />
@@ -347,23 +244,65 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         <article className="dashboard-overview__progressCard">
           <div className="dashboard-overview__progressHeader">
             <div>
-              <span className="dashboard-overview__statLabel">Repayment Progress</span>
-              <h2>Capital recovered vs open exposure</h2>
+              <span className="dashboard-overview__statLabel">Capital Position</span>
+              <h2>Cash on hand vs money with borrowers</h2>
               <p>
-                Portfolio-state view of capital already recovered, principal still outstanding, and remaining projected interest.
+                The chart uses your starting capital plus collected interest as the capital basis, then separates available cash from principal still deployed.
               </p>
             </div>
             <div className="dashboard-overview__progressSummary">
-              <span className="dashboard-overview__progressSummaryLabel">Projected portfolio value</span>
-              <strong>{formatCurrency(summary.totalProjectedValue)}</strong>
-              <span>{formatCurrency(summary.totalIssuedPrincipal)} principal issued</span>
+              <span className="dashboard-overview__progressSummaryLabel">Current capital basis</span>
+              <strong>{formatCurrency(summary.capitalBasis, dashboardCurrency)}</strong>
+              <span>{formatCurrency(summary.profitCollected, dashboardCurrency)} collected interest added back</span>
             </div>
           </div>
 
-          <DashboardProgressGraphic
-            segments={progressSegments}
-            totalProjectedValue={summary.totalProjectedValue}
-          />
+          <div className="dashboard-overview__progressBody">
+            {summary.capitalBasis > 0 || summary.capitalOutstanding > 0 ? (
+              <DashboardPortfolioChart
+                currency={dashboardCurrency}
+                capitalBasis={summary.capitalBasis}
+                segments={progressSegments}
+                totalProfitBooked={summary.totalProfitBooked}
+                remainingProjectedInterest={summary.remainingProjectedInterest}
+              />
+            ) : (
+              <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
+                <span className="dashboard-overview__emptyIcon">
+                  <OverviewGlyph name="trend" />
+                </span>
+                <div>
+                  <strong>No capital baseline yet</strong>
+                  <p>Set a starting capital amount or release a loan to begin tracking cash on hand and principal with borrowers.</p>
+                </div>
+              </div>
+            )}
+
+            {summary.availableCash < 0 ? (
+              <div className="notice">
+                Cash on hand is negative by {formatCurrency(Math.abs(summary.availableCash), dashboardCurrency)}. Principal deployed is currently higher than starting capital plus collected interest.
+              </div>
+            ) : null}
+
+            <div className="dashboard-overview__progressLegend">
+              {progressSegments.map((segment) => (
+                <article
+                  key={segment.key}
+                  className={`dashboard-overview__progressLegendItem dashboard-overview__progressLegendItem--${segment.tone}`}
+                >
+                  <div className="dashboard-overview__progressLegendTop">
+                    <span className="dashboard-overview__progressLegendLabel">
+                      <span className="dashboard-overview__progressLegendSwatch" />
+                      {segment.label}
+                    </span>
+                    <strong>{formatPercentage(segment.percentage)}</strong>
+                  </div>
+                  <div className="dashboard-overview__progressLegendValue">{formatCurrency(segment.value, dashboardCurrency)}</div>
+                  <p>{segment.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
         </article>
       </section>
 
@@ -379,12 +318,12 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         </div>
 
         <section className="dashboard-overview__actionsRow">
-          <Link href="/loans/new" className="dashboard-overview__actionCard">
+          <Link href="/loan-applications/new" className="dashboard-overview__actionCard">
             <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--amber">
               <OverviewGlyph name="plus" />
             </span>
-            <h2>Create a new loan</h2>
-            <p>Start a fresh origination flow for a borrower ready to move into underwriting and issuance.</p>
+            <h2>Create a new application</h2>
+            <p>Start the official origination flow from application intake through approval, conversion, and disbursement.</p>
           </Link>
 
           <Link href="/loan-applications" className="dashboard-overview__actionCard">
@@ -405,6 +344,14 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </span>
             <h2>Adjust rules</h2>
             <p>Refine underwriting parameters and lending guardrails without leaving the operating workspace.</p>
+          </Link>
+
+          <Link href="/calculator" className="dashboard-overview__actionCard">
+            <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
+              <OverviewGlyph name="calculator" />
+            </span>
+            <h2>Open lending calculator</h2>
+            <p>Preview cutoff dates, per-give interest, and the full repayment table before you create or approve a loan.</p>
           </Link>
         </section>
 

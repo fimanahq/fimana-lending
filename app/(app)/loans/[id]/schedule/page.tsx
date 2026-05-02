@@ -1,11 +1,10 @@
-import { LoanScheduleDetail } from '@/components/loan-schedule-detail'
+import { redirect } from 'next/navigation'
 
 export default async function LoanSchedulePage({
   params,
 }: {
   params: Promise<{ id: string }>
 }) {
-  const { id } = await params
-
-  return <LoanScheduleDetail loanId={id} />
+  await params
+  redirect('/loan-applications')
 }

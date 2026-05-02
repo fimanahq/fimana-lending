@@ -1,4 +1,4 @@
-import { LoanApplicationApproval } from '@/components/loan-applications/loan-application-approval'
+import { redirect } from 'next/navigation'
 
 export default async function LoanApplicationApprovalPage({
   params,
@@ -7,5 +7,5 @@ export default async function LoanApplicationApprovalPage({
 }) {
   const { id } = await params
 
-  return <LoanApplicationApproval applicationId={id} />
+  redirect(`/loan-applications/${id}`)
 }
