@@ -1941,7 +1941,7 @@ th {
 }
 
 .loan-payment-dialog {
-  width: min(61.25rem, calc(100vw - 2rem));
+  width: min(75rem, calc(100vw - 2rem));
 }
 
 .user-card {

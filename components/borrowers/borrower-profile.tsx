@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Badge,
   Button,
@@ -15,7 +15,7 @@ import { BorrowerForm } from '@/components/borrowers/borrower-form'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Borrower, LoanRecord } from '@/lib/types'
-import { getBorrower, listLoanRecords } from '@/services'
+import { getBorrower, listLoansByBorrowerId } from '@/services'
 
 interface BorrowerProfileProps {
   borrowerId: string
@@ -25,21 +25,12 @@ function getBorrowerName(borrower: Borrower) {
   return borrower.fullName.trim() || 'Unnamed borrower'
 }
 
-function belongsToBorrower(loan: LoanRecord, borrowerId: string) {
-  return loan.borrowerId === borrowerId
-}
-
 export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const [borrower, setBorrower] = useState<Borrower | null>(null)
-  const [loans, setLoans] = useState<LoanRecord[]>([])
+  const [borrowerLoans, setBorrowerLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-
-  const borrowerLoans = useMemo(
-    () => loans.filter((loan) => belongsToBorrower(loan, borrowerId)),
-    [borrowerId, loans],
-  )
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -48,11 +39,11 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
     try {
       const [borrowerRow, loanRows] = await Promise.all([
         getBorrower(borrowerId),
-        listLoanRecords(),
+        listLoansByBorrowerId(borrowerId),
       ])
 
       setBorrower(borrowerRow)
-      setLoans(loanRows)
+      setBorrowerLoans(loanRows)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load borrower profile')
     } finally {
@@ -155,8 +146,8 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                       <Link href={`/loans/${loan.id}`} className="data-card__titleLink">{loan.loanNumber}</Link>
                       <div className="muted micro-copy">Issued {formatDate(loan.createdAt)}</div>
                     </td>
-                    <td>{formatCurrency(loan.principalAmountMinor / 100, loan.loanProduct.currency)}</td>
-                    <td>{formatCurrency(loan.balances.totalOutstandingAmountMinor / 100, loan.loanProduct.currency)}</td>
+                    <td>{formatCurrency(loan.principalAmountMinor / 100)}</td>
+                    <td>{formatCurrency(loan.balances.totalOutstandingAmountMinor / 100)}</td>
                     <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>
                     <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
                   </tr>

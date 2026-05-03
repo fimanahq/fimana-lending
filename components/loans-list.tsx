@@ -16,7 +16,6 @@ const STATUS_FILTERS: Array<{ label: string; value: LoanListFilter }> = [
   { label: 'All', value: 'all' },
   { label: 'Active', value: 'active' },
   { label: 'Completed', value: 'completed' },
-  { label: 'Pending Disbursement', value: 'pending_disbursement' },
 ]
 
 function formatMinorCurrency(value: number, currency: string) {

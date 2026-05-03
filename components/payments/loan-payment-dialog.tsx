@@ -54,7 +54,6 @@ function LoanSummary({ loan }: { loan: LoanRecord }) {
   return (
     <Card
       title={`${loan.borrower.displayName} · ${loan.loanNumber}`}
-      description="Post partial, exact, catch-up, or larger-than-scheduled payments. Allocation and balances come from the backend."
       actions={<span className={getStatusClassName(loan.status)}>{loan.status}</span>}
     >
       <div className="application-summary-grid">
@@ -231,8 +230,7 @@ export function LoanPaymentDialog({
       id="loan-payment-dialog"
       open={open}
       onClose={onClose}
-      title={loan ? `Post payment · ${loan.loanNumber}` : 'Post payment'}
-      description={loan ? loan.borrower.displayName : loanLabel || 'Load a loan record to post a payment.'}
+      title='Post Payment'
       className="loan-payment-dialog"
     >
       <div className="stack">
@@ -260,8 +258,6 @@ export function LoanPaymentDialog({
             <LoanSummary loan={loan} />
 
             <Card
-              title="Post payment"
-              description="Amounts can be partial, exact, catch-up, or greater than the current scheduled amount."
               variant="flat"
               className="loan-payment-form-card"
             >
@@ -284,7 +280,6 @@ export function LoanPaymentDialog({
                   step="0.01"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  hint={`Enter in ${currency}. The backend allocates the payment across open schedule rows.`}
                 />
                 <Select
                   id="payment-method"
