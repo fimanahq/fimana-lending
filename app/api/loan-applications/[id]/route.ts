@@ -6,7 +6,7 @@ function getActionPath(status: LoanApplicationStatus) {
   return {
     approved: 'approve',
     cancelled: null,
-    draft: 'return-for-revision',
+    draft: null,
     expired: null,
     rejected: 'reject',
     submitted: 'submit',
@@ -38,11 +38,25 @@ export async function PATCH(
   const body = (await request.json().catch(() => null)) as {
     reviewerRemarks?: string
     status?: LoanApplicationStatus
+    [key: string]: unknown
   } | null
+
+  if (!body) {
+    return jsonError('Invalid request body', 400)
+  }
   const status = body?.status
 
   if (!status) {
-    return jsonError('Application status is required', 400)
+    try {
+      const updated = await authorizedBackendRequest<LoanApplication>(`/loan-applications/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      })
+      return NextResponse.json(updated)
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Unable to update application'
+      return jsonError(message, message === 'Loan application not found' ? 404 : 400)
+    }
   }
 
   const actionPath = getActionPath(status)

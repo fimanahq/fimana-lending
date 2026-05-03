@@ -7,12 +7,9 @@ import type {
   LoanApplicationCutoffPatternCode,
   LoanApplicationDraftInput,
   LoanApplicationPaymentType,
-  LoanApplication,
 } from '@/lib/types'
 import {
   createLoanApplication,
-  updateLoanApplicationDraft,
-  updateLoanApplicationStatus,
   listLendingBorrowers,
 } from '@/services'
 import {
@@ -25,7 +22,6 @@ import {
   Select,
   Textarea,
 } from '@/components/shared'
-import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 
 const initialForm = {
   borrowerId: '',
@@ -33,7 +29,7 @@ const initialForm = {
   numberOfCutoffs: '2',
   startDate: '',
   paymentType: 'semi_monthly' as LoanApplicationPaymentType,
-  cutoffPatternCode: '15_30' as LoanApplicationCutoffPatternCode,
+  cutoffPatternCode: '15_month_end' as LoanApplicationCutoffPatternCode,
   purpose: '',
 }
 
@@ -78,16 +74,13 @@ function validateForm(form: typeof initialForm) {
 export function LoanApplicationForm() {
   const router = useRouter()
   const [borrowers, setBorrowers] = useState<Borrower[]>([])
-  const [draft, setDraft] = useState<LoanApplication | null>(null)
   const [error, setError] = useState('')
   const [form, setForm] = useState(initialForm)
   const [loadingBorrowers, setLoadingBorrowers] = useState(true)
-  const [previewing, setPreviewing] = useState(false)
   const [showValidation, setShowValidation] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const validationError = useMemo(() => validateForm(form), [form])
-  const preview = draft?.computedPreviewSnapshot ?? null
 
   useEffect(() => {
     const loadBorrowers = async () => {
@@ -114,30 +107,6 @@ export function LoanApplicationForm() {
     setError('')
   }
 
-  const handleSaveDraft = async () => {
-    setShowValidation(true)
-    setError('')
-
-    if (validationError) {
-      return
-    }
-
-    setPreviewing(true)
-
-    try {
-      const payload = getDraftPayload(form)
-      const updatedDraft = draft
-        ? await updateLoanApplicationDraft(draft.id, payload)
-        : await createLoanApplication(payload)
-
-      setDraft(updatedDraft)
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to preview application')
-    } finally {
-      setPreviewing(false)
-    }
-  }
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setShowValidation(true)
@@ -147,16 +116,11 @@ export function LoanApplicationForm() {
       return
     }
 
-    if (!draft) {
-      setError('Save the application as a draft before submitting it.')
-      return
-    }
-
     setSubmitting(true)
 
     try {
-      const submitted = await updateLoanApplicationStatus(draft.id, 'submitted')
-      router.push(`/loan-applications/${submitted.id}`)
+      const created = await createLoanApplication(getDraftPayload(form))
+      router.push(`/loan-applications/${created.id}`)
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit application')
     } finally {
@@ -254,7 +218,7 @@ export function LoanApplicationForm() {
                   updateForm({ cutoffPatternCode: event.target.value as LoanApplicationCutoffPatternCode })
                 }
               >
-                <option value="15_30">15th + 30th</option>
+                <option value="15_month_end">15th + month end</option>
                 <option value="5_20">5th + 20th</option>
               </Select>
             ) : null}
@@ -268,28 +232,14 @@ export function LoanApplicationForm() {
 
             <div className="application-form-actions">
               <Button
-                type="button"
-                variant="secondary"
-                disabled={previewing || submitting || borrowers.length === 0}
-                onClick={() => void handleSaveDraft()}
+                type="submit"
+                disabled={submitting || borrowers.length === 0}
               >
-                {previewing ? 'Saving...' : draft ? 'Update draft' : 'Save draft'}
-              </Button>
-              <Button type="submit" disabled={submitting || !draft}>
-                {submitting ? 'Submitting...' : 'Submit application'}
+                {submitting ? 'Creating...' : 'Create application'}
               </Button>
             </div>
-
-            {draft ? (
-              <p className="muted micro-copy">
-                Draft {draft.applicationNumber || draft.id} saved.
-                {preview ? ' A backend preview is available.' : ' Preview could not be generated for these terms.'}
-              </p>
-            ) : null}
           </form>
         </Card>
-
-        <ApplicationBreakdownPreview preview={preview} />
       </div>
     </div>
   )

@@ -14,14 +14,14 @@ import {
   TableShell,
 } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'
-import type { Contact } from '@/lib/types'
+import type { Borrower } from '@/lib/types'
 import { listBorrowers } from '@/services'
 
-function getBorrowerName(borrower: Contact) {
-  return `${borrower.firstName} ${borrower.lastName}`.trim() || 'Unnamed borrower'
+function getBorrowerName(borrower: Borrower) {
+  return borrower.fullName.trim() || 'Unnamed borrower'
 }
 
-function matchesQuery(borrower: Contact, query: string) {
+function matchesQuery(borrower: Borrower, query: string) {
   const normalizedQuery = query.trim().toLowerCase()
 
   if (!normalizedQuery) {
@@ -30,8 +30,9 @@ function matchesQuery(borrower: Contact, query: string) {
 
   return [
     getBorrowerName(borrower),
+    borrower.borrowerNumber,
     borrower.email,
-    borrower.phone,
+    borrower.contactNumber,
     borrower.notes,
   ]
     .filter(Boolean)
@@ -40,7 +41,7 @@ function matchesQuery(borrower: Contact, query: string) {
 
 export function BorrowerList() {
   const router = useRouter()
-  const [borrowers, setBorrowers] = useState<Contact[]>([])
+  const [borrowers, setBorrowers] = useState<Borrower[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
@@ -138,27 +139,28 @@ export function BorrowerList() {
                 <tbody>
                   {filteredBorrowers.map((borrower) => (
                     <tr
-                      key={borrower._id}
+                      key={borrower.id}
                       className="table-row-link"
                       tabIndex={0}
                       role="link"
                       aria-label={`Open borrower profile for ${getBorrowerName(borrower)}`}
-                      onClick={() => openBorrower(borrower._id)}
-                      onKeyDown={(event) => handleRowKeyDown(event, borrower._id)}
+                      onClick={() => openBorrower(borrower.id)}
+                      onKeyDown={(event) => handleRowKeyDown(event, borrower.id)}
                     >
                       <td>
                         <span className="data-card__titleLink">{getBorrowerName(borrower)}</span>
+                        <div className="muted micro-copy">{borrower.borrowerNumber}</div>
                       </td>
                       <td>{borrower.email || 'Not set'}</td>
-                      <td>{borrower.phone || 'Not set'}</td>
+                      <td>{borrower.contactNumber || 'Not set'}</td>
                       <td>
-                        <Badge tone={borrower.isArchived ? 'warning' : 'success'}>
-                          {borrower.isArchived ? 'Archived' : 'Active'}
+                        <Badge tone={borrower.status === 'active' ? 'success' : 'warning'}>
+                          {borrower.status}
                         </Badge>
                       </td>
                       <td>
                         <Link
-                          href={`/borrowers/${borrower._id}`}
+                          href={`/borrowers/${borrower.id}`}
                           className="button-ghost table-action-icon"
                           aria-label={`View borrower profile for ${getBorrowerName(borrower)}`}
                           title="View profile"

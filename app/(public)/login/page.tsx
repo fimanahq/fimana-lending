@@ -5,8 +5,7 @@ import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/lib/constants'
 
-const editorialImageUrl =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDHeYrglbki121-NaocI6nGIPChuYrk9xr8DfcJEtb17hOwdNGfeuu5U2Usr6Ks0O_TwbyusZi9PUzgVItDA9Q3vzlblkjzLD6nWsOMgA9CIWBONnaDEX12cyih1-HPmPpk-p95O-mxVoFRH6sJCD5sw5rh4T3qCbTM1wz6DsVjJ3JZ1qRuRZWdbfVfw1i9_VDOZ12nwh7QvhxmsnkWjAVhg5_cZdldNoymcT9PWzHyfDSswQOXCM-nxRDtyGhdz3k3tgL8_TTP5t0'
+const editorialImageUrl = '/images/login-lending-dashboard-office.png'
 
 interface LoginPageProps {
   searchParams?: Promise<{

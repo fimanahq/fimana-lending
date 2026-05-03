@@ -1,18 +1,17 @@
 import { apiRequest } from '@/lib/client-api'
-import type { Borrower, Contact } from '@/lib/types'
+import type { Borrower } from '@/lib/types'
 
 export interface CreateBorrowerInput {
-  firstName: string
-  lastName: string
-  email: string
-  phone: string
+  fullName: string
+  email?: string
+  contactNumber?: string
   notes?: string
 }
 
 export type UpdateBorrowerInput = CreateBorrowerInput
 
 export function listBorrowers() {
-  return apiRequest<Contact[]>('/api/contacts')
+  return apiRequest<Borrower[]>('/api/borrowers')
 }
 
 export function listLendingBorrowers() {
@@ -20,18 +19,18 @@ export function listLendingBorrowers() {
 }
 
 export function getBorrower(borrowerId: string) {
-  return apiRequest<Contact>(`/api/contacts/${borrowerId}`)
+  return apiRequest<Borrower>(`/api/borrowers/${borrowerId}`)
 }
 
 export function createBorrower(input: CreateBorrowerInput) {
-  return apiRequest<Contact>('/api/contacts', {
+  return apiRequest<Borrower>('/api/borrowers', {
     method: 'POST',
     body: JSON.stringify(input),
   })
 }
 
 export function updateBorrower(borrowerId: string, input: UpdateBorrowerInput) {
-  return apiRequest<Contact>(`/api/contacts/${borrowerId}`, {
+  return apiRequest<Borrower>(`/api/borrowers/${borrowerId}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   })

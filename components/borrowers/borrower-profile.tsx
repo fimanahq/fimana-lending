@@ -9,27 +9,29 @@ import {
   ErrorState,
   LoadingState,
   PageContainer,
+  TableShell,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
-import { BorrowerLoanHistory } from '@/components/borrowers/borrower-loan-history'
-import type { Contact, Loan } from '@/lib/types'
-import { getBorrower, listLoans } from '@/services'
+import { formatCurrency, formatDate } from '@/lib/format'
+import { getStatusClassName } from '@/lib/status'
+import type { Borrower, LoanRecord } from '@/lib/types'
+import { getBorrower, listLoanRecords } from '@/services'
 
 interface BorrowerProfileProps {
   borrowerId: string
 }
 
-function getBorrowerName(borrower: Contact) {
-  return `${borrower.firstName} ${borrower.lastName}`.trim() || 'Unnamed borrower'
+function getBorrowerName(borrower: Borrower) {
+  return borrower.fullName.trim() || 'Unnamed borrower'
 }
 
-function belongsToBorrower(loan: Loan, borrowerId: string) {
-  return loan.contactId === borrowerId || loan.borrower?._id === borrowerId
+function belongsToBorrower(loan: LoanRecord, borrowerId: string) {
+  return loan.borrowerId === borrowerId
 }
 
 export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
-  const [borrower, setBorrower] = useState<Contact | null>(null)
-  const [loans, setLoans] = useState<Loan[]>([])
+  const [borrower, setBorrower] = useState<Borrower | null>(null)
+  const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -46,7 +48,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
     try {
       const [borrowerRow, loanRows] = await Promise.all([
         getBorrower(borrowerId),
-        listLoans(),
+        listLoanRecords(),
       ])
 
       setBorrower(borrowerRow)
@@ -97,16 +99,20 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         <Card
           title="Profile"
           description="Borrower contact details used by lending workflows."
-          actions={<Badge tone={borrower.isArchived ? 'warning' : 'success'}>{borrower.isArchived ? 'Archived' : 'Active'}</Badge>}
+          actions={<Badge tone={borrower.status === 'active' ? 'success' : 'warning'}>{borrower.status}</Badge>}
         >
           <dl className="borrower-detail-list">
+            <div>
+              <dt>Borrower number</dt>
+              <dd>{borrower.borrowerNumber}</dd>
+            </div>
             <div>
               <dt>Email</dt>
               <dd>{borrower.email || 'Not set'}</dd>
             </div>
             <div>
               <dt>Phone</dt>
-              <dd>{borrower.phone || 'Not set'}</dd>
+              <dd>{borrower.contactNumber || 'Not set'}</dd>
             </div>
             <div>
               <dt>Notes</dt>
@@ -127,7 +133,39 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         </Card>
       </div>
 
-      <BorrowerLoanHistory borrowerName={borrowerName} loans={borrowerLoans} />
+      <Card title="Loan history" description={`${borrowerName} lending activity.`}>
+        {borrowerLoans.length === 0 ? (
+          <p className="muted">No issued loans yet.</p>
+        ) : (
+          <TableShell label={`${borrowerName} loan history`}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Loan</th>
+                  <th>Principal</th>
+                  <th>Outstanding</th>
+                  <th>Next due</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {borrowerLoans.map((loan) => (
+                  <tr key={loan.id}>
+                    <td>
+                      <Link href={`/loans/${loan.id}`} className="data-card__titleLink">{loan.loanNumber}</Link>
+                      <div className="muted micro-copy">Issued {formatDate(loan.createdAt)}</div>
+                    </td>
+                    <td>{formatCurrency(loan.principalAmountMinor / 100, loan.loanProduct.currency)}</td>
+                    <td>{formatCurrency(loan.balances.totalOutstandingAmountMinor / 100, loan.loanProduct.currency)}</td>
+                    <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>
+                    <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        )}
+      </Card>
     </PageContainer>
   )
 }

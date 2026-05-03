@@ -13,7 +13,8 @@ export interface LoanApplicationValidationInput {
   secondDay: string
   paymentPreset: LoanSchedulePreset
   firstPaymentDate: string
-  notes: string
+  purpose: string
+  income?: number | null
 }
 
 export interface ValidatedLoanApplicationInput {
@@ -27,7 +28,9 @@ export interface ValidatedLoanApplicationInput {
   paymentDays: string[]
   paymentPreset: LoanSchedulePreset
   firstPaymentDate: string
-  notes?: string
+  purpose: string
+  income: number
+  source?: 'public'
 }
 
 export interface LoanApplicationValidationErrors {
@@ -36,6 +39,8 @@ export interface LoanApplicationValidationErrors {
   email: string
   phone: string
   principal: string
+  income: string
+  purpose: string
   gives: string
   paymentDays: string
   firstPaymentDate: string
@@ -48,7 +53,8 @@ export interface LoanApplicationValidationResult {
     lastName: string
     email: string
     phone: string
-    notes: string
+    purpose: string
+    income: number | null
     firstPaymentDate: string
     paymentDays: string[]
   }
@@ -61,6 +67,8 @@ const EMPTY_ERRORS: LoanApplicationValidationErrors = {
   email: '',
   phone: '',
   principal: '',
+  income: '',
+  purpose: '',
   gives: '',
   paymentDays: '',
   firstPaymentDate: '',
@@ -103,6 +111,8 @@ function getFirstValidationError(errors: LoanApplicationValidationErrors) {
     errors.email ||
     errors.phone ||
     errors.principal ||
+    errors.income ||
+    errors.purpose ||
     errors.gives ||
     errors.paymentDays ||
     errors.firstPaymentDate
@@ -114,7 +124,8 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
   const lastName = input.lastName.trim()
   const email = input.email.trim()
   const phone = normalizePhone(input.phone)
-  const notes = input.notes.trim()
+  const purpose = input.purpose.trim()
+  const income = input.income ?? null
   const firstPaymentDate = input.firstPaymentDate
   const errors = { ...EMPTY_ERRORS }
   let paymentDays: string[] = []
@@ -127,20 +138,30 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
     errors.lastName = 'Last name is required'
   }
 
-  if (!email) {
-    errors.email = 'Email is required'
-  } else if (!isValidEmail(email)) {
+  if (email && !isValidEmail(email)) {
     errors.email = 'Enter a valid email address'
   }
 
-  if (!phone) {
-    errors.phone = 'Phone is required'
-  } else if (getPhoneDigits(phone).length !== 10) {
+  if (phone && getPhoneDigits(phone).length !== 10) {
     errors.phone = 'Phone number must be 10 digits'
+  }
+
+  if (!email && !phone) {
+    errors.phone = 'Provide an email address or phone number'
   }
 
   if (!Number.isFinite(input.principal) || input.principal <= 0) {
     errors.principal = 'Requested amount must be greater than zero'
+  }
+
+  if (income === null) {
+    errors.income = 'Monthly income is required'
+  } else if (!Number.isFinite(income) || income < 0) {
+    errors.income = 'Monthly income must be zero or greater'
+  }
+
+  if (!purpose) {
+    errors.purpose = 'Loan purpose is required'
   }
 
   if (!Number.isInteger(input.gives) || input.gives < 1) {
@@ -185,7 +206,8 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
       lastName,
       email,
       phone,
-      notes,
+      purpose,
+      income,
       firstPaymentDate,
       paymentDays,
     },
@@ -212,6 +234,8 @@ export function validateLoanApplicationInput(input: LoanApplicationValidationInp
     paymentDays: validation.normalized.paymentDays,
     paymentPreset: input.paymentPreset,
     firstPaymentDate: validation.normalized.firstPaymentDate,
-    notes: validation.normalized.notes || undefined,
+    purpose: validation.normalized.purpose,
+    income: validation.normalized.income!,
+    source: 'public',
   }
 }

@@ -3,7 +3,8 @@ export const settingsCurrencyValues = ['PHP', 'USD', 'EUR'] as const
 export type SettingsCurrency = (typeof settingsCurrencyValues)[number]
 export type PaymentFrequency = 'monthly' | 'twice_monthly'
 export type LoanApplicationPaymentType = 'monthly' | 'semi_monthly'
-export type LoanApplicationCutoffPatternCode = '5_20' | '15_30'
+export type LoanApplicationCutoffPatternCode = '5_20' | '15_month_end'
+export type LoanApplicationSource = 'internal' | 'public'
 export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled'
 export type LoanInstallmentStatus = 'pending' | 'partial' | 'paid'
 export type LoanReminderStatus = 'pending' | 'sent' | 'cancelled'
@@ -320,7 +321,7 @@ export interface LoanApplication {
   applicationNumber?: string
   borrowerId?: string
   loanProductId?: string | null
-  borrower?: LoanApplicationBorrowerSnapshot
+  borrower?: LoanApplicationBorrower
   loanProduct?: LoanApplicationProductSnapshot | null
   loanAmountMinor?: number
   numberOfCutoffs?: number
@@ -328,6 +329,7 @@ export interface LoanApplication {
   paymentType?: LoanApplicationPaymentType
   cutoffPatternCode?: LoanApplicationCutoffPatternCode | null
   purpose?: string
+  source?: LoanApplicationSource
   computedPreviewSnapshot?: LoanApplicationComputedPreviewSnapshot | null
   firstName?: string
   lastName?: string
@@ -355,12 +357,13 @@ export interface LoanApplication {
   loanId?: string | null
 }
 
-export interface LoanApplicationBorrowerSnapshot {
+export interface LoanApplicationBorrower {
   id: string
   borrowerNumber: string
   displayName: string
   mobileNumber: string
   email: string
+  income?: number | null
 }
 
 export interface LoanApplicationProductSnapshot {

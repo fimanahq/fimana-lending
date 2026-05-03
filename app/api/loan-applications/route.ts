@@ -33,7 +33,7 @@ function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInp
     startDate: typeof body.startDate === 'string' ? body.startDate : '',
     paymentType: body.paymentType === 'monthly' ? 'monthly' : 'semi_monthly',
     cutoffPatternCode:
-      body.cutoffPatternCode === '5_20' || body.cutoffPatternCode === '15_30'
+      body.cutoffPatternCode === '5_20' || body.cutoffPatternCode === '15_month_end'
         ? body.cutoffPatternCode
         : null,
     purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
   if (isDraftApplicationPayload(body)) {
     try {
-      const application = await authorizedBackendRequest<LoanApplication>('/loan-applications/drafts', {
+      const application = await authorizedBackendRequest<LoanApplication>('/loan-applications/submitted', {
         method: 'POST',
         body: JSON.stringify(getDraftPayload(body)),
       })
@@ -72,11 +72,18 @@ export async function POST(request: NextRequest) {
   const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : ''
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
-  const notes = typeof body.notes === 'string' ? body.notes.trim() : ''
+  const purpose = typeof body.purpose === 'string'
+    ? body.purpose.trim()
+    : typeof body.notes === 'string'
+      ? body.notes.trim()
+      : ''
   const firstPaymentDate = typeof body.firstPaymentDate === 'string' ? body.firstPaymentDate : ''
   const firstDay = typeof body.firstDay === 'string' ? body.firstDay : '15'
   const secondDay = typeof body.secondDay === 'string' ? body.secondDay : 'month_end'
   const principal = Number(body.principal)
+  const income = body.income === undefined || body.income === null || body.income === ''
+    ? null
+    : Number(body.income)
   const gives = Number(body.gives)
   const paymentFrequency = body.paymentFrequency
   const paymentPreset = body.paymentPreset
@@ -91,6 +98,18 @@ export async function POST(request: NextRequest) {
 
   if (!Number.isFinite(principal) || principal <= 0) {
     return jsonError('Requested amount must be greater than zero', 400)
+  }
+
+  if (income === null) {
+    return jsonError('Monthly income is required', 400)
+  }
+
+  if (!Number.isFinite(income) || income < 0) {
+    return jsonError('Monthly income must be zero or greater', 400)
+  }
+
+  if (!purpose) {
+    return jsonError('Loan purpose is required', 400)
   }
 
   if (!Number.isInteger(gives) || gives < 1) {
@@ -118,7 +137,8 @@ export async function POST(request: NextRequest) {
       secondDay,
       paymentPreset,
       firstPaymentDate,
-      notes,
+      purpose,
+      income,
     })
 
     const response = await fetch(`${API_BASE_URL}/loan-applications`, {

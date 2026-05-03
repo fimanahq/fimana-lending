@@ -3,20 +3,19 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, ErrorBanner, Input, Textarea } from '@/components/shared'
-import type { Contact } from '@/lib/types'
+import type { Borrower } from '@/lib/types'
 import { createBorrower, updateBorrower, type CreateBorrowerInput } from '@/services'
 
 interface BorrowerFormProps {
   mode: 'create' | 'edit'
-  borrower?: Contact
-  onSaved?: (borrower: Contact) => void
+  borrower?: Borrower
+  onSaved?: (borrower: Borrower) => void
 }
 
 interface BorrowerFormState {
-  firstName: string
-  lastName: string
+  fullName: string
   email: string
-  phone: string
+  contactNumber: string
   notes: string
 }
 
@@ -24,37 +23,34 @@ type BorrowerFormErrors = Partial<Record<keyof BorrowerFormState, string>>
 
 const emptyForm: BorrowerFormState = {
   email: '',
-  firstName: '',
-  lastName: '',
+  fullName: '',
   notes: '',
-  phone: '',
+  contactNumber: '',
 }
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-function getInitialForm(borrower?: Contact): BorrowerFormState {
+function getInitialForm(borrower?: Borrower): BorrowerFormState {
   if (!borrower) {
     return emptyForm
   }
 
   return {
     email: borrower.email || '',
-    firstName: borrower.firstName,
-    lastName: borrower.lastName,
+    fullName: borrower.fullName,
     notes: borrower.notes || '',
-    phone: borrower.phone || '',
+    contactNumber: borrower.contactNumber || '',
   }
 }
 
 function trimForm(form: BorrowerFormState): CreateBorrowerInput {
   return {
     email: form.email.trim(),
-    firstName: form.firstName.trim(),
-    lastName: form.lastName.trim(),
+    fullName: form.fullName.trim(),
     notes: form.notes.trim(),
-    phone: form.phone.trim(),
+    contactNumber: form.contactNumber.trim(),
   }
 }
 
@@ -62,22 +58,16 @@ function validateForm(form: BorrowerFormState) {
   const nextErrors: BorrowerFormErrors = {}
   const trimmed = trimForm(form)
 
-  if (!trimmed.firstName) {
-    nextErrors.firstName = 'First name is required.'
+  if (!trimmed.fullName) {
+    nextErrors.fullName = 'Borrower name is required.'
   }
 
-  if (!trimmed.lastName) {
-    nextErrors.lastName = 'Last name is required.'
-  }
-
-  if (!trimmed.email) {
-    nextErrors.email = 'Email is required.'
-  } else if (!isValidEmail(trimmed.email)) {
+  if (trimmed.email && !isValidEmail(trimmed.email)) {
     nextErrors.email = 'Enter a valid email address.'
   }
 
-  if (!trimmed.phone) {
-    nextErrors.phone = 'Phone is required.'
+  if (!trimmed.email && !trimmed.contactNumber) {
+    nextErrors.contactNumber = 'Provide an email address or phone number.'
   }
 
   return nextErrors
@@ -121,7 +111,7 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
 
     try {
       const payload = trimForm(form)
-      let saved: Contact
+      let saved: Borrower
 
       if (mode === 'create') {
         saved = await createBorrower(payload)
@@ -130,13 +120,13 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
           throw new Error('Borrower record is required before saving edits.')
         }
 
-        saved = await updateBorrower(borrower._id, payload)
+        saved = await updateBorrower(borrower.id, payload)
       }
 
       onSaved?.(saved)
 
       if (mode === 'create') {
-        router.push(`/borrowers/${saved._id}`)
+        router.push(`/borrowers/${saved.id}`)
       }
     } catch (caughtError) {
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to save borrower')
@@ -151,26 +141,15 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
         <ErrorBanner title="Borrower was not saved" message={submitError} />
       ) : null}
 
-      <div className="grid two">
-        <Input
-          id={`${mode}-borrower-first-name`}
-          label="First name"
-          value={form.firstName}
-          error={errors.firstName}
-          autoComplete="given-name"
-          onChange={(event) => updateField('firstName', event.target.value)}
-          required
-        />
-        <Input
-          id={`${mode}-borrower-last-name`}
-          label="Last name"
-          value={form.lastName}
-          error={errors.lastName}
-          autoComplete="family-name"
-          onChange={(event) => updateField('lastName', event.target.value)}
-          required
-        />
-      </div>
+      <Input
+        id={`${mode}-borrower-full-name`}
+        label="Borrower name"
+        value={form.fullName}
+        error={errors.fullName}
+        autoComplete="name"
+        onChange={(event) => updateField('fullName', event.target.value)}
+        required
+      />
 
       <div className="grid two">
         <Input
@@ -182,17 +161,15 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
           inputMode="email"
           onChange={(event) => updateField('email', event.target.value)}
           placeholder="borrower@example.com"
-          required
           type="email"
         />
         <Input
           id={`${mode}-borrower-phone`}
           label="Phone"
-          value={form.phone}
-          error={errors.phone}
+          value={form.contactNumber}
+          error={errors.contactNumber}
           autoComplete="tel"
-          onChange={(event) => updateField('phone', event.target.value)}
-          required
+          onChange={(event) => updateField('contactNumber', event.target.value)}
           type="tel"
         />
       </div>

@@ -21,7 +21,8 @@ const initialForm = {
   secondDay: 'month_end',
   paymentPreset: '15_month_end' as LoanSchedulePreset,
   firstPaymentDate: '',
-  notes: '',
+  income: '',
+  purpose: '',
 }
 
 function coercePhoneValue(value: string) {
@@ -59,6 +60,11 @@ function isRequiredError(error: string) {
   return error.endsWith(REQUIRED_ERROR_SUFFIX)
 }
 
+function parseOptionalNumber(value: string) {
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? Number(trimmed) : null
+}
+
 export function LoanApplicationIntakeForm() {
   const [form, setForm] = useState(initialForm)
   const [firstPaymentDateIsAuto, setFirstPaymentDateIsAuto] = useState(true)
@@ -68,6 +74,8 @@ export function LoanApplicationIntakeForm() {
     email: false,
     phone: false,
     principal: false,
+    income: false,
+    purpose: false,
     gives: false,
     firstPaymentDate: false,
   })
@@ -83,6 +91,7 @@ export function LoanApplicationIntakeForm() {
       getLoanApplicationValidationResult({
         ...form,
         principal: Number(form.principal),
+        income: parseOptionalNumber(form.income),
         gives: Number(form.gives),
       }),
     [form],
@@ -124,6 +133,10 @@ export function LoanApplicationIntakeForm() {
         return form.phone.replace(/\s+/g, '') === '+63'
       case 'principal':
         return form.principal.trim().length === 0
+      case 'income':
+        return form.income.trim().length === 0
+      case 'purpose':
+        return form.purpose.trim().length === 0
       case 'gives':
         return form.gives.trim().length === 0
       case 'firstPaymentDate':
@@ -161,14 +174,11 @@ export function LoanApplicationIntakeForm() {
       const validated = validateLoanApplicationInput({
         ...form,
         principal: Number(form.principal),
+        income: parseOptionalNumber(form.income),
         gives: Number(form.gives),
       })
 
-      const created = await createPublicLoanApplication({
-        ...form,
-        principal: validated.principal,
-        gives: validated.gives,
-      })
+      const created = await createPublicLoanApplication(validated)
 
       setSuccess(created)
       setForm(initialForm)
@@ -179,6 +189,8 @@ export function LoanApplicationIntakeForm() {
         email: false,
         phone: false,
         principal: false,
+        income: false,
+        purpose: false,
         gives: false,
         firstPaymentDate: false,
       })
@@ -265,7 +277,7 @@ export function LoanApplicationIntakeForm() {
       </div>
 
       <div className="request-loan-form__grid">
-        <div className="request-loan-form__field request-loan-form__field--full">
+        <div className="request-loan-form__field">
           <label htmlFor="requestPrincipal">Requested amount</label>
           <input
             id="requestPrincipal"
@@ -281,6 +293,24 @@ export function LoanApplicationIntakeForm() {
           />
           {getVisibleError('principal', touchedFields.principal) ? (
             <p className="request-loan-form__error">{getVisibleError('principal', touchedFields.principal)}</p>
+          ) : null}
+        </div>
+        <div className="request-loan-form__field">
+          <label htmlFor="requestIncome">Monthly income</label>
+          <input
+            id="requestIncome"
+            type="number"
+            min="0"
+            inputMode="decimal"
+            placeholder="0.00"
+            className={showDirtyField('income', validation.errors.income) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('income', touchedFields.income))}
+            value={form.income}
+            onBlur={() => markTouched('income')}
+            onChange={(event) => setForm((current) => ({ ...current, income: event.target.value }))}
+          />
+          {getVisibleError('income', touchedFields.income) ? (
+            <p className="request-loan-form__error">{getVisibleError('income', touchedFields.income)}</p>
           ) : null}
         </div>
       </div>
@@ -344,13 +374,19 @@ export function LoanApplicationIntakeForm() {
       </div>
 
       <div className="request-loan-form__field">
-        <label htmlFor="requestNotes">Loan purpose</label>
+        <label htmlFor="requestPurpose">Loan purpose</label>
         <textarea
-          id="requestNotes"
-          value={form.notes}
-          onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
+          id="requestPurpose"
+          value={form.purpose}
+          aria-invalid={Boolean(getVisibleError('purpose', touchedFields.purpose))}
+          className={showDirtyField('purpose', validation.errors.purpose) ? 'request-loan-form__input--dirty' : ''}
+          onBlur={() => markTouched('purpose')}
+          onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))}
           placeholder="Describe the intended use of the loan and any relevant repayment details."
         />
+        {getVisibleError('purpose', touchedFields.purpose) ? (
+          <p className="request-loan-form__error">{getVisibleError('purpose', touchedFields.purpose)}</p>
+        ) : null}
       </div>
 
       {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
