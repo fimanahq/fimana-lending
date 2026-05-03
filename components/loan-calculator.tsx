@@ -141,7 +141,6 @@ export function LoanCalculator() {
   return (
     <div className="stack">
       <section className="card panel">
-        <div className="eyebrow">Calculator</div>
         <h1 className="section-title title-offset">Loan schedule calculator</h1>
         <p className="muted">
           Enter the amount, term, payment dates, and interest setup to generate the cutoff table instantly.

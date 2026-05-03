@@ -4,7 +4,6 @@ export default function RulesPage() {
   return (
     <div className="stack">
       <section className="card panel stack">
-        <div className="eyebrow">Policy document</div>
         <h1 className="display-title">
           Loan business rules
         </h1>

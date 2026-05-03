@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Button, DataTable, EmptyState, ErrorState, LoadingState, SectionHeader, TableShell } from '@/components/shared'
+import { Button, DataTable, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
+import { PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
+import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { LoanRecord, LoanStatus } from '@/lib/types'
@@ -35,6 +37,7 @@ export function LoansList() {
   const [activeFilter, setActiveFilter] = useState<LoanListFilter>('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [paymentLoanId, setPaymentLoanId] = useState('')
 
   const loadLoans = async () => {
     setLoading(true)
@@ -63,14 +66,13 @@ export function LoansList() {
     return sorted.filter((loan) => loan.status === activeFilter)
   }, [activeFilter, loans])
 
+  const selectedPaymentLoan = loans.find((loan) => loan.id === paymentLoanId) || null
+
   return (
     <div className="stack">
-      <SectionHeader
-        eyebrow="Loans"
-        title="Official loan records"
-        description="These are the issued loans created from approved applications. This page is read-only for the MVP flow."
-        actions={<Link href="/loan-applications" className="button-secondary">View applications</Link>}
-      />
+      <div className="inline-actions">
+        <Link href="/loan-applications" className="button-secondary">View applications</Link>
+      </div>
 
       <div className="application-status-tabs" aria-label="Loan status filters">
         {STATUS_FILTERS.map((status) => (
@@ -116,7 +118,7 @@ export function LoansList() {
                 <th>Outstanding</th>
                 <th>Next due</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -142,9 +144,25 @@ export function LoansList() {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/loans/${loan.id}`} className="button-ghost">
-                        Details
-                      </Link>
+                      <div className="loan-schedule__actions">
+                        <Link
+                          href={`/loans/${loan.id}`}
+                          className="button-ghost table-action-icon loans-list__iconAction"
+                          aria-label={`View details for ${loan.loanNumber}`}
+                          title="View details"
+                        >
+                          <ViewIcon />
+                        </Link>
+                        <button
+                          type="button"
+                          className="button-ghost table-action-icon loans-list__iconAction"
+                          aria-label={`Post payment for ${loan.loanNumber}`}
+                          title="Post payment"
+                          onClick={() => setPaymentLoanId(loan.id)}
+                        >
+                          <PaymentIcon />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -157,6 +175,14 @@ export function LoansList() {
           </DataTable>
         </TableShell>
       ) : null}
+
+      <LoanPaymentDialog
+        open={Boolean(paymentLoanId)}
+        loanId={paymentLoanId}
+        loanLabel={selectedPaymentLoan ? `${selectedPaymentLoan.borrower.displayName} · ${selectedPaymentLoan.loanNumber}` : undefined}
+        onClose={() => setPaymentLoanId('')}
+        onPaymentPosted={loadLoans}
+      />
     </div>
   )
 }

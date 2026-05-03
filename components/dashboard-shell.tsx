@@ -28,23 +28,18 @@ interface NavItem {
   aliases?: string[]
 }
 
-interface BreadcrumbItem {
-  href?: string
-  label: string
-}
-
 const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'overview' },
   { href: '/borrowers', label: 'Borrowers', icon: 'borrowers' },
   { href: '/loan-applications', label: 'Loan Applications', icon: 'applications' },
   { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
-  { href: '/payments', label: 'Payments', icon: 'payments' },
   { href: '/collections', label: 'Collections', icon: 'collections' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
 const pathLabels: Record<string, string> = {
+  'active-loans': 'Loans',
   borrowers: 'Borrowers',
   calculator: 'Calculator',
   collections: 'Collections',
@@ -53,6 +48,7 @@ const pathLabels: Record<string, string> = {
   loans: 'Loans',
   new: 'New Application',
   payments: 'Payments',
+  rules: 'Rules',
   schedule: 'Schedule',
   settings: 'Settings',
 }
@@ -178,15 +174,7 @@ function getAccountInitials(firstName?: string, lastName?: string, email?: strin
   return email?.trim()[0]?.toUpperCase() || ''
 }
 
-function formatDynamicSegment(segment: string, previousSegment?: string) {
-  if (/^[a-f\d]{24}$/i.test(segment) || segment.length > 12) {
-    if (previousSegment === 'borrowers') {
-      return 'Borrower Profile'
-    }
-
-    return 'Loan Detail'
-  }
-
+function formatPathSegment(segment: string) {
   return segment
     .split('-')
     .filter(Boolean)
@@ -194,37 +182,55 @@ function formatDynamicSegment(segment: string, previousSegment?: string) {
     .join(' ')
 }
 
-function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
-  const segments = pathname.split('/').filter(Boolean)
-
-  if (segments.length === 0) {
-    return [{ label: 'Dashboard', href: '/dashboard' }]
-  }
-
-  return segments.map((segment, index) => {
-    const href = `/${segments.slice(0, index + 1).join('/')}`
-    const isLast = index === segments.length - 1
-    const previousSegment = segments[index - 1]
-    const label = previousSegment === 'borrowers' && segment === 'new'
-      ? 'New Borrower'
-      : pathLabels[segment] || formatDynamicSegment(segment, previousSegment)
-
-    return {
-      href: isLast ? undefined : href,
-      label,
-    }
-  })
+function isDynamicSegment(segment: string) {
+  return /^[a-f\d]{24}$/i.test(segment) || segment.length > 12
 }
 
 function getPageTitle(pathname: string) {
-  const activeItem = navItems.find((item) => isRouteActive(pathname, item))
-
-  if (activeItem) {
-    return activeItem.label
+  if (pathname === '/') {
+    return 'Dashboard'
   }
 
-  const breadcrumbs = getBreadcrumbs(pathname)
-  return breadcrumbs[breadcrumbs.length - 1]?.label || 'Dashboard'
+  const exactMatch = navItems.find((item) => item.href === pathname || item.aliases?.includes(pathname))
+  if (exactMatch) {
+    return exactMatch.label
+  }
+
+  const segments = pathname.split('/').filter(Boolean)
+  const lastSegment = segments[segments.length - 1]
+  const previousSegment = segments[segments.length - 2]
+
+  if (!lastSegment) {
+    return 'Dashboard'
+  }
+
+  if (lastSegment === 'new' && previousSegment === 'borrowers') {
+    return 'New Borrower'
+  }
+
+  if (lastSegment === 'new' && (previousSegment === 'loan-applications' || previousSegment === 'loans')) {
+    return 'New Application'
+  }
+
+  if (lastSegment === 'schedule') {
+    return 'Schedule'
+  }
+
+  if (isDynamicSegment(lastSegment)) {
+    if (previousSegment === 'borrowers') {
+      return 'Borrower Profile'
+    }
+
+    if (previousSegment === 'loan-applications') {
+      return 'Application Detail'
+    }
+
+    if (previousSegment === 'loans') {
+      return 'Loan Detail'
+    }
+  }
+
+  return pathLabels[lastSegment] || formatPathSegment(lastSegment)
 }
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -265,7 +271,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Team member'
   const initials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
-  const breadcrumbs = getBreadcrumbs(pathname)
   const pageTitle = getPageTitle(pathname)
 
   return (
@@ -330,22 +335,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </button>
 
             <div className="dashboard-shell__headingCopy">
-              <nav className="dashboard-shell__breadcrumbs" aria-label="Breadcrumb">
-                <ol>
-                  {breadcrumbs.map((item, index) => {
-                    const isLast = index === breadcrumbs.length - 1
-
-                    return (
-                      <li
-                        key={`${item.label}-${index}`}
-                        className={classNames(isLast && 'dashboard-shell__breadcrumbItem--current')}
-                      >
-                        {item.href ? <Link href={item.href}>{item.label}</Link> : <span>{item.label}</span>}
-                      </li>
-                    )
-                  })}
-                </ol>
-              </nav>
+              <h1 className="dashboard-shell__pageTitle">{pageTitle}</h1>
             </div>
           </div>
 

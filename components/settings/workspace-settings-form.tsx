@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SectionHeader, Select } from '@/components/shared'
+import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, Select } from '@/components/shared'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types'
 import { getSettings, updateSettings } from '@/services'
 
@@ -112,11 +112,6 @@ export function WorkspaceSettingsForm() {
   if (loading) {
     return (
       <PageContainer className="stack">
-        <SectionHeader
-          eyebrow="Settings"
-          title="Workspace settings"
-          description="Set the baseline capital and reporting currency used by the lending dashboard."
-        />
         <LoadingState
           title="Loading settings"
           description="Fetching your workspace preferences and current capital baseline."
@@ -128,11 +123,6 @@ export function WorkspaceSettingsForm() {
   if (loadError || !form || !settings) {
     return (
       <PageContainer className="stack">
-        <SectionHeader
-          eyebrow="Settings"
-          title="Workspace settings"
-          description="Set the baseline capital and reporting currency used by the lending dashboard."
-        />
         <ErrorState
           title="Unable to load settings"
           description={loadError || 'The settings record is not available right now.'}
@@ -180,12 +170,6 @@ export function WorkspaceSettingsForm() {
 
   return (
     <PageContainer className="stack">
-      <SectionHeader
-        eyebrow="Settings"
-        title="Workspace settings"
-        description="Set the baseline capital and reporting currency used by the lending dashboard."
-      />
-
       <div className="grid two">
         <CardWrapper title="Capital baseline">
           <form className="stack" onSubmit={handleSubmit} noValidate>

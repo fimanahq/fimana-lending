@@ -1,26 +1,22 @@
 import { CardWrapper, EmptyState, PageContainer, SectionHeader } from '@/components/shared'
 
 interface ModuleScaffoldPageProps {
-  description: string
   emptyDescription: string
   emptyTitle: string
-  eyebrow: string
   nextSteps: string[]
   title: string
 }
 
 export function ModuleScaffoldPage({
-  description,
   emptyDescription,
   emptyTitle,
-  eyebrow,
   nextSteps,
   title,
 }: ModuleScaffoldPageProps) {
   return (
     <PageContainer>
       <CardWrapper>
-        <SectionHeader eyebrow={eyebrow} title={title} description={description} />
+        <SectionHeader title={title} />
       </CardWrapper>
 
       <CardWrapper title="Foundation">

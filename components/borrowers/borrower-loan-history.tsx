@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { Card, EmptyState, TableShell } from '@/components/shared'
+import { OpenLoanIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Loan } from '@/lib/types'
@@ -66,7 +67,7 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
                 <th>Total repayment</th>
                 <th>Next due</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -85,7 +86,14 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
                     <td>{nextDueDate ? formatDate(nextDueDate) : 'Complete'}</td>
                     <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
                     <td>
-                      <Link href={`/loans/${loan._id}`} className="button-ghost">Open loan</Link>
+                      <Link
+                        href={`/loans/${loan._id}`}
+                        className="button-ghost table-action-icon"
+                        aria-label={`Open loan ${loan._id.slice(-6)}`}
+                        title="Open loan"
+                      >
+                        <OpenLoanIcon />
+                      </Link>
                     </td>
                   </tr>
                 )

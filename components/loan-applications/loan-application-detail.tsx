@@ -7,7 +7,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { LoanApplication, LoanApplicationStatus } from '@/lib/types'
 import { getLoanApplication, updateLoanApplicationStatus } from '@/services'
-import { Button, Card, EmptyState, ErrorState, LoadingState, SectionHeader, Textarea } from '@/components/shared'
+import { Button, Card, EmptyState, ErrorState, LoadingState, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 
 interface LoanApplicationDetailProps {
@@ -120,17 +120,10 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
   return (
     <div className="stack">
-      <SectionHeader
-        eyebrow="Application Details"
-        title={getApplicantName(application)}
-        description="Review the application-stage record and backend preview snapshot before taking approval action."
-        actions={
-          <>
-            {application.loanId ? <Link href={`/loans/${application.loanId}`} className="button">Open loan</Link> : null}
-            <Link href="/loan-applications" className="button-secondary">Back</Link>
-          </>
-        }
-      />
+      <div className="inline-actions">
+        {application.loanId ? <Link href={`/loans/${application.loanId}`} className="button">Open loan</Link> : null}
+        <Link href="/loan-applications" className="button-secondary">Back</Link>
+      </div>
 
       {message ? <div className="notice">{message}</div> : null}
       {error ? <ErrorState title="Unable to update application" description={error} /> : null}

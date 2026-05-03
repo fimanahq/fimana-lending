@@ -12,8 +12,6 @@ interface SectionHeaderProps {
   title: string
   actions?: ReactNode
   className?: string
-  description?: string
-  eyebrow?: string
   level?: HeadingLevel
 }
 
@@ -43,8 +41,6 @@ export function PageContainer({ children, className }: PageContainerProps) {
 export function SectionHeader({
   actions,
   className,
-  description,
-  eyebrow,
   level = 'h1',
   title,
 }: SectionHeaderProps) {
@@ -53,9 +49,7 @@ export function SectionHeader({
   return (
     <div className={classNames('section-header', className)}>
       <div className="section-header__copy">
-        {eyebrow ? <div className="eyebrow">{eyebrow}</div> : null}
         <Heading className="section-title section-header__title">{title}</Heading>
-        {description ? <p className="muted section-header__description">{description}</p> : null}
       </div>
       {actions ? <div className="section-header__actions">{actions}</div> : null}
     </div>

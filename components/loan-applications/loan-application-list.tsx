@@ -6,7 +6,8 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
 import { listLoanApplications } from '@/services'
-import { Button, DataTable, EmptyState, ErrorState, LoadingState, SectionHeader, TableShell } from '@/components/shared'
+import { Button, DataTable, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
+import { ViewIcon } from '@/components/shared/table-icons'
 
 type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
 
@@ -71,12 +72,9 @@ export function LoanApplicationList() {
 
   return (
     <div className="stack">
-      <SectionHeader
-        eyebrow="Loan Applications"
-        title="Application queue"
-        description="Track applications before they become issued loans. Approval keeps the application separate from loan creation."
-        actions={<Link href="/loan-applications/new" className="button">New application</Link>}
-      />
+      <div className="inline-actions">
+        <Link href="/loan-applications/new" className="button">New application</Link>
+      </div>
 
       <div className="application-status-tabs" aria-label="Application status filters">
         {STATUS_FILTERS.map((status) => (
@@ -122,7 +120,7 @@ export function LoanApplicationList() {
                 <th>First Payment</th>
                 <th>Status</th>
                 <th>Created</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -147,8 +145,13 @@ export function LoanApplicationList() {
                     </td>
                     <td>{formatDate(application.createdAt)}</td>
                     <td>
-                      <Link href={`/loan-applications/${application.id}`} className="button-ghost">
-                        Details
+                      <Link
+                        href={`/loan-applications/${application.id}`}
+                        className="button-ghost table-action-icon"
+                        aria-label={`View application details for ${getApplicantName(application)}`}
+                        title="View details"
+                      >
+                        <ViewIcon />
                       </Link>
                     </td>
                   </tr>

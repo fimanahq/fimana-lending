@@ -1,5 +1,5 @@
-import { PaymentsModulePage } from '@/modules/payments'
+import { redirect } from 'next/navigation'
 
 export default function PaymentsPage() {
-  return <PaymentsModulePage />
+  redirect('/loans')
 }

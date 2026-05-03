@@ -9,7 +9,6 @@ import {
   ErrorState,
   LoadingState,
   PageContainer,
-  SectionHeader,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
 import { BorrowerLoanHistory } from '@/components/borrowers/borrower-loan-history'
@@ -87,17 +86,10 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
 
   return (
     <PageContainer>
-      <SectionHeader
-        eyebrow="Borrower profile"
-        title={borrowerName}
-        description="Contact record, account notes, and lending history for this borrower."
-        actions={(
-          <>
-            <Link href="/borrowers" className="button-secondary">Back to borrowers</Link>
-            <Link href="/loan-applications/new" className="button">New application</Link>
-          </>
-        )}
-      />
+      <div className="inline-actions">
+        <Link href="/borrowers" className="button-secondary">Back to borrowers</Link>
+        <Link href="/loan-applications/new" className="button">New application</Link>
+      </div>
 
       {message ? <div className="notice">{message}</div> : null}
 
@@ -135,11 +127,6 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         </Card>
       </div>
 
-      <SectionHeader
-        title="Loan history"
-        description="Summary uses values returned by the lending service."
-        level="h2"
-      />
       <BorrowerLoanHistory borrowerName={borrowerName} loans={borrowerLoans} />
     </PageContainer>
   )

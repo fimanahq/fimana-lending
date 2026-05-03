@@ -165,8 +165,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
       <section className="dashboard-overview__executive">
         <div className="dashboard-overview__executiveHeader">
           <div>
-            <div className="eyebrow">Executive summary</div>
-            <h1 className="section-title title-offset">Capital position and lending exposure</h1>
             <p className="muted">
               Track starting capital, collected interest, cash on hand, and principal currently deployed to borrowers.
             </p>
@@ -309,7 +307,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
       <section className="dashboard-overview__operator">
         <div className="dashboard-overview__operatorHeader">
           <div>
-            <div className="eyebrow">Operator cockpit</div>
             <h2 className="section-title title-offset">Day-to-day actions and due-soon work</h2>
             <p className="muted">
               Keep origination moving, review recent intake, and stay ahead of reminders that need attention.

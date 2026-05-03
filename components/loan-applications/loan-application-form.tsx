@@ -22,7 +22,6 @@ import {
   ErrorState,
   Input,
   LoadingState,
-  SectionHeader,
   Select,
   Textarea,
 } from '@/components/shared'
@@ -167,12 +166,6 @@ export function LoanApplicationForm() {
 
   return (
     <div className="stack">
-      <SectionHeader
-        eyebrow="New Application"
-        title="Create loan application"
-        description="Create a draft application record, then submit it for review."
-      />
-
       {error ? <ErrorState title="Application not ready" description={error} /> : null}
       {showValidation && validationError ? (
         <ErrorState title="Missing application details" description={validationError} />

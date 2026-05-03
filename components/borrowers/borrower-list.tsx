@@ -11,9 +11,9 @@ import {
   Input,
   LoadingState,
   PageContainer,
-  SectionHeader,
   TableShell,
 } from '@/components/shared'
+import { ViewIcon } from '@/components/shared/table-icons'
 import type { Contact } from '@/lib/types'
 import { listBorrowers } from '@/services'
 
@@ -80,13 +80,6 @@ export function BorrowerList() {
 
   return (
     <PageContainer>
-      <SectionHeader
-        eyebrow="Borrowers"
-        title="Borrower profiles"
-        description="Manage borrower records, contact details, notes, and lending history."
-        actions={<Link href="/borrowers/new" className="button">Add borrower</Link>}
-      />
-
       <div className="card panel borrower-list__toolbar">
         <Input
           id="borrower-search"
@@ -95,6 +88,9 @@ export function BorrowerList() {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Name, email, phone, or notes"
         />
+        <div className="inline-actions borrower-list__toolbarActions">
+          <Link href="/borrowers/new" className="button">Add borrower</Link>
+        </div>
       </div>
 
       {loading ? (
@@ -137,7 +133,7 @@ export function BorrowerList() {
                     <th>Phone</th>
                     <th>Notes</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,10 +161,12 @@ export function BorrowerList() {
                       <td>
                         <Link
                           href={`/borrowers/${borrower._id}`}
-                          className="button-ghost"
+                          className="button-ghost table-action-icon"
+                          aria-label={`View borrower profile for ${getBorrowerName(borrower)}`}
+                          title="View profile"
                           onClick={(event) => event.stopPropagation()}
                         >
-                          View
+                          <ViewIcon />
                         </Link>
                       </td>
                     </tr>

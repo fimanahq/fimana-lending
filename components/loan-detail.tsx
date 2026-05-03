@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Button, Card, EmptyState, ErrorState, LoadingState, SectionHeader, TableShell } from '@/components/shared'
+import { Button, Card, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { LoanRecord } from '@/lib/types'
@@ -90,17 +90,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
   return (
     <div className="stack">
-      <SectionHeader
-        eyebrow="Loan Detail"
-        title={loan.borrower.displayName}
-        description="Loan record created and disbursed automatically after approval."
-        actions={(
-          <>
-            <Link href={`/loan-applications/${loan.loanApplicationId}`} className="button-secondary">View application</Link>
-            <Link href="/loan-applications" className="button-ghost">Back to applications</Link>
-          </>
-        )}
-      />
+      <div className="inline-actions">
+        <Link href={`/loan-applications/${loan.loanApplicationId}`} className="button-secondary">View application</Link>
+        <Link href="/loan-applications" className="button-ghost">Back to applications</Link>
+      </div>
 
       {error ? (
         <ErrorState
