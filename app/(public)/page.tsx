@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
 
-const HERO_IMAGE_URL = 'https://www.figma.com/api/mcp/asset/bd91ea1a-8716-481b-80a0-0bcb19290174'
+const HERO_IMAGE_URL = '/images/lending-home-office.png'
 
 export default function LandingPage() {
   return (
