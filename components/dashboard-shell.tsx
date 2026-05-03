@@ -18,6 +18,8 @@ type IconName =
   | 'settings'
   | 'bell'
   | 'menu'
+  | 'panel-left-close'
+  | 'panel-left-open'
   | 'plus'
   | 'x'
 
@@ -117,6 +119,20 @@ function DashboardIcon({ name }: { name: IconName }) {
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )
+    case 'panel-left-close':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9 3v18M16 15l-3-3 3-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'panel-left-open':
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M9 3v18M13 9l3 3-3 3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     case 'settings':
@@ -238,6 +254,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { loading, user, setUser } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isNavCollapsed, setIsNavCollapsed] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
@@ -274,7 +291,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pageTitle = getPageTitle(pathname)
 
   return (
-    <div className={classNames('dashboard-shell', isSidebarOpen && 'dashboard-shell--sidebar-open')}>
+    <div
+      className={classNames(
+        'dashboard-shell',
+        isSidebarOpen && 'dashboard-shell--sidebar-open',
+        isNavCollapsed && 'dashboard-shell--nav-collapsed',
+      )}
+    >
       <div
         className="dashboard-shell__backdrop"
         role="presentation"
@@ -283,18 +306,33 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <aside className="dashboard-shell__sidebar" aria-label="Application navigation">
         <div className="dashboard-shell__sidebarHeader">
-          <Link href="/dashboard" className="dashboard-shell__sidebarBrand" aria-label="FiMana dashboard home">
-            <AppLogo />
-          </Link>
+          <div className="dashboard-shell__sidebarBrandGroup">
+            <Link href="/dashboard" className="dashboard-shell__sidebarBrand" aria-label="FiMana Lending dashboard home">
+              <AppLogo suffix="Lending" />
+            </Link>
 
-          <button
-            className="dashboard-shell__sidebarClose"
-            type="button"
-            aria-label="Close navigation"
-            onClick={() => setIsSidebarOpen(false)}
-          >
-            <DashboardIcon name="x" />
-          </button>
+            <button
+              className="dashboard-shell__sidebarToggle"
+              type="button"
+              aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+              aria-pressed={!isNavCollapsed}
+              title={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+              onClick={() => setIsNavCollapsed((current) => !current)}
+            >
+              <DashboardIcon name={isNavCollapsed ? 'panel-left-open' : 'panel-left-close'} />
+            </button>
+          </div>
+
+          <div className="dashboard-shell__sidebarControls">
+            <button
+              className="dashboard-shell__sidebarClose"
+              type="button"
+              aria-label="Close navigation"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <DashboardIcon name="x" />
+            </button>
+          </div>
         </div>
 
         <nav className="dashboard-shell__nav" aria-label="Primary">
@@ -304,21 +342,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               href={item.href}
               className={classNames('dashboard-shell__navLink', isRouteActive(pathname, item) && 'is-active')}
               aria-current={isRouteActive(pathname, item) ? 'page' : undefined}
+              title={item.label}
             >
               <span className="dashboard-shell__navIcon">
                 <DashboardIcon name={item.icon} />
               </span>
-              <span>{item.label}</span>
+              <span className="dashboard-shell__navLabel">{item.label}</span>
             </Link>
           ))}
         </nav>
-
-        <Link href="/loan-applications/new" className="dashboard-shell__sidebarCta">
-          <span className="dashboard-shell__ctaIcon">
-            <DashboardIcon name="plus" />
-          </span>
-          <span>New Application</span>
-        </Link>
       </aside>
 
       <div className="dashboard-shell__workspace">
