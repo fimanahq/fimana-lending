@@ -131,7 +131,6 @@ export function BorrowerList() {
                     <th>Borrower</th>
                     <th>Email</th>
                     <th>Phone</th>
-                    <th>Notes</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -152,7 +151,6 @@ export function BorrowerList() {
                       </td>
                       <td>{borrower.email || 'Not set'}</td>
                       <td>{borrower.phone || 'Not set'}</td>
-                      <td className="borrower-list__notes">{borrower.notes || 'No notes'}</td>
                       <td>
                         <Badge tone={borrower.isArchived ? 'warning' : 'success'}>
                           {borrower.isArchived ? 'Archived' : 'Active'}
