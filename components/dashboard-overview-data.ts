@@ -1,28 +1,22 @@
-import type { LoanApplication, LoanRecord, SettingsCurrency, UpcomingLoanReminder } from '@/lib/types'
+import type {
+  DashboardCutoffReceivable,
+  LoanApplication,
+  LoanDashboardSummary,
+  SettingsCurrency,
+  UpcomingLoanReminder,
+} from '@/lib/types'
 
-export type DashboardDataSource = 'loans' | 'applications' | 'reminders' | 'settings'
+export type DashboardDataSource = 'summary' | 'applications' | 'reminders'
 
-export interface DashboardSummaryMetrics {
-  currency: SettingsCurrency
-  startingCapital: number
-  profitCollected: number
-  capitalBasis: number
-  availableCash: number
-  capitalOutstanding: number
-  recoveredPrincipal: number
-  totalProfitBooked: number
-  remainingProjectedInterest: number
-  totalProjectedValue: number
-  totalIssuedPrincipal: number
-  activeLoans: number
-  pendingReviews: number
+export interface DashboardSummaryMetrics extends LoanDashboardSummary {
+  pendingReviewCount: number
 }
 
 export interface DashboardProgressSegment {
-  key: 'available_cash' | 'principal_on_borrowers' | 'recovered_principal' | 'remaining_projected_interest'
+  key: string
   label: string
   description: string
-  value: number
+  valueMinor: number
   percentage: number
   tone: 'green' | 'amber' | 'olive'
 }
@@ -30,28 +24,24 @@ export interface DashboardProgressSegment {
 export interface DashboardOverviewData {
   summary: DashboardSummaryMetrics
   capitalPositionSegments: DashboardProgressSegment[]
-  repaymentProgressSegments: DashboardProgressSegment[]
+  interestOutlookSegments: DashboardProgressSegment[]
   recentApplications: LoanApplication[]
   dueSoon: UpcomingLoanReminder[]
+  receivablePreview: DashboardCutoffReceivable[]
   partialFailureNotice: string | null
 }
 
 interface BuildDashboardOverviewDataInput {
-  loans: LoanRecord[]
+  summary?: LoanDashboardSummary | null
   applications: LoanApplication[]
   reminders: UpcomingLoanReminder[]
-  settings?: {
-    defaultCurrency?: SettingsCurrency
-    startingCapital?: number
-  } | null
   failedSources?: DashboardDataSource[]
 }
 
 const FAILED_SOURCE_LABELS: Record<DashboardDataSource, string> = {
-  loans: 'loans',
+  summary: 'dashboard summary',
   applications: 'loan applications',
   reminders: 'upcoming reminders',
-  settings: 'workspace settings',
 }
 
 function formatFailedSources(failedSources: DashboardDataSource[]) {
@@ -67,121 +57,95 @@ function buildPartialFailureNotice(failedSources: DashboardDataSource[]) {
   return `Showing available dashboard data. Unable to load ${formatFailedSources(failedSources)}.`
 }
 
-function getProfitCollected(loan: LoanRecord) {
-  return loan.balances.interestPaidAmountMinor / 100
+function getPendingReviewCount(applications: LoanApplication[]) {
+  return applications.filter((application) =>
+    application.status === 'pending' || application.status === 'submitted' || application.status === 'under_review',
+  ).length
 }
 
-function getTotalProfitBooked(loan: LoanRecord) {
-  return (loan.balances.interestPaidAmountMinor + loan.balances.interestOutstandingAmountMinor) / 100
-}
-
-function getCapitalOutstanding(loan: LoanRecord) {
-  return loan.balances.principalOutstandingAmountMinor / 100
-}
-
-function getTotalIssuedPrincipal(loan: LoanRecord) {
-  return loan.principalAmountMinor / 100
-}
-
-function getRecoveredPrincipal(loan: LoanRecord) {
-  return loan.balances.principalPaidAmountMinor / 100
+function getDefaultSummary(): DashboardSummaryMetrics {
+  return {
+    currency: 'PHP' as SettingsCurrency,
+    startingCapitalMinor: 0,
+    collectedInterestMinor: 0,
+    currentCapitalBasisMinor: 0,
+    cashOnHandMinor: 0,
+    outstandingPrincipalMinor: 0,
+    moneyWithBorrowersMinor: 0,
+    nextCutoffReceivableMinor: 0,
+    overdueReceivableMinor: 0,
+    overduePrincipalMinor: 0,
+    overdueInterestMinor: 0,
+    overdueLoanCount: 0,
+    overdueBorrowerCount: 0,
+    oldestUnpaidDueDate: null,
+    remainingProjectedInterestMinor: 0,
+    totalProjectedInterestMinor: 0,
+    activeLoanCount: 0,
+    currentCutoffReceivable: null,
+    receivableByCutoff: [],
+    pendingReviewCount: 0,
+  }
 }
 
 export function buildDashboardOverviewData({
-  loans,
+  summary,
   applications,
   reminders,
-  settings,
   failedSources = [],
 }: BuildDashboardOverviewDataInput): DashboardOverviewData {
-  const nonCancelledLoans = loans.filter((loan) => loan.status !== 'cancelled')
-  const activeLoans = nonCancelledLoans.filter((loan) => loan.status === 'active')
+  const mergedSummary: DashboardSummaryMetrics = {
+    ...(summary ?? getDefaultSummary()),
+    pendingReviewCount: getPendingReviewCount(applications),
+  }
 
-  const profitCollected = loans.reduce((sum, loan) => sum + getProfitCollected(loan), 0)
-
-  const totalProfitBooked = nonCancelledLoans.reduce((sum, loan) => sum + getTotalProfitBooked(loan), 0)
-
-  const capitalOutstanding = activeLoans.reduce((sum, loan) => sum + getCapitalOutstanding(loan), 0)
-
-  const totalIssuedPrincipal = nonCancelledLoans.reduce((sum, loan) => sum + getTotalIssuedPrincipal(loan), 0)
-  const currency = settings?.defaultCurrency || 'PHP'
-  const startingCapital = Math.max(0, settings?.startingCapital || 0)
-  const recoveredPrincipal = nonCancelledLoans.reduce((sum, loan) => sum + getRecoveredPrincipal(loan), 0)
-  const remainingProjectedInterest = Math.max(0, totalProfitBooked - profitCollected)
-  const totalProjectedValue = recoveredPrincipal + capitalOutstanding + remainingProjectedInterest
-  const capitalBasis = startingCapital + profitCollected
-  const availableCash = capitalBasis - capitalOutstanding
-  const capitalPositionTotal = capitalOutstanding + Math.max(0, availableCash)
-  const pendingReviews = applications.filter((application) =>
-    application.status === 'pending' || application.status === 'submitted' || application.status === 'under_review',
-  ).length
-
+  const capitalPositionBaseMinor = Math.max(0, mergedSummary.currentCapitalBasisMinor)
   const capitalPositionSegments: DashboardProgressSegment[] = [
     {
-      key: 'available_cash',
-      label: 'Cash on Hand',
-      description: 'Starting capital plus collected interest, less principal currently out with borrowers.',
-      value: Math.max(0, availableCash),
-      percentage: capitalPositionTotal > 0 ? (Math.max(0, availableCash) / capitalPositionTotal) * 100 : 0,
+      key: 'cash_on_hand',
+      label: 'Cash on hand',
+      description: 'Available to lend again from your current capital basis.',
+      valueMinor: Math.max(0, mergedSummary.cashOnHandMinor),
+      percentage: capitalPositionBaseMinor > 0 ? (Math.max(0, mergedSummary.cashOnHandMinor) / capitalPositionBaseMinor) * 100 : 0,
       tone: 'green',
     },
     {
-      key: 'principal_on_borrowers',
-      label: 'Money with Borrowers',
-      description: 'Principal still outstanding across active loans, excluding projected and uncollected interest.',
-      value: capitalOutstanding,
-      percentage: capitalPositionTotal > 0 ? (capitalOutstanding / capitalPositionTotal) * 100 : 0,
+      key: 'money_with_borrowers',
+      label: 'Money with borrowers',
+      description: 'Principal still deployed across active loans.',
+      valueMinor: mergedSummary.moneyWithBorrowersMinor,
+      percentage: capitalPositionBaseMinor > 0 ? (mergedSummary.moneyWithBorrowersMinor / capitalPositionBaseMinor) * 100 : 0,
       tone: 'amber',
     },
   ]
 
-  const repaymentProgressSegments: DashboardProgressSegment[] = [
+  const interestOutlookBaseMinor = Math.max(0, mergedSummary.totalProjectedInterestMinor)
+  const interestOutlookSegments: DashboardProgressSegment[] = [
     {
-      key: 'recovered_principal',
-      label: 'Recovered Principal',
-      description: 'Principal already returned through paid installments and available for redeployment.',
-      value: recoveredPrincipal,
-      percentage: totalProjectedValue > 0 ? (recoveredPrincipal / totalProjectedValue) * 100 : 0,
+      key: 'collected_interest',
+      label: 'Collected interest',
+      description: 'Interest already collected and realized.',
+      valueMinor: mergedSummary.collectedInterestMinor,
+      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.collectedInterestMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'green',
     },
     {
-      key: 'principal_on_borrowers',
-      label: 'Outstanding Principal',
-      description: 'Unpaid principal still scheduled across active loan installments.',
-      value: capitalOutstanding,
-      percentage: totalProjectedValue > 0 ? (capitalOutstanding / totalProjectedValue) * 100 : 0,
-      tone: 'amber',
-    },
-    {
       key: 'remaining_projected_interest',
-      label: 'Remaining Projected Interest',
-      description: 'Booked interest that has not yet been collected from issued loans.',
-      value: remainingProjectedInterest,
-      percentage: totalProjectedValue > 0 ? (remainingProjectedInterest / totalProjectedValue) * 100 : 0,
+      label: 'Remaining projected interest',
+      description: 'Expected future interest from active schedules that is still unpaid.',
+      valueMinor: mergedSummary.remainingProjectedInterestMinor,
+      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.remainingProjectedInterestMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'olive',
     },
   ]
 
   return {
-    summary: {
-      currency,
-      startingCapital,
-      profitCollected,
-      capitalBasis,
-      availableCash,
-      capitalOutstanding,
-      recoveredPrincipal,
-      totalProfitBooked,
-      remainingProjectedInterest,
-      totalProjectedValue,
-      totalIssuedPrincipal,
-      activeLoans: activeLoans.length,
-      pendingReviews,
-    },
+    summary: mergedSummary,
     capitalPositionSegments,
-    repaymentProgressSegments,
+    interestOutlookSegments,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
     dueSoon: [...reminders].sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt)).slice(0, 3),
+    receivablePreview: mergedSummary.receivableByCutoff.slice(0, 6),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }
 }

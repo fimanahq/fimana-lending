@@ -316,6 +316,44 @@ export interface UpcomingLoanReminder {
   loanStatus: LoanStatus
 }
 
+export type DashboardReceivableStatus = 'overdue' | 'current' | 'upcoming'
+
+export interface DashboardCutoffReceivable {
+  cutoffDate: string
+  principalDueMinor: number
+  interestDueMinor: number
+  totalReceivableMinor: number
+  principalCollectedMinor: number
+  interestCollectedMinor: number
+  totalCollectedMinor: number
+  remainingMinor: number
+  borrowerCount: number
+  loanCount: number
+  status: DashboardReceivableStatus
+}
+
+export interface LoanDashboardSummary {
+  currency: SettingsCurrency
+  startingCapitalMinor: number
+  collectedInterestMinor: number
+  currentCapitalBasisMinor: number
+  cashOnHandMinor: number
+  outstandingPrincipalMinor: number
+  moneyWithBorrowersMinor: number
+  nextCutoffReceivableMinor: number
+  overdueReceivableMinor: number
+  overduePrincipalMinor: number
+  overdueInterestMinor: number
+  overdueLoanCount: number
+  overdueBorrowerCount: number
+  oldestUnpaidDueDate: string | null
+  remainingProjectedInterestMinor: number
+  totalProjectedInterestMinor: number
+  activeLoanCount: number
+  currentCutoffReceivable: DashboardCutoffReceivable | null
+  receivableByCutoff: DashboardCutoffReceivable[]
+}
+
 export interface LoanApplication {
   id: string
   applicationNumber?: string

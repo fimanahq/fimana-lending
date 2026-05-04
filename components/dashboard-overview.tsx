@@ -2,8 +2,12 @@ import Link from 'next/link'
 import { DashboardPortfolioChart } from '@/components/dashboard-portfolio-chart'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
-import type { LoanApplication } from '@/lib/types'
+import type { DashboardCutoffReceivable, LoanApplication } from '@/lib/types'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard-overview-data'
+
+function formatMinorCurrency(valueMinor: number, currency: string) {
+  return formatCurrency(valueMinor / 100, currency)
+}
 
 function formatPercentage(value: number) {
   return `${value.toFixed(2)}%`
@@ -35,6 +39,18 @@ function getReminderTone(index: number) {
   return ['amber', 'green', 'olive'][index % 3]
 }
 
+function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
+  if (status === 'overdue') {
+    return 'Overdue'
+  }
+
+  if (status === 'current') {
+    return 'Current'
+  }
+
+  return 'Upcoming'
+}
+
 function ProgressLegend({
   currency,
   segments,
@@ -56,7 +72,7 @@ function ProgressLegend({
             </span>
             <strong>{formatPercentage(segment.percentage)}</strong>
           </div>
-          <div className="dashboard-overview__progressLegendValue">{formatCurrency(segment.value, currency)}</div>
+          <div className="dashboard-overview__progressLegendValue">{formatMinorCurrency(segment.valueMinor, currency)}</div>
           <p>{segment.description}</p>
         </article>
       ))}
@@ -185,13 +201,32 @@ function OverviewGlyph({
   }
 }
 
+function MiniMetric({
+  label,
+  value,
+  meta,
+}: {
+  label: string
+  value: string
+  meta: string
+}) {
+  return (
+    <article className="dashboard-overview__miniCard">
+      <span className="dashboard-overview__statLabel">{label}</span>
+      <strong className="dashboard-overview__miniValue">{value}</strong>
+      <span className="dashboard-overview__miniMeta">{meta}</span>
+    </article>
+  )
+}
+
 export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const {
     summary,
     capitalPositionSegments,
-    repaymentProgressSegments,
+    interestOutlookSegments,
     recentApplications,
     dueSoon,
+    receivablePreview,
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
@@ -199,59 +234,31 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   return (
     <div className="dashboard-overview stack">
       <section className="dashboard-overview__executive">
-        <div className="dashboard-overview__executiveHeader">
-          <div>
-            <div className="eyebrow">Executive summary</div>
-            <h1 className="section-title title-offset">Capital position and repayment progress</h1>
-            <p className="muted">
-              Keep both views on the dashboard: where your money is now, and how much of the loan book has already been recovered.
-            </p>
-          </div>
-        </div>
-
         {partialFailureNotice ? <div className="notice dashboard-overview__notice">{partialFailureNotice}</div> : null}
 
-        <section className="dashboard-overview__kpiGrid">
+        <section className="dashboard-overview__kpiGrid dashboard-overview__kpiGrid--six">
           <article className="dashboard-overview__statCard dashboard-overview__statCard--plain">
-            <span className="dashboard-overview__statLabel">Starting Capital</span>
+            <span className="dashboard-overview__statLabel">Current capital basis</span>
             <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.startingCapital, dashboardCurrency)}
+              {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">
-              Baseline capital configured in workspace settings
+            <span className="dashboard-overview__statMeta">Starting capital + collected interest</span>
+            <span className="dashboard-overview__statSubvalue">
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital basis
             </span>
-            <span className="dashboard-overview__statSubvalue">Used as the base for current cash and exposure</span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="money" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
-            <span className="dashboard-overview__statLabel">Collected Interest</span>
-            <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.profitCollected, dashboardCurrency)}
-            </strong>
-            <span className="dashboard-overview__statMeta">
-              Realized interest from fully paid installments only
-            </span>
-            <span className="dashboard-overview__statSubvalue">
-              {formatCurrency(summary.remainingProjectedInterest, dashboardCurrency)} still projected but not yet collected
-            </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
-              <OverviewGlyph name="trend" />
-            </div>
-          </article>
-
           <article className="dashboard-overview__statCard dashboard-overview__statCard--sage">
-            <span className="dashboard-overview__statLabel">Cash on Hand</span>
+            <span className="dashboard-overview__statLabel">Cash on hand</span>
             <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.availableCash, dashboardCurrency)}
+              {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">
-              Current capital minus principal still out with borrowers
-            </span>
+            <span className="dashboard-overview__statMeta">Available to lend again</span>
             <span className="dashboard-overview__statSubvalue">
-              {formatCurrency(summary.capitalBasis, dashboardCurrency)} capital basis from starting capital + collected interest
+              Current capital basis less principal still deployed
             </span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="shield" />
@@ -259,20 +266,62 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </article>
 
           <article className="dashboard-overview__statCard dashboard-overview__statCard--ink">
-            <span className="dashboard-overview__statLabel">Money with Borrowers</span>
+            <span className="dashboard-overview__statLabel">Money with borrowers</span>
             <strong className="dashboard-overview__statValue">
-              {formatCurrency(summary.capitalOutstanding, dashboardCurrency)}
+              {formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
             </strong>
             <span className="dashboard-overview__statMeta dashboard-overview__statMeta--contrast">
-              Principal outstanding only across {summary.activeLoans.toLocaleString('en-PH')} active loan{summary.activeLoans === 1 ? '' : 's'}
+              Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}
             </span>
             <span className="dashboard-overview__statSubvalue dashboard-overview__statSubvalue--contrast">
-              {summary.pendingReviews > 0
-                ? `${summary.pendingReviews} pending review${summary.pendingReviews === 1 ? '' : 's'} still in the intake queue`
-                : 'No pending reviews waiting in the intake queue'}
+              {summary.pendingReviewCount > 0
+                ? `${summary.pendingReviewCount} pending review${summary.pendingReviewCount === 1 ? '' : 's'} still in the queue`
+                : 'No pending reviews in the intake queue'}
             </span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="applications" />
+            </div>
+          </article>
+
+          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
+            <span className="dashboard-overview__statLabel">Next cutoff receivable</span>
+            <strong className="dashboard-overview__statValue">
+              {formatMinorCurrency(summary.nextCutoffReceivableMinor, dashboardCurrency)}
+            </strong>
+            <span className="dashboard-overview__statMeta">Expected collection on the nearest cutoff date</span>
+            <span className="dashboard-overview__statSubvalue">
+              {summary.currentCutoffReceivable ? formatDate(summary.currentCutoffReceivable.cutoffDate) : 'No upcoming cutoff'}
+            </span>
+            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+              <OverviewGlyph name="trend" />
+            </div>
+          </article>
+
+          <article className="dashboard-overview__statCard dashboard-overview__statCard--plain">
+            <span className="dashboard-overview__statLabel">Overdue receivable</span>
+            <strong className="dashboard-overview__statValue">
+              {formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
+            </strong>
+            <span className="dashboard-overview__statMeta">Past due unpaid schedules</span>
+            <span className="dashboard-overview__statSubvalue">
+              {summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No overdue schedules right now'}
+            </span>
+            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+              <OverviewGlyph name="alert" />
+            </div>
+          </article>
+
+          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
+            <span className="dashboard-overview__statLabel">Remaining projected interest</span>
+            <strong className="dashboard-overview__statValue">
+              {formatMinorCurrency(summary.remainingProjectedInterestMinor, dashboardCurrency)}
+            </strong>
+            <span className="dashboard-overview__statMeta">Expected future interest from active loans</span>
+            <span className="dashboard-overview__statSubvalue">
+              Shown in profit outlook only, not part of current capital yet
+            </span>
+            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+              <OverviewGlyph name="note" />
             </div>
           </article>
         </section>
@@ -281,26 +330,26 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           <article className="dashboard-overview__progressCard">
             <div className="dashboard-overview__progressHeader">
               <div>
-                <span className="dashboard-overview__statLabel">Capital Position</span>
-                <h2>Cash on hand vs money with borrowers</h2>
+                <span className="dashboard-overview__statLabel">Current Capital Position</span>
+                <h2>Where the current capital sits now</h2>
                 <p>
-                  Uses starting capital plus collected interest as the capital basis, then separates available cash from principal still deployed.
+                  The capital basis uses starting capital plus collected interest, then splits that basis into cash on hand and money still out with borrowers.
                 </p>
               </div>
               <div className="dashboard-overview__progressSummary">
                 <span className="dashboard-overview__progressSummaryLabel">Current capital basis</span>
-                <strong>{formatCurrency(summary.capitalBasis, dashboardCurrency)}</strong>
-                <span>{formatCurrency(summary.profitCollected, dashboardCurrency)} collected interest added back</span>
+                <strong>{formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}</strong>
+                <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected interest already added back</span>
               </div>
             </div>
 
             <div className="dashboard-overview__progressBody">
-              {summary.capitalBasis > 0 || summary.capitalOutstanding > 0 ? (
+              {summary.currentCapitalBasisMinor > 0 || summary.moneyWithBorrowersMinor > 0 ? (
                 <DashboardPortfolioChart
-                  caption={`Cash position based on your starting capital, plus collected interest, against principal still deployed to borrowers. ${formatCurrency(summary.remainingProjectedInterest, dashboardCurrency)} projected interest is still unrealized.`}
-                  centerKicker="Current capital"
-                  centerSubvalue={`${formatCurrency(summary.totalProfitBooked, dashboardCurrency)} total booked interest`}
-                  centerValue={summary.capitalBasis}
+                  caption="This view only uses cash on hand and money with borrowers. Remaining projected interest stays in profit outlook until it is actually collected."
+                  centerKicker="Current capital basis"
+                  centerSubvalue={`${formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)} cash available right now`}
+                  centerValueMinor={summary.currentCapitalBasisMinor}
                   currency={dashboardCurrency}
                   segments={capitalPositionSegments}
                 />
@@ -310,15 +359,15 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                     <OverviewGlyph name="trend" />
                   </span>
                   <div>
-                    <strong>No capital baseline yet</strong>
-                    <p>Set a starting capital amount or release a loan to begin tracking cash on hand and principal with borrowers.</p>
+                    <strong>No capital position yet</strong>
+                    <p>Set a starting capital amount or disburse a loan to start tracking where current capital sits.</p>
                   </div>
                 </div>
               )}
 
-              {summary.availableCash < 0 ? (
+              {summary.cashOnHandMinor < 0 ? (
                 <div className="notice">
-                  Cash on hand is negative by {formatCurrency(Math.abs(summary.availableCash), dashboardCurrency)}. Principal deployed is currently higher than starting capital plus collected interest.
+                  Cash on hand is negative by {formatMinorCurrency(Math.abs(summary.cashOnHandMinor), dashboardCurrency)}. Principal deployed is currently higher than current capital basis.
                 </div>
               ) : null}
 
@@ -329,94 +378,244 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           <article className="dashboard-overview__progressCard">
             <div className="dashboard-overview__progressHeader">
               <div>
-                <span className="dashboard-overview__statLabel">Repayment Progress</span>
-                <h2>Recovered principal vs open exposure</h2>
+                <span className="dashboard-overview__statLabel">Interest Outlook</span>
+                <h2>Collected versus projected interest</h2>
                 <p>
-                  Keeps the original portfolio payoff view so you can still see what has been recovered, what is still outstanding, and what interest remains unrealized.
+                  Realized interest is already in the business. Remaining projected interest is expected future profit from active schedules and is not current cash.
                 </p>
               </div>
               <div className="dashboard-overview__progressSummary">
-                <span className="dashboard-overview__progressSummaryLabel">Projected portfolio value</span>
-                <strong>{formatCurrency(summary.totalProjectedValue, dashboardCurrency)}</strong>
-                <span>{formatCurrency(summary.totalIssuedPrincipal, dashboardCurrency)} principal issued</span>
+                <span className="dashboard-overview__progressSummaryLabel">Total projected interest</span>
+                <strong>{formatMinorCurrency(summary.totalProjectedInterestMinor, dashboardCurrency)}</strong>
+                <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far</span>
               </div>
             </div>
 
             <div className="dashboard-overview__progressBody">
-              {summary.totalProjectedValue > 0 ? (
+              {summary.totalProjectedInterestMinor > 0 ? (
                 <DashboardPortfolioChart
-                  caption={`Portfolio-state view of capital already recovered, principal still outstanding, and remaining projected interest. ${formatCurrency(summary.recoveredPrincipal, dashboardCurrency)} principal has already returned to the business.`}
-                  centerKicker="Recovered principal"
-                  centerSubvalue={`${formatCurrency(summary.remainingProjectedInterest, dashboardCurrency)} projected interest remaining`}
-                  centerValue={summary.recoveredPrincipal}
+                  caption="This chart is interest-only. It compares collected interest with remaining projected interest and does not treat projected interest as cash on hand."
+                  centerKicker="Total projected interest"
+                  centerSubvalue={`${formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far`}
+                  centerValueMinor={summary.totalProjectedInterestMinor}
                   currency={dashboardCurrency}
-                  segments={repaymentProgressSegments}
+                  segments={interestOutlookSegments}
                 />
               ) : (
                 <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
                   <span className="dashboard-overview__emptyIcon">
-                    <OverviewGlyph name="shield" />
+                    <OverviewGlyph name="note" />
                   </span>
                   <div>
-                    <strong>No repayment progress yet</strong>
-                    <p>Issue a loan to start tracking recovered principal, outstanding principal, and remaining projected interest.</p>
+                    <strong>No interest outlook yet</strong>
+                    <p>Projected and collected interest will appear here once active schedules begin generating interest.</p>
                   </div>
                 </div>
               )}
 
-              <ProgressLegend currency={dashboardCurrency} segments={repaymentProgressSegments} />
+              <ProgressLegend currency={dashboardCurrency} segments={interestOutlookSegments} />
             </div>
           </article>
         </div>
+
+        <section className="dashboard-overview__operator">
+          <div className="dashboard-overview__operatorHeader">
+            <div>
+              <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
+              <p className="muted">
+                Group unpaid or partially paid schedules by cutoff date so the nearest collection target and the next receivable dates are visible at a glance.
+              </p>
+            </div>
+          </div>
+
+          {summary.currentCutoffReceivable ? (
+            <section className="dashboard-overview__miniGrid dashboard-overview__miniGrid--five">
+              <MiniMetric
+                label="Due this cutoff"
+                value={formatMinorCurrency(summary.currentCutoffReceivable.totalReceivableMinor, dashboardCurrency)}
+                meta={formatDate(summary.currentCutoffReceivable.cutoffDate)}
+              />
+              <MiniMetric
+                label="Principal due"
+                value={formatMinorCurrency(summary.currentCutoffReceivable.principalDueMinor, dashboardCurrency)}
+                meta="Scheduled principal on this cutoff"
+              />
+              <MiniMetric
+                label="Interest due"
+                value={formatMinorCurrency(summary.currentCutoffReceivable.interestDueMinor, dashboardCurrency)}
+                meta="Scheduled interest on this cutoff"
+              />
+              <MiniMetric
+                label="Remaining to collect"
+                value={formatMinorCurrency(summary.currentCutoffReceivable.remainingMinor, dashboardCurrency)}
+                meta={formatMinorCurrency(summary.currentCutoffReceivable.totalCollectedMinor, dashboardCurrency) + ' already collected'}
+              />
+              <MiniMetric
+                label="Borrowers due"
+                value={summary.currentCutoffReceivable.borrowerCount.toLocaleString('en-PH')}
+                meta={`${summary.currentCutoffReceivable.loanCount.toLocaleString('en-PH')} loan${summary.currentCutoffReceivable.loanCount === 1 ? '' : 's'} due`}
+              />
+            </section>
+          ) : (
+            <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
+              <span className="dashboard-overview__emptyIcon">
+                <OverviewGlyph name="note" />
+              </span>
+              <div>
+                <strong>No upcoming receivables</strong>
+                <p>No unpaid or partially paid cutoff rows are scheduled right now.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="dashboard-overview__tableCard">
+            {receivablePreview.length > 0 ? (
+              <table className="dashboard-overview__table">
+                <thead>
+                  <tr>
+                    <th>Cutoff date</th>
+                    <th className="dashboard-overview__tableAmount">Principal due</th>
+                    <th className="dashboard-overview__tableAmount">Interest due</th>
+                    <th className="dashboard-overview__tableAmount">Total receivable</th>
+                    <th className="dashboard-overview__tableAmount">Collected</th>
+                    <th className="dashboard-overview__tableAmount">Remaining</th>
+                    <th>Borrowers due</th>
+                    <th>Loans due</th>
+                    <th className="dashboard-overview__tableStatus">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {receivablePreview.map((entry) => (
+                    <tr key={entry.cutoffDate}>
+                      <td>{formatDate(entry.cutoffDate)}</td>
+                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.principalDueMinor, dashboardCurrency)}</td>
+                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.interestDueMinor, dashboardCurrency)}</td>
+                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.totalReceivableMinor, dashboardCurrency)}</td>
+                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.totalCollectedMinor, dashboardCurrency)}</td>
+                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.remainingMinor, dashboardCurrency)}</td>
+                      <td>{entry.borrowerCount.toLocaleString('en-PH')}</td>
+                      <td>{entry.loanCount.toLocaleString('en-PH')}</td>
+                      <td className="dashboard-overview__tableStatus">
+                        <span className={`dashboard-overview__statusBadge dashboard-overview__statusBadge--${entry.status}`}>
+                          {getReceivableStatusLabel(entry.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="dashboard-overview__emptyState">
+                <span className="dashboard-overview__emptyIcon">
+                  <OverviewGlyph name="money" />
+                </span>
+                <div>
+                  <strong>No receivable cutoffs yet</strong>
+                  <p>Open receivable cutoff groups will appear here once active schedules are generated.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="grid two">
+          <article className="dashboard-overview__progressCard">
+            <div className="dashboard-overview__progressHeader">
+              <div>
+                <span className="dashboard-overview__statLabel">Collection Risk</span>
+                <h2>What needs collection attention</h2>
+                <p>
+                  Track the overdue receivable, split between overdue principal and overdue interest, then watch how many borrowers and loans are already late.
+                </p>
+              </div>
+            </div>
+            <div className="dashboard-overview__miniGrid">
+              <MiniMetric
+                label="Overdue receivable"
+                value={formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
+                meta="Past due unpaid schedules only"
+              />
+              <MiniMetric
+                label="Overdue principal"
+                value={formatMinorCurrency(summary.overduePrincipalMinor, dashboardCurrency)}
+                meta="Principal already past due"
+              />
+              <MiniMetric
+                label="Overdue interest"
+                value={formatMinorCurrency(summary.overdueInterestMinor, dashboardCurrency)}
+                meta="Interest already past due"
+              />
+              <MiniMetric
+                label="Overdue loans"
+                value={summary.overdueLoanCount.toLocaleString('en-PH')}
+                meta="Loans with missed schedule rows"
+              />
+              <MiniMetric
+                label="Borrowers with missed payments"
+                value={summary.overdueBorrowerCount.toLocaleString('en-PH')}
+                meta={summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No missed payments right now'}
+              />
+            </div>
+          </article>
+
+          <article className="dashboard-overview__progressCard">
+            <div className="dashboard-overview__progressHeader">
+              <div>
+                <span className="dashboard-overview__statLabel">Day-to-day actions</span>
+                <h2>Origination and workspace shortcuts</h2>
+                <p>Keep loan intake moving and jump straight into the core lending workflows.</p>
+              </div>
+            </div>
+            <section className="dashboard-overview__actionsRow">
+              <Link href="/loan-applications/new" className="dashboard-overview__actionCard">
+                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--amber">
+                  <OverviewGlyph name="plus" />
+                </span>
+                <h2>Create a new application</h2>
+                <p>Start the origination flow from application intake through approval and disbursement.</p>
+              </Link>
+
+              <Link href="/loan-applications" className="dashboard-overview__actionCard">
+                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
+                  <OverviewGlyph name="applications" />
+                </span>
+                <h2>Review applications</h2>
+                <p>
+                  {summary.pendingReviewCount > 0
+                    ? `${summary.pendingReviewCount} pending application${summary.pendingReviewCount === 1 ? '' : 's'} need a review decision.`
+                    : 'The intake queue is clear and ready for the next borrower submission.'}
+                </p>
+              </Link>
+
+              <Link href="/rules" className="dashboard-overview__actionCard">
+                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--olive">
+                  <OverviewGlyph name="rules" />
+                </span>
+                <h2>Adjust rules</h2>
+                <p>Refine underwriting parameters and lending guardrails without leaving the operating workspace.</p>
+              </Link>
+
+              <Link href="/calculator" className="dashboard-overview__actionCard">
+                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
+                  <OverviewGlyph name="calculator" />
+                </span>
+                <h2>Open lending calculator</h2>
+                <p>Preview cutoff dates, interest, and repayment tables before creating or approving a loan.</p>
+              </Link>
+            </section>
+          </article>
+        </section>
       </section>
 
       <section className="dashboard-overview__operator">
         <div className="dashboard-overview__operatorHeader">
           <div>
-            <h2 className="section-title title-offset">Day-to-day actions and due-soon work</h2>
+            <h2 className="section-title title-offset">Recent applications and due-soon work</h2>
             <p className="muted">
-              Keep origination moving, review recent intake, and stay ahead of reminders that need attention.
+              Keep the operating queue visible without mixing it into the capital and receivable summaries.
             </p>
           </div>
         </div>
-
-        <section className="dashboard-overview__actionsRow">
-          <Link href="/loan-applications/new" className="dashboard-overview__actionCard">
-            <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--amber">
-              <OverviewGlyph name="plus" />
-            </span>
-            <h2>Create a new application</h2>
-            <p>Start the official origination flow from application intake through approval, conversion, and disbursement.</p>
-          </Link>
-
-          <Link href="/loan-applications" className="dashboard-overview__actionCard">
-            <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
-              <OverviewGlyph name="applications" />
-            </span>
-            <h2>Review applications</h2>
-            <p>
-              {summary.pendingReviews > 0
-                ? `${summary.pendingReviews} pending application${summary.pendingReviews === 1 ? '' : 's'} need a review decision.`
-                : 'The intake queue is clear and ready for the next borrower submission.'}
-            </p>
-          </Link>
-
-          <Link href="/rules" className="dashboard-overview__actionCard">
-            <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--olive">
-              <OverviewGlyph name="rules" />
-            </span>
-            <h2>Adjust rules</h2>
-            <p>Refine underwriting parameters and lending guardrails without leaving the operating workspace.</p>
-          </Link>
-
-          <Link href="/calculator" className="dashboard-overview__actionCard">
-            <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
-              <OverviewGlyph name="calculator" />
-            </span>
-            <h2>Open lending calculator</h2>
-            <p>Preview cutoff dates, per-give interest, and the full repayment table before you create or approve a loan.</p>
-          </Link>
-        </section>
 
         <section className="dashboard-overview__contentGrid">
           <div className="dashboard-overview__mainColumn">
@@ -472,7 +671,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                   </span>
                   <div>
                     <strong>No applications yet</strong>
-                    <p>New borrower applications will appear here once the public intake form is used.</p>
+                    <p>New borrower applications will appear here once the intake flow is used.</p>
                   </div>
                 </div>
               )}

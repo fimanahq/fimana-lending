@@ -43,19 +43,19 @@ export function DashboardPortfolioChart({
   caption,
   centerKicker,
   centerSubvalue,
-  centerValue,
+  centerValueMinor,
   currency,
   segments,
 }: {
   caption: string
   centerKicker: string
   centerSubvalue: string
-  centerValue: number
+  centerValueMinor: number
   currency: string
   segments: DashboardProgressSegment[]
 }) {
   const ariaLabel = segments
-    .map((segment) => `${segment.label}: ${segment.percentage.toFixed(2)}%, ${formatCurrency(segment.value, currency)}`)
+    .map((segment) => `${segment.label}: ${segment.percentage.toFixed(2)}%, ${formatCurrency(segment.valueMinor / 100, currency)}`)
     .join('. ')
 
   return (
@@ -65,7 +65,7 @@ export function DashboardPortfolioChart({
           <PieChart>
             <Pie
               data={segments}
-              dataKey="value"
+              dataKey="valueMinor"
               nameKey="label"
               cx="50%"
               cy="50%"
@@ -83,7 +83,7 @@ export function DashboardPortfolioChart({
             <Tooltip
               formatter={(value) => {
                 const normalizedValue = Array.isArray(value) ? Number(value[0] || 0) : Number(value || 0)
-                return formatCurrency(normalizedValue, currency)
+                return formatCurrency(normalizedValue / 100, currency)
               }}
               contentStyle={tooltipContentStyle}
               itemStyle={tooltipItemStyle}
@@ -95,7 +95,7 @@ export function DashboardPortfolioChart({
 
         <div className="dashboard-overview__progressChartCenter" aria-hidden="true">
           <span className="dashboard-overview__progressChartKicker">{centerKicker}</span>
-          <strong>{formatCurrency(centerValue, currency)}</strong>
+          <strong>{formatCurrency(centerValueMinor / 100, currency)}</strong>
           <span>{centerSubvalue}</span>
         </div>
       </div>

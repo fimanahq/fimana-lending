@@ -1,19 +1,18 @@
 import { DashboardOverview, buildDashboardOverviewData, type DashboardDataSource } from '@/modules/dashboard'
 import { authorizedBackendRequest } from '@/lib/server/backend'
-import type { LoanApplication, LoanRecord, Settings, UpcomingLoanReminder } from '@/lib/types'
+import type { LoanApplication, LoanDashboardSummary, UpcomingLoanReminder } from '@/lib/types'
 
 export default async function DashboardPage() {
-  const [loanResult, applicationResult, reminderResult, settingsResult] = await Promise.allSettled([
-    authorizedBackendRequest<LoanRecord[]>('/loans'),
+  const [summaryResult, applicationResult, reminderResult] = await Promise.allSettled([
+    authorizedBackendRequest<LoanDashboardSummary>('/loans/dashboard-summary'),
     authorizedBackendRequest<LoanApplication[]>('/loan-applications'),
     authorizedBackendRequest<UpcomingLoanReminder[]>('/lendings/reminders/upcoming'),
-    authorizedBackendRequest<Settings>('/settings/me'),
   ])
 
   const failedSources: DashboardDataSource[] = []
 
-  if (loanResult.status === 'rejected') {
-    failedSources.push('loans')
+  if (summaryResult.status === 'rejected') {
+    failedSources.push('summary')
   }
 
   if (applicationResult.status === 'rejected') {
@@ -24,15 +23,10 @@ export default async function DashboardPage() {
     failedSources.push('reminders')
   }
 
-  if (settingsResult.status === 'rejected') {
-    failedSources.push('settings')
-  }
-
   const data = buildDashboardOverviewData({
-    loans: loanResult.status === 'fulfilled' ? loanResult.value : [],
+    summary: summaryResult.status === 'fulfilled' ? summaryResult.value : null,
     applications: applicationResult.status === 'fulfilled' ? applicationResult.value : [],
     reminders: reminderResult.status === 'fulfilled' ? reminderResult.value : [],
-    settings: settingsResult.status === 'fulfilled' ? settingsResult.value : null,
     failedSources,
   })
 

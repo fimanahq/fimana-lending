@@ -2523,6 +2523,10 @@ th {
   align-items: stretch;
 }
 
+.dashboard-overview__kpiGrid--six {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .dashboard-overview__statCard,
 .dashboard-overview__actionCard,
 .dashboard-overview__tableCard,
@@ -2754,6 +2758,41 @@ th {
   padding: 0.75rem 1rem;
 }
 
+.dashboard-overview__miniGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-overview__miniGrid--five {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.dashboard-overview__miniCard {
+  display: flex;
+  min-height: 8.5rem;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1.35rem 1.4rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__miniValue {
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.dashboard-overview__miniMeta {
+  color: rgba(84, 67, 57, 0.78);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .dashboard-overview__table {
   width: 100%;
   border-collapse: separate;
@@ -2819,6 +2858,35 @@ th {
 
 .dashboard-overview__tableStatus {
   text-align: center;
+}
+
+.dashboard-overview__statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-overview__statusBadge--overdue {
+  background: rgba(176, 64, 44, 0.12);
+  color: #9f3826;
+}
+
+.dashboard-overview__statusBadge--current {
+  background: rgba(58, 103, 83, 0.1);
+  color: var(--success);
+}
+
+.dashboard-overview__statusBadge--upcoming {
+  background: rgba(146, 75, 16, 0.08);
+  color: var(--accent-strong);
 }
 
 .dashboard-overview__taskStack {
@@ -4372,6 +4440,7 @@ th {
   .landing-pillars,
   .landing-stats-grid,
   .dashboard-overview__kpiGrid,
+  .dashboard-overview__miniGrid,
   .dashboard-overview__actionsRow,
   .dashboard-overview__contentGrid,
   .dashboard-overview__progressBody {
