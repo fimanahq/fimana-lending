@@ -10,7 +10,6 @@ export default function LandingPage() {
     <div className="landing-homepage">
       <PublicSiteHeader
         headerClassName="landing-homepage__header"
-        innerClassName="landing-homepage__headerContainer"
         brandClassName="landing-homepage__brand"
         actions={
           <>

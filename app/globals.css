@@ -4717,6 +4717,8 @@ th {
 }
 
 .landing-homepage__header {
+  position: relative;
+  z-index: 2;
   backdrop-filter: blur(12px);
   background: rgba(250, 248, 244, 0.8);
 }
@@ -4729,6 +4731,15 @@ th {
 
 .landing-homepage__brand {
   flex-shrink: 0;
+}
+
+.landing-homepage__brand .app-logo {
+  align-items: flex-start;
+  gap: 0.32em;
+}
+
+.landing-homepage__brand .app-logo__mark {
+  margin-top: 0.08em;
 }
 
 .landing-homepage__nav,
@@ -5101,14 +5112,8 @@ th {
 }
 
 @media (max-width: 1120px) {
-  .landing-homepage__headerContainer,
   .landing-homepage__footerContainer {
     flex-wrap: wrap;
-  }
-
-  .landing-homepage__headerContainer {
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
   }
 
   .landing-homepage__hero {
