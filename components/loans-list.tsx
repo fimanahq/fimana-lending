@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Button, DataTable, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
-import { PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
+import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { LoanRecord, LoanStatus } from '@/lib/types'
-import { listLoanRecords } from '@/services'
+import { deleteLoan, listLoanRecords } from '@/services'
 
 type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement'
 
@@ -37,6 +37,8 @@ export function LoansList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [paymentLoanId, setPaymentLoanId] = useState('')
+  const [deleteLoanId, setDeleteLoanId] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const loadLoans = async () => {
     setLoading(true)
@@ -48,6 +50,21 @@ export function LoansList() {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteLoan = async () => {
+    if (!deleteLoanId) return
+
+    setDeleting(true)
+    try {
+      await deleteLoan(deleteLoanId)
+      setLoans((prev) => prev.filter((loan) => loan.id !== deleteLoanId))
+      setDeleteLoanId('')
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to delete loan')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -161,6 +178,15 @@ export function LoansList() {
                         >
                           <PaymentIcon />
                         </button>
+                        <button
+                          type="button"
+                          className="button-ghost table-action-icon loans-list__iconAction"
+                          aria-label={`Delete ${loan.loanNumber}`}
+                          title="Delete loan"
+                          onClick={() => setDeleteLoanId(loan.id)}
+                        >
+                          <DeleteIcon />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -181,6 +207,18 @@ export function LoansList() {
         loanLabel={selectedPaymentLoan ? `${selectedPaymentLoan.borrower.displayName} · ${selectedPaymentLoan.loanNumber}` : undefined}
         onClose={() => setPaymentLoanId('')}
         onPaymentPosted={loadLoans}
+      />
+
+      <ConfirmationDialog
+        open={Boolean(deleteLoanId)}
+        title="Delete loan"
+        message={`Are you sure you want to delete this loan? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        confirmDisabled={deleting}
+        onConfirm={handleDeleteLoan}
+        onClose={() => setDeleteLoanId('')}
       />
     </div>
   )

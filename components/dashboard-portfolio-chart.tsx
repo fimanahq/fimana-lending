@@ -22,6 +22,10 @@ const tooltipLabelStyle = {
   marginBottom: '0.25rem',
 }
 
+const tooltipWrapperStyle = {
+  zIndex: 8,
+}
+
 function getProgressToneColor(tone: DashboardProgressSegment['tone']) {
   switch (tone) {
     case 'green':
@@ -36,17 +40,19 @@ function getProgressToneColor(tone: DashboardProgressSegment['tone']) {
 }
 
 export function DashboardPortfolioChart({
+  caption,
+  centerKicker,
+  centerSubvalue,
+  centerValue,
   currency,
-  capitalBasis,
   segments,
-  totalProfitBooked,
-  remainingProjectedInterest,
 }: {
+  caption: string
+  centerKicker: string
+  centerSubvalue: string
+  centerValue: number
   currency: string
-  capitalBasis: number
   segments: DashboardProgressSegment[]
-  totalProfitBooked: number
-  remainingProjectedInterest: number
 }) {
   const ariaLabel = segments
     .map((segment) => `${segment.label}: ${segment.percentage.toFixed(2)}%, ${formatCurrency(segment.value, currency)}`)
@@ -63,8 +69,8 @@ export function DashboardPortfolioChart({
               nameKey="label"
               cx="50%"
               cy="50%"
-              innerRadius="60%"
-              outerRadius="82%"
+              innerRadius="85%"
+              outerRadius="100%"
               paddingAngle={2}
               cornerRadius={10}
               stroke="none"
@@ -82,19 +88,20 @@ export function DashboardPortfolioChart({
               contentStyle={tooltipContentStyle}
               itemStyle={tooltipItemStyle}
               labelStyle={tooltipLabelStyle}
+              wrapperStyle={tooltipWrapperStyle}
             />
           </PieChart>
         </ResponsiveContainer>
 
         <div className="dashboard-overview__progressChartCenter" aria-hidden="true">
-          <span className="dashboard-overview__progressChartKicker">Current capital</span>
-          <strong>{formatCurrency(capitalBasis, currency)}</strong>
-          <span>{formatCurrency(totalProfitBooked, currency)} total booked interest</span>
+          <span className="dashboard-overview__progressChartKicker">{centerKicker}</span>
+          <strong>{formatCurrency(centerValue, currency)}</strong>
+          <span>{centerSubvalue}</span>
         </div>
       </div>
 
       <figcaption className="dashboard-overview__progressCaption">
-        Cash position based on your starting capital, plus collected interest, against principal still deployed to borrowers. {formatCurrency(remainingProjectedInterest, currency)} projected interest is still unrealized.
+        {caption}
       </figcaption>
     </figure>
   )

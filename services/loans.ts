@@ -17,3 +17,9 @@ export function getLoan(loanId: string) {
 export function listLoansByBorrowerId(borrowerId: string) {
   return apiRequest<LoanRecord[]>(`/api/borrowers/${borrowerId}/loans`)
 }
+
+export function deleteLoan(loanId: string) {
+  return apiRequest<void>(`/api/loans/${loanId}`, {
+    method: 'DELETE',
+  })
+}

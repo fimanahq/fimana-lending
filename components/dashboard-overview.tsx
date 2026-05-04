@@ -3,7 +3,7 @@ import { DashboardPortfolioChart } from '@/components/dashboard-portfolio-chart'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types'
-import type { DashboardOverviewData } from '@/components/dashboard-overview-data'
+import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard-overview-data'
 
 function formatPercentage(value: number) {
   return `${value.toFixed(2)}%`
@@ -33,6 +33,35 @@ function getApplicationName(application: LoanApplication) {
 
 function getReminderTone(index: number) {
   return ['amber', 'green', 'olive'][index % 3]
+}
+
+function ProgressLegend({
+  currency,
+  segments,
+}: {
+  currency: string
+  segments: DashboardProgressSegment[]
+}) {
+  return (
+    <div className="dashboard-overview__progressLegend">
+      {segments.map((segment) => (
+        <article
+          key={segment.key}
+          className={`dashboard-overview__progressLegendItem dashboard-overview__progressLegendItem--${segment.tone}`}
+        >
+          <div className="dashboard-overview__progressLegendTop">
+            <span className="dashboard-overview__progressLegendLabel">
+              <span className="dashboard-overview__progressLegendSwatch" />
+              {segment.label}
+            </span>
+            <strong>{formatPercentage(segment.percentage)}</strong>
+          </div>
+          <div className="dashboard-overview__progressLegendValue">{formatCurrency(segment.value, currency)}</div>
+          <p>{segment.description}</p>
+        </article>
+      ))}
+    </div>
+  )
 }
 
 function OverviewGlyph({
@@ -157,7 +186,14 @@ function OverviewGlyph({
 }
 
 export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
-  const { summary, progressSegments, recentApplications, dueSoon, partialFailureNotice } = data
+  const {
+    summary,
+    capitalPositionSegments,
+    repaymentProgressSegments,
+    recentApplications,
+    dueSoon,
+    partialFailureNotice,
+  } = data
   const dashboardCurrency = summary.currency
 
   return (
@@ -165,8 +201,10 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
       <section className="dashboard-overview__executive">
         <div className="dashboard-overview__executiveHeader">
           <div>
+            <div className="eyebrow">Executive summary</div>
+            <h1 className="section-title title-offset">Capital position and repayment progress</h1>
             <p className="muted">
-              Track starting capital, collected interest, cash on hand, and principal currently deployed to borrowers.
+              Keep both views on the dashboard: where your money is now, and how much of the loan book has already been recovered.
             </p>
           </div>
         </div>
@@ -239,69 +277,97 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </article>
         </section>
 
-        <article className="dashboard-overview__progressCard">
-          <div className="dashboard-overview__progressHeader">
-            <div>
-              <span className="dashboard-overview__statLabel">Capital Position</span>
-              <h2>Cash on hand vs money with borrowers</h2>
-              <p>
-                The chart uses your starting capital plus collected interest as the capital basis, then separates available cash from principal still deployed.
-              </p>
-            </div>
-            <div className="dashboard-overview__progressSummary">
-              <span className="dashboard-overview__progressSummaryLabel">Current capital basis</span>
-              <strong>{formatCurrency(summary.capitalBasis, dashboardCurrency)}</strong>
-              <span>{formatCurrency(summary.profitCollected, dashboardCurrency)} collected interest added back</span>
-            </div>
-          </div>
-
-          <div className="dashboard-overview__progressBody">
-            {summary.capitalBasis > 0 || summary.capitalOutstanding > 0 ? (
-              <DashboardPortfolioChart
-                currency={dashboardCurrency}
-                capitalBasis={summary.capitalBasis}
-                segments={progressSegments}
-                totalProfitBooked={summary.totalProfitBooked}
-                remainingProjectedInterest={summary.remainingProjectedInterest}
-              />
-            ) : (
-              <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-                <span className="dashboard-overview__emptyIcon">
-                  <OverviewGlyph name="trend" />
-                </span>
-                <div>
-                  <strong>No capital baseline yet</strong>
-                  <p>Set a starting capital amount or release a loan to begin tracking cash on hand and principal with borrowers.</p>
-                </div>
+        <div className="grid two">
+          <article className="dashboard-overview__progressCard">
+            <div className="dashboard-overview__progressHeader">
+              <div>
+                <span className="dashboard-overview__statLabel">Capital Position</span>
+                <h2>Cash on hand vs money with borrowers</h2>
+                <p>
+                  Uses starting capital plus collected interest as the capital basis, then separates available cash from principal still deployed.
+                </p>
               </div>
-            )}
-
-            {summary.availableCash < 0 ? (
-              <div className="notice">
-                Cash on hand is negative by {formatCurrency(Math.abs(summary.availableCash), dashboardCurrency)}. Principal deployed is currently higher than starting capital plus collected interest.
+              <div className="dashboard-overview__progressSummary">
+                <span className="dashboard-overview__progressSummaryLabel">Current capital basis</span>
+                <strong>{formatCurrency(summary.capitalBasis, dashboardCurrency)}</strong>
+                <span>{formatCurrency(summary.profitCollected, dashboardCurrency)} collected interest added back</span>
               </div>
-            ) : null}
+            </div>
 
-            <div className="dashboard-overview__progressLegend">
-              {progressSegments.map((segment) => (
-                <article
-                  key={segment.key}
-                  className={`dashboard-overview__progressLegendItem dashboard-overview__progressLegendItem--${segment.tone}`}
-                >
-                  <div className="dashboard-overview__progressLegendTop">
-                    <span className="dashboard-overview__progressLegendLabel">
-                      <span className="dashboard-overview__progressLegendSwatch" />
-                      {segment.label}
-                    </span>
-                    <strong>{formatPercentage(segment.percentage)}</strong>
+            <div className="dashboard-overview__progressBody">
+              {summary.capitalBasis > 0 || summary.capitalOutstanding > 0 ? (
+                <DashboardPortfolioChart
+                  caption={`Cash position based on your starting capital, plus collected interest, against principal still deployed to borrowers. ${formatCurrency(summary.remainingProjectedInterest, dashboardCurrency)} projected interest is still unrealized.`}
+                  centerKicker="Current capital"
+                  centerSubvalue={`${formatCurrency(summary.totalProfitBooked, dashboardCurrency)} total booked interest`}
+                  centerValue={summary.capitalBasis}
+                  currency={dashboardCurrency}
+                  segments={capitalPositionSegments}
+                />
+              ) : (
+                <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
+                  <span className="dashboard-overview__emptyIcon">
+                    <OverviewGlyph name="trend" />
+                  </span>
+                  <div>
+                    <strong>No capital baseline yet</strong>
+                    <p>Set a starting capital amount or release a loan to begin tracking cash on hand and principal with borrowers.</p>
                   </div>
-                  <div className="dashboard-overview__progressLegendValue">{formatCurrency(segment.value, dashboardCurrency)}</div>
-                  <p>{segment.description}</p>
-                </article>
-              ))}
+                </div>
+              )}
+
+              {summary.availableCash < 0 ? (
+                <div className="notice">
+                  Cash on hand is negative by {formatCurrency(Math.abs(summary.availableCash), dashboardCurrency)}. Principal deployed is currently higher than starting capital plus collected interest.
+                </div>
+              ) : null}
+
+              <ProgressLegend currency={dashboardCurrency} segments={capitalPositionSegments} />
             </div>
-          </div>
-        </article>
+          </article>
+
+          <article className="dashboard-overview__progressCard">
+            <div className="dashboard-overview__progressHeader">
+              <div>
+                <span className="dashboard-overview__statLabel">Repayment Progress</span>
+                <h2>Recovered principal vs open exposure</h2>
+                <p>
+                  Keeps the original portfolio payoff view so you can still see what has been recovered, what is still outstanding, and what interest remains unrealized.
+                </p>
+              </div>
+              <div className="dashboard-overview__progressSummary">
+                <span className="dashboard-overview__progressSummaryLabel">Projected portfolio value</span>
+                <strong>{formatCurrency(summary.totalProjectedValue, dashboardCurrency)}</strong>
+                <span>{formatCurrency(summary.totalIssuedPrincipal, dashboardCurrency)} principal issued</span>
+              </div>
+            </div>
+
+            <div className="dashboard-overview__progressBody">
+              {summary.totalProjectedValue > 0 ? (
+                <DashboardPortfolioChart
+                  caption={`Portfolio-state view of capital already recovered, principal still outstanding, and remaining projected interest. ${formatCurrency(summary.recoveredPrincipal, dashboardCurrency)} principal has already returned to the business.`}
+                  centerKicker="Recovered principal"
+                  centerSubvalue={`${formatCurrency(summary.remainingProjectedInterest, dashboardCurrency)} projected interest remaining`}
+                  centerValue={summary.recoveredPrincipal}
+                  currency={dashboardCurrency}
+                  segments={repaymentProgressSegments}
+                />
+              ) : (
+                <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
+                  <span className="dashboard-overview__emptyIcon">
+                    <OverviewGlyph name="shield" />
+                  </span>
+                  <div>
+                    <strong>No repayment progress yet</strong>
+                    <p>Issue a loan to start tracking recovered principal, outstanding principal, and remaining projected interest.</p>
+                  </div>
+                </div>
+              )}
+
+              <ProgressLegend currency={dashboardCurrency} segments={repaymentProgressSegments} />
+            </div>
+          </article>
+        </div>
       </section>
 
       <section className="dashboard-overview__operator">

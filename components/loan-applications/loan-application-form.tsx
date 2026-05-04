@@ -15,6 +15,7 @@ import {
 import {
   Button,
   Card,
+  Dialog,
   EmptyState,
   ErrorState,
   Input,
@@ -22,6 +23,7 @@ import {
   Select,
   Textarea,
 } from '@/components/shared'
+import { BorrowerForm } from '@/components/borrowers/borrower-form'
 
 const initialForm = {
   borrowerId: '',
@@ -79,6 +81,7 @@ export function LoanApplicationForm() {
   const [loadingBorrowers, setLoadingBorrowers] = useState(true)
   const [showValidation, setShowValidation] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [showBorrowerModal, setShowBorrowerModal] = useState(false)
 
   const validationError = useMemo(() => validateForm(form), [form])
 
@@ -87,7 +90,13 @@ export function LoanApplicationForm() {
       try {
         const rows = await listLendingBorrowers()
         setBorrowers(rows)
-        setForm((current) => ({ ...current, borrowerId: current.borrowerId || rows[0]?.id || '' }))
+        // Only update borrowerId if it's empty and we have borrowers
+        setForm((current) => {
+          if (current.borrowerId === '' && rows.length > 0) {
+            return { ...current, borrowerId: rows[0].id }
+          }
+          return current
+        })
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load borrowers')
       } finally {
@@ -128,6 +137,16 @@ export function LoanApplicationForm() {
     }
   }
 
+  const handleBorrowerCreated = async (newBorrower: Borrower) => {
+    setShowBorrowerModal(false)
+    setBorrowers((current) => [...current, newBorrower])
+    setForm((current) => ({ ...current, borrowerId: newBorrower.id }))
+  }
+
+  const handleAddBorrowerClick = () => {
+    setShowBorrowerModal(true)
+  }
+
   return (
     <div className="stack">
       {error ? <ErrorState title="Application not ready" description={error} /> : null}
@@ -151,7 +170,13 @@ export function LoanApplicationForm() {
               label="Borrower"
               value={form.borrowerId}
               disabled={loadingBorrowers || borrowers.length === 0}
-              onChange={(event) => updateForm({ borrowerId: event.target.value })}
+              onChange={(event) => {
+                if (event.target.value === '__add_new__') {
+                  handleAddBorrowerClick()
+                } else {
+                  updateForm({ borrowerId: event.target.value })
+                }
+              }}
             >
               <option value="">Select borrower</option>
               {borrowers.map((borrower) => (
@@ -159,6 +184,7 @@ export function LoanApplicationForm() {
                   {borrower.fullName} ({borrower.borrowerNumber})
                 </option>
               ))}
+              <option value="__add_new__">+ Add new borrower</option>
             </Select>
 
             <div className="grid two">
@@ -241,6 +267,18 @@ export function LoanApplicationForm() {
           </form>
         </Card>
       </div>
+
+      <Dialog
+        id="add-borrower-modal"
+        title="Add new borrower"
+        description="Create a new borrower record for the loan application."
+        open={showBorrowerModal}
+        onClose={() => setShowBorrowerModal(false)}
+      >
+        <div className="stack">
+          <BorrowerForm mode="create" onSaved={handleBorrowerCreated} />
+        </div>
+      </Dialog>
     </div>
   )
 }

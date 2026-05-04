@@ -13,7 +13,8 @@ interface BorrowerFormProps {
 }
 
 interface BorrowerFormState {
-  fullName: string
+  firstName: string
+  lastName: string
   email: string
   contactNumber: string
   notes: string
@@ -23,7 +24,8 @@ type BorrowerFormErrors = Partial<Record<keyof BorrowerFormState, string>>
 
 const emptyForm: BorrowerFormState = {
   email: '',
-  fullName: '',
+  firstName: '',
+  lastName: '',
   notes: '',
   contactNumber: '',
 }
@@ -37,18 +39,27 @@ function getInitialForm(borrower?: Borrower): BorrowerFormState {
     return emptyForm
   }
 
+  const nameParts = borrower.fullName.split(' ')
+  const firstName = nameParts[0] || ''
+  const lastName = nameParts.slice(1).join(' ')
+
   return {
     email: borrower.email || '',
-    fullName: borrower.fullName,
+    firstName,
+    lastName,
     notes: borrower.notes || '',
     contactNumber: borrower.contactNumber || '',
   }
 }
 
 function trimForm(form: BorrowerFormState): CreateBorrowerInput {
+  const firstName = form.firstName.trim()
+  const lastName = form.lastName.trim()
+  const fullName = `${firstName} ${lastName}`.trim()
+
   return {
     email: form.email.trim(),
-    fullName: form.fullName.trim(),
+    fullName,
     notes: form.notes.trim(),
     contactNumber: form.contactNumber.trim(),
   }
@@ -59,7 +70,7 @@ function validateForm(form: BorrowerFormState) {
   const trimmed = trimForm(form)
 
   if (!trimmed.fullName) {
-    nextErrors.fullName = 'Borrower name is required.'
+    nextErrors.firstName = 'Borrower name is required.'
   }
 
   if (trimmed.email && !isValidEmail(trimmed.email)) {
@@ -141,15 +152,26 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
         <ErrorBanner title="Borrower was not saved" message={submitError} />
       ) : null}
 
-      <Input
-        id={`${mode}-borrower-full-name`}
-        label="Borrower name"
-        value={form.fullName}
-        error={errors.fullName}
-        autoComplete="name"
-        onChange={(event) => updateField('fullName', event.target.value)}
-        required
-      />
+      <div className="grid two">
+        <Input
+          id={`${mode}-borrower-first-name`}
+          label="First name"
+          value={form.firstName}
+          error={errors.firstName}
+          autoComplete="given-name"
+          onChange={(event) => updateField('firstName', event.target.value)}
+          required
+        />
+        <Input
+          id={`${mode}-borrower-last-name`}
+          label="Last name"
+          value={form.lastName}
+          error={errors.lastName}
+          autoComplete="family-name"
+          onChange={(event) => updateField('lastName', event.target.value)}
+          required
+        />
+      </div>
 
       <div className="grid two">
         <Input

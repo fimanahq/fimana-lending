@@ -30,3 +30,14 @@ export function OpenLoanIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function DeleteIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M19 6.4 H5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 6.4V4.6c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v1.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 11v6M14 11v6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 6.4L6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2l1-12.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
