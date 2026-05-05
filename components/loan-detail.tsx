@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { LoanAdjustmentDialog, LoanPaymentDialog } from '@/components/payments'
 import { Button, Card, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
@@ -39,6 +40,8 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [loan, setLoan] = useState<LoanRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
+  const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false)
 
   useEffect(() => {
     const loadLoan = async () => {
@@ -87,10 +90,14 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const overallProfitPercentage = loan.principalAmountMinor > 0
     ? (totalInterestAmountMinor / loan.principalAmountMinor) * 100
     : 0
+  const canPostPayment = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
+  const canAdjustInterest = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
 
   return (
     <div className="stack">
       <div className="inline-actions">
+        <Button variant="secondary" onClick={() => setPaymentDialogOpen(true)} disabled={!canPostPayment}>Post payment</Button>
+        <Button variant="secondary" onClick={() => setAdjustmentDialogOpen(true)} disabled={!canAdjustInterest}>Loan adjustment</Button>
         <Link href={`/loan-applications/${loan.loanApplicationId}`} className="button-secondary">View application</Link>
         <Link href="/loan-applications" className="button-ghost">Back to applications</Link>
       </div>
@@ -219,6 +226,25 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           </tbody>
         </table>
       </TableShell>
+
+      <LoanPaymentDialog
+        open={paymentDialogOpen}
+        loanId={loanId}
+        loanLabel={`${loan.borrower.displayName} · ${loan.loanNumber}`}
+        onClose={() => setPaymentDialogOpen(false)}
+        onPaymentPosted={async (updatedLoan) => {
+          setLoan(updatedLoan)
+        }}
+      />
+
+      <LoanAdjustmentDialog
+        open={adjustmentDialogOpen}
+        loanId={loanId}
+        onClose={() => setAdjustmentDialogOpen(false)}
+        onAdjustmentPosted={async (updatedLoan) => {
+          setLoan(updatedLoan)
+        }}
+      />
     </div>
   )
 }

@@ -12,6 +12,7 @@ export type LoanDisbursementMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'che
 export type LoanPaymentMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'internal_offset'
 export type LoanPaymentAllocationStatus = 'unallocated' | 'partially_allocated' | 'fully_allocated'
 export type LoanPaymentStatus = 'posted' | 'reversed'
+export type LoanAdjustmentStatus = 'posted'
 export type LoanScheduleRowStatus = 'pending' | 'partial' | 'paid' | 'cancelled'
 export type LoanApplicationStatus =
   | 'draft'
@@ -279,6 +280,44 @@ export interface PostLoanPaymentInput {
 export interface LoanPaymentPostResponse {
   payment: LoanPaymentHistory
   payments: LoanPaymentHistory[]
+  loan: LoanRecord
+  updatedScheduleRows: LoanScheduleRow[]
+}
+
+export interface LoanAdjustmentAllocation {
+  loanScheduleId: string
+  sequence: number
+  principalAmountMinor: number
+  interestAmountMinor: number
+  totalAmountMinor: number
+}
+
+export interface LoanAdjustmentRecord {
+  id: string
+  loanId: string
+  borrowerId: string
+  adjustmentDate: string
+  postedAt: string
+  amountMinor: number
+  currency: string
+  reason: string
+  allocations: LoanAdjustmentAllocation[]
+  status: LoanAdjustmentStatus
+}
+
+export interface LoanAdjustmentDetail {
+  loan: LoanRecord
+  adjustments: LoanAdjustmentRecord[]
+}
+
+export interface PostLoanAdjustmentInput {
+  adjustmentDate: string
+  amountMinor: number
+  reason: string
+}
+
+export interface LoanAdjustmentPostResponse {
+  adjustment: LoanAdjustmentRecord
   loan: LoanRecord
   updatedScheduleRows: LoanScheduleRow[]
 }

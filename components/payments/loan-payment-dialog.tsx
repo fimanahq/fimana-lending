@@ -132,7 +132,7 @@ export interface LoanPaymentDialogProps {
   loanId: string
   loanLabel?: string
   onClose: () => void
-  onPaymentPosted?: () => Promise<void> | void
+  onPaymentPosted?: (loan: LoanRecord) => Promise<void> | void
   open: boolean
 }
 
@@ -213,7 +213,7 @@ export function LoanPaymentDialog({
       })
       setAmount('')
       setReferenceNo('')
-      await onPaymentPosted?.()
+      await onPaymentPosted?.(response.loan)
     } catch (caughtError) {
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to post payment')
     } finally {
