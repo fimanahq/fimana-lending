@@ -86,9 +86,9 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
   const currency = loan.loanProduct.currency || 'PHP'
   const schedule = loan.schedule ?? []
-  const totalInterestAmountMinor = schedule.reduce((sum, row) => sum + row.scheduledInterestAmountMinor, 0)
+  const overallProfitAmountMinor = schedule.reduce((sum, row) => sum + row.scheduledInterestAmountMinor, 0)
   const overallProfitPercentage = loan.principalAmountMinor > 0
-    ? (totalInterestAmountMinor / loan.principalAmountMinor) * 100
+    ? (overallProfitAmountMinor / loan.principalAmountMinor) * 100
     : 0
   const canPostPayment = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
   const canAdjustInterest = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
@@ -127,6 +127,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           <div className="data-card">
             <span className="muted">Outstanding</span>
             <strong>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, currency)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">Overall Profit</span>
+            <strong>{formatMinorCurrency(overallProfitAmountMinor, currency)}</strong>
           </div>
           <div className="data-card">
             <span className="muted">Overall Profit %</span>
