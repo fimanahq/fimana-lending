@@ -1,8 +1,9 @@
 import Link from 'next/link'
+import { DashboardCutoffReceivables } from '@/components/dashboard-cutoff-receivables'
 import { DashboardPortfolioChart } from '@/components/dashboard-portfolio-chart'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
-import type { DashboardCutoffReceivable, LoanApplication } from '@/lib/types'
+import type { LoanApplication } from '@/lib/types'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard-overview-data'
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
@@ -37,18 +38,6 @@ function getApplicationName(application: LoanApplication) {
 
 function getReminderTone(index: number) {
   return ['amber', 'green', 'olive'][index % 3]
-}
-
-function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
-  if (status === 'overdue') {
-    return 'Overdue'
-  }
-
-  if (status === 'current') {
-    return 'Current'
-  }
-
-  return 'Upcoming'
 }
 
 function ProgressLegend({
@@ -226,7 +215,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     interestOutlookSegments,
     recentApplications,
     dueSoon,
-    receivablePreview,
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
@@ -418,105 +406,11 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </article>
         </div>
 
-        <section className="dashboard-overview__operator">
-          <div className="dashboard-overview__operatorHeader">
-            <div>
-              <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
-              <p className="muted">
-                Group unpaid or partially paid schedules by cutoff date so the nearest collection target and the next receivable dates are visible at a glance.
-              </p>
-            </div>
-          </div>
-
-          {summary.currentCutoffReceivable ? (
-            <section className="dashboard-overview__miniGrid dashboard-overview__miniGrid--five">
-              <MiniMetric
-                label="Due this cutoff"
-                value={formatMinorCurrency(summary.currentCutoffReceivable.totalReceivableMinor, dashboardCurrency)}
-                meta={formatDate(summary.currentCutoffReceivable.cutoffDate)}
-              />
-              <MiniMetric
-                label="Principal due"
-                value={formatMinorCurrency(summary.currentCutoffReceivable.principalDueMinor, dashboardCurrency)}
-                meta="Scheduled principal on this cutoff"
-              />
-              <MiniMetric
-                label="Interest due"
-                value={formatMinorCurrency(summary.currentCutoffReceivable.interestDueMinor, dashboardCurrency)}
-                meta="Scheduled interest on this cutoff"
-              />
-              <MiniMetric
-                label="Remaining to collect"
-                value={formatMinorCurrency(summary.currentCutoffReceivable.remainingMinor, dashboardCurrency)}
-                meta={formatMinorCurrency(summary.currentCutoffReceivable.totalCollectedMinor, dashboardCurrency) + ' already collected'}
-              />
-              <MiniMetric
-                label="Borrowers due"
-                value={summary.currentCutoffReceivable.borrowerCount.toLocaleString('en-PH')}
-                meta={`${summary.currentCutoffReceivable.loanCount.toLocaleString('en-PH')} loan${summary.currentCutoffReceivable.loanCount === 1 ? '' : 's'} due`}
-              />
-            </section>
-          ) : (
-            <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-              <span className="dashboard-overview__emptyIcon">
-                <OverviewGlyph name="note" />
-              </span>
-              <div>
-                <strong>No upcoming receivables</strong>
-                <p>No unpaid or partially paid cutoff rows are scheduled right now.</p>
-              </div>
-            </div>
-          )}
-
-          <div className="dashboard-overview__tableCard">
-            {receivablePreview.length > 0 ? (
-              <table className="dashboard-overview__table">
-                <thead>
-                  <tr>
-                    <th>Cutoff date</th>
-                    <th className="dashboard-overview__tableAmount">Principal due</th>
-                    <th className="dashboard-overview__tableAmount">Interest due</th>
-                    <th className="dashboard-overview__tableAmount">Total receivable</th>
-                    <th className="dashboard-overview__tableAmount">Collected</th>
-                    <th className="dashboard-overview__tableAmount">Remaining</th>
-                    <th>Borrowers due</th>
-                    <th>Loans due</th>
-                    <th className="dashboard-overview__tableStatus">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {receivablePreview.map((entry) => (
-                    <tr key={entry.cutoffDate}>
-                      <td>{formatDate(entry.cutoffDate)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.principalDueMinor, dashboardCurrency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.interestDueMinor, dashboardCurrency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.totalReceivableMinor, dashboardCurrency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.totalCollectedMinor, dashboardCurrency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.remainingMinor, dashboardCurrency)}</td>
-                      <td>{entry.borrowerCount.toLocaleString('en-PH')}</td>
-                      <td>{entry.loanCount.toLocaleString('en-PH')}</td>
-                      <td className="dashboard-overview__tableStatus">
-                        <span className={`dashboard-overview__statusBadge dashboard-overview__statusBadge--${entry.status}`}>
-                          {getReceivableStatusLabel(entry.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="dashboard-overview__emptyState">
-                <span className="dashboard-overview__emptyIcon">
-                  <OverviewGlyph name="money" />
-                </span>
-                <div>
-                  <strong>No receivable cutoffs yet</strong>
-                  <p>Open receivable cutoff groups will appear here once active schedules are generated.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        <DashboardCutoffReceivables
+          currency={dashboardCurrency}
+          currentCutoffReceivable={summary.currentCutoffReceivable}
+          receivableByCutoff={summary.receivableByCutoff}
+        />
 
         <section className="grid two">
           <article className="dashboard-overview__progressCard">

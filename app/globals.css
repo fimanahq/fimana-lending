@@ -2758,6 +2758,11 @@ th {
   padding: 0.75rem 1rem;
 }
 
+.dashboard-overview__tableScroll {
+  max-height: 31rem;
+  overflow: auto;
+}
+
 .dashboard-overview__miniGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2860,6 +2865,11 @@ th {
   text-align: center;
 }
 
+.dashboard-overview__tableActions {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .dashboard-overview__statusBadge {
   display: inline-flex;
   align-items: center;
@@ -2887,6 +2897,52 @@ th {
 .dashboard-overview__statusBadge--upcoming {
   background: rgba(146, 75, 16, 0.08);
   color: var(--accent-strong);
+}
+
+.dashboard-overview__emptyIcon--text {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(146, 75, 16, 0.08);
+  color: var(--accent-strong);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.dashboard-overview__cutoffDialog {
+  width: min(70rem, 100%);
+}
+
+.dashboard-overview__cutoffDialogContent {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-overview__cutoffDialogSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-overview__cutoffDialogTableWrap {
+  max-height: 24rem;
+  overflow: auto;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__table--compact th,
+.dashboard-overview__table--compact td {
+  padding: 0.95rem 1rem;
+}
+
+.dashboard-overview__loanCell {
+  display: grid;
+  gap: 0.2rem;
 }
 
 .dashboard-overview__taskStack {
@@ -4666,6 +4722,10 @@ th {
   .dashboard-overview__statCard {
     min-height: 0;
     padding: 1.35rem;
+  }
+
+  .dashboard-overview__cutoffDialogSummary {
+    grid-template-columns: 1fr;
   }
 
   .dashboard-overview__statValue {

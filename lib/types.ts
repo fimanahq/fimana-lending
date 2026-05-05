@@ -357,6 +357,19 @@ export interface UpcomingLoanReminder {
 
 export type DashboardReceivableStatus = 'overdue' | 'current' | 'upcoming'
 
+export interface DashboardCutoffReceivableLoan {
+  loanId: string
+  loanNumber: string
+  borrowerId: string
+  borrowerDisplayName: string
+  borrowerNumber: string
+  principalDueMinor: number
+  interestDueMinor: number
+  totalReceivableMinor: number
+  totalCollectedMinor: number
+  remainingMinor: number
+}
+
 export interface DashboardCutoffReceivable {
   cutoffDate: string
   principalDueMinor: number
@@ -369,6 +382,7 @@ export interface DashboardCutoffReceivable {
   borrowerCount: number
   loanCount: number
   status: DashboardReceivableStatus
+  loans: DashboardCutoffReceivableLoan[]
 }
 
 export interface LoanDashboardSummary {

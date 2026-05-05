@@ -1,5 +1,4 @@
 import type {
-  DashboardCutoffReceivable,
   LoanApplication,
   LoanDashboardSummary,
   SettingsCurrency,
@@ -27,7 +26,6 @@ export interface DashboardOverviewData {
   interestOutlookSegments: DashboardProgressSegment[]
   recentApplications: LoanApplication[]
   dueSoon: UpcomingLoanReminder[]
-  receivablePreview: DashboardCutoffReceivable[]
   partialFailureNotice: string | null
 }
 
@@ -145,7 +143,6 @@ export function buildDashboardOverviewData({
     interestOutlookSegments,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
     dueSoon: [...reminders].sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt)).slice(0, 3),
-    receivablePreview: mergedSummary.receivableByCutoff.slice(0, 6),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }
 }
