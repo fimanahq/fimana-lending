@@ -6,6 +6,22 @@ import { useEffect, useState } from 'react'
 import { AppLogo } from '@/components/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { classNames } from '@/utils/class-names'
+import {
+  Bell,
+  Calculator,
+  CreditCard,
+  FileText,
+  HandCoins,
+  LayoutDashboard,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  ReceiptText,
+  Settings,
+  UsersRound,
+  X,
+} from 'lucide-react'
 
 type IconName =
   | 'borrowers'
@@ -55,121 +71,33 @@ const pathLabels: Record<string, string> = {
   settings: 'Settings',
 }
 
-function DashboardIcon({ name }: { name: IconName }) {
-  switch (name) {
-    case 'borrowers':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M8.5 11a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4ZM15.8 10a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M3.5 19c.7-3.6 2.6-5.4 5-5.4s4.3 1.8 5 5.4M13.7 14.1c2.7.1 4.5 1.8 5 4.9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      )
-    case 'calculator':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="5" y="3.8" width="14" height="16.4" rx="2.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M8 7.8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-        </svg>
-      )
-    case 'collections':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M6 5h12v14H6z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M17.5 14.5 20 17l-2.5 2.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )
-    case 'overview':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" fill="currentColor" />
-        </svg>
-      )
-    case 'payments':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3.8" y="6.2" width="16.4" height="11.6" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M3.8 10h16.4M8 15h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M15.5 14.8h1.8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-        </svg>
-      )
-    case 'applications':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M6 5h8l4 4v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-          <path d="M14 5v4h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M8 12h6M8 16h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      )
-    case 'loans':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M3 10 12 5l9 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-          <path d="M5 10v8M10 10v8M14 10v8M19 10v8M3 19h18" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        </svg>
-      )
-    case 'menu':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      )
-    case 'panel-left-close':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M9 3v18M16 15l-3-3 3-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )
-    case 'panel-left-open':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M9 3v18M13 9l3 3-3 3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )
-    case 'settings':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="m12 3 1.3 2.8 3.1.5.7 3 2.6 1.8-1 3 1 3-2.6 1.8-.7 3-3.1.5L12 21l-1.3-2.8-3.1-.5-.7-3L4.3 13l1-3-1-3 2.6-1.8.7-3 3.1-.5Z"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
-          <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        </svg>
-      )
-    case 'bell':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 4a4 4 0 0 0-4 4v2.2c0 1-.3 2-.9 2.8L5.8 15h12.4l-1.3-2c-.6-.8-.9-1.8-.9-2.8V8a4 4 0 0 0-4-4Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M10 18a2 2 0 0 0 4 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      )
-    case 'plus':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      )
-    case 'x':
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      )
-    default:
-      return null
-  }
+const icons = {
+  overview: LayoutDashboard,
+  borrowers: UsersRound,
+  applications: FileText,
+  loans: HandCoins,
+  payments: CreditCard,
+  collections: ReceiptText,
+  calculator: Calculator,
+  settings: Settings,
+  bell: Bell,
+  menu: Menu,
+  'panel-left-close': PanelLeftClose,
+  'panel-left-open': PanelLeftOpen,
+  plus: Plus,
+  x: X,
+} satisfies Record<IconName, React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>>
+
+export function DashboardIcon({
+  name,
+  className,
+}: {
+  name: IconName
+  className?: string
+}) {
+  const Icon = icons[name]
+
+  return <Icon className={className} aria-hidden />
 }
 
 function isPathMatch(pathname: string, href: string) {

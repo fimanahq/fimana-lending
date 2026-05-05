@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { DashboardCutoffReceivables } from '@/components/dashboard-cutoff-receivables'
-import { DashboardPortfolioChart } from '@/components/dashboard-portfolio-chart'
+import { DashboardCutoffReceivables } from '@/components/dashboard/dashboard-cutoff-receivables'
+import { DashboardPortfolioChart } from '@/components/dashboard/dashboard-portfolio-chart'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types'
-import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard-overview-data'
+import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)

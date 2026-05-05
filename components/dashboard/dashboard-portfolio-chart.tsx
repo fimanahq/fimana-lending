@@ -2,7 +2,7 @@
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { formatCurrency } from '@/lib/format'
-import type { DashboardProgressSegment } from '@/components/dashboard-overview-data'
+import type { DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 
 const tooltipContentStyle = {
   border: '1px solid rgba(97, 84, 62, 0.14)',

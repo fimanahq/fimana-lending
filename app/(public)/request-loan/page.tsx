@@ -24,8 +24,7 @@ export default function RequestLoanPage() {
             </h1>
 
             <p className="request-homepage__lede">
-              Complete your loan application below. Our curated approach ensures a bespoke lending experience tailored to
-              your unique portfolio.
+              Apply online and complete your loan request in a few simple steps.
             </p>
 
             <div className="request-homepage__imageCard">

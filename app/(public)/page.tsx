@@ -51,7 +51,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="landing-homepage__body" data-node-id="2003:22">
-                Apply online, share the essentials, and move through a clear lending process from request to repayment.
+                Complete your request online with a simple, guided process.
               </p>
 
               <div className="landing-homepage__actions" data-node-id="2003:24">
@@ -83,7 +83,7 @@ export default function LandingPage() {
 
           <div className="landing-homepage__separator" aria-hidden="true" data-node-id="2003:30" />
 
-          <section className="grid two landing-homepage__infoGrid">
+          {/* <section className="grid two landing-homepage__infoGrid">
             <article id="privacy-policy" className="card panel stack">
               <h2 className="section-title">Privacy Policy</h2>
               <p className="muted">
@@ -111,7 +111,7 @@ export default function LandingPage() {
                 Lending terms, charges, and collection practices should be reviewed against the applicable local compliance requirements.
               </p>
             </article>
-          </section>
+          </section> */}
         </div>
       </main>
 
