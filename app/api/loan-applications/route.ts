@@ -40,12 +40,28 @@ function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInp
   }
 }
 
-export async function GET() {
+// export async function GET() {
+//   try {
+//     const applications = await authorizedBackendRequest<LoanApplication[]>('/loan-applications')
+//     return NextResponse.json(applications)
+//   } catch (caughtError) {
+//     return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan applications', 401)
+//   }
+// }
+export async function GET(request: NextRequest) {
+  const query = request.nextUrl.searchParams.toString()
+
   try {
-    const applications = await authorizedBackendRequest<LoanApplication[]>('/loan-applications')
+    const applications = await authorizedBackendRequest(
+      `/loan-applications${query ? `?${query}` : ''}`,
+    )
+
     return NextResponse.json(applications)
   } catch (caughtError) {
-    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan applications', 401)
+    return jsonError(
+      caughtError instanceof Error ? caughtError.message : 'Unable to load loan applications',
+      401,
+    )
   }
 }
 

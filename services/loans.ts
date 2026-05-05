@@ -1,17 +1,40 @@
 import { apiRequest } from '@/lib/client-api'
 import type { LoanRecord, Loan } from '@/lib/types'
-import { API_BASE_URL } from '@/lib/constants'
+import { PaginatedResponse } from '@/types'
 
 export function listLoans() {
   return apiRequest<Loan[]>('/api/lendings')
 }
 
-export function listLoanRecords() {
-  return apiRequest<LoanRecord[]>('/api/loans')
-}
-
 export function getLoan(loanId: string) {
   return apiRequest<LoanRecord>(`/api/loans/${loanId}`)
+}
+
+type LoanRecordFilters = {
+  status?: string
+  borrowerId?: string
+  page?: number
+  itemsPerPage?: number
+}
+
+function buildQueryParams(filters: LoanRecordFilters) {
+  const params = new URLSearchParams()
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.set(key, String(value))
+    }
+  })
+
+  return params.toString()
+}
+
+export function listLoanRecords(filters: LoanRecordFilters = {}) {
+  const query = buildQueryParams(filters)
+
+  return apiRequest<PaginatedResponse<LoanRecord>>(
+    `/api/loans${query ? `?${query}` : ''}`,
+  )
 }
 
 export function listLoansByBorrowerId(borrowerId: string) {

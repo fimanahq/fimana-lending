@@ -1,11 +1,19 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const query = request.nextUrl.searchParams.toString()
+
   try {
-    const loans = await authorizedBackendRequest('/loans')
+    const loans = await authorizedBackendRequest(
+      `/loans${query ? `?${query}` : ''}`,
+    )
+
     return NextResponse.json(loans)
   } catch (caughtError) {
-    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans', 401)
+    const message =
+      caughtError instanceof Error ? caughtError.message : 'Unable to load loans'
+
+    return jsonError(message, 400)
   }
 }

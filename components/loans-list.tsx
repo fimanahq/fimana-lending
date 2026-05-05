@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
-import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
+import { useCallback, useEffect, useState } from 'react'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, LoadingState, Pagination, TableShell } from '@/components/shared'
+
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
@@ -12,10 +13,13 @@ import { deleteLoan, listLoanRecords } from '@/services'
 
 type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement'
 
+const PAGE_SIZE = 20
+
 const STATUS_FILTERS: Array<{ label: string; value: LoanListFilter }> = [
-  { label: 'All', value: 'all' },
   { label: 'Active', value: 'active' },
+  { label: 'Pending', value: 'pending_disbursement' },
   { label: 'Completed', value: 'completed' },
+  { label: 'All', value: 'all' },
 ]
 
 function formatMinorCurrency(value: number, currency: string) {
@@ -33,34 +37,52 @@ function formatLoanSchedule(loan: LoanRecord) {
 
 export function LoansList() {
   const [loans, setLoans] = useState<LoanRecord[]>([])
-  const [activeFilter, setActiveFilter] = useState<LoanListFilter>('all')
+  const [activeFilter, setActiveFilter] = useState<LoanListFilter>('active')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalLoans, setTotalLoans] = useState(0)
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [paymentLoanId, setPaymentLoanId] = useState('')
   const [deleteLoanId, setDeleteLoanId] = useState('')
   const [deleting, setDeleting] = useState(false)
 
-  const loadLoans = async () => {
+  const loadLoans = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      setLoans(await listLoanRecords())
+      const response = await listLoanRecords({
+        status: activeFilter === 'all' ? undefined : activeFilter,
+        page,
+        itemsPerPage: PAGE_SIZE,
+      })
+
+      setLoans(response.items)
+      setTotalLoans(response.total)
+      setTotalPages(Math.max(response.totalPages, 1))
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeFilter, page])
 
   const handleDeleteLoan = async () => {
     if (!deleteLoanId) return
 
     setDeleting(true)
+
     try {
       await deleteLoan(deleteLoanId)
-      setLoans((prev) => prev.filter((loan) => loan.id !== deleteLoanId))
       setDeleteLoanId('')
+
+      if (loans.length === 1 && page > 1) {
+        setPage((current) => Math.max(current - 1, 1))
+      } else {
+        await loadLoans()
+      }
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to delete loan')
     } finally {
@@ -70,17 +92,7 @@ export function LoansList() {
 
   useEffect(() => {
     void loadLoans()
-  }, [])
-
-  const visibleLoans = useMemo(() => {
-    const sorted = [...loans].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-
-    if (activeFilter === 'all') {
-      return sorted
-    }
-
-    return sorted.filter((loan) => loan.status === activeFilter)
-  }, [activeFilter, loans])
+  }, [loadLoans])
 
   const selectedPaymentLoan = loans.find((loan) => loan.id === paymentLoanId) || null
 
@@ -96,7 +108,10 @@ export function LoansList() {
             key={status.value}
             type="button"
             className={activeFilter === status.value ? 'is-active' : ''}
-            onClick={() => setActiveFilter(status.value)}
+            onClick={() => {
+              setActiveFilter(status.value)
+              setPage(1)
+            }}
           >
             {status.label}
           </button>
@@ -117,29 +132,33 @@ export function LoansList() {
 
       {!loading && !error && loans.length === 0 ? (
         <EmptyState
-          title="No loans yet"
-          description="Approved applications appear here after they are converted and auto-disbursed."
+          title={activeFilter === 'all' ? 'No loans yet' : 'No loans match this status'}
+          description={
+            activeFilter === 'all'
+              ? 'Approved applications appear here after they are converted and auto-disbursed.'
+              : 'Try another status filter or check loan applications.'
+          }
           action={<Link href="/loan-applications" className="button-secondary">Go to applications</Link>}
         />
       ) : null}
 
       {!loading && !error && loans.length > 0 ? (
-        <TableShell label="Loans">
-          <DataTable>
-            <thead>
-              <tr>
-                <th>Borrower</th>
-                <th>Loan</th>
-                <th>Principal</th>
-                <th>Outstanding</th>
-                <th>Next due</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleLoans.length > 0 ? (
-                visibleLoans.map((loan) => (
+        <>
+          <TableShell label="Loans">
+            <DataTable>
+              <thead>
+                <tr>
+                  <th>Borrower</th>
+                  <th>Loan</th>
+                  <th>Principal</th>
+                  <th>Outstanding</th>
+                  <th>Next due</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loans.map((loan) => (
                   <tr key={loan.id}>
                     <td>
                       <Link className="data-card__titleLink" href={`/loans/${loan.id}`}>
@@ -169,6 +188,7 @@ export function LoansList() {
                         >
                           <ViewIcon />
                         </Link>
+
                         <button
                           type="button"
                           className="button-ghost table-action-icon loans-list__iconAction"
@@ -178,6 +198,7 @@ export function LoansList() {
                         >
                           <PaymentIcon />
                         </button>
+
                         <button
                           type="button"
                           className="button-ghost table-action-icon loans-list__iconAction"
@@ -190,15 +211,20 @@ export function LoansList() {
                       </div>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="muted">No loans match this status.</td>
-                </tr>
-              )}
-            </tbody>
-          </DataTable>
-        </TableShell>
+                ))}
+              </tbody>
+            </DataTable>
+          </TableShell>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalLoans}
+            itemLabel="loans"
+            loading={loading}
+            onPageChange={setPage}
+          />
+        </>
       ) : null}
 
       <LoanPaymentDialog
@@ -212,7 +238,7 @@ export function LoansList() {
       <ConfirmationDialog
         open={Boolean(deleteLoanId)}
         title="Delete loan"
-        message={`Are you sure you want to delete this loan? This action cannot be undone.`}
+        message="Are you sure you want to delete this loan? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
         destructive

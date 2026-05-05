@@ -1,13 +1,40 @@
 import { apiRequest } from '@/lib/client-api'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import type { LoanApplicationDraftInput, LoanApplicationStatus, LoanApplication } from '@/lib/types'
+import { PaginatedResponse } from '@/types'
 
 export type CreateLoanApplicationInput = LoanApplicationDraftInput
 export type UpdateLoanApplicationDraftInput = Partial<LoanApplicationDraftInput>
 export type UpdateLoanApplicationInput = Partial<LoanApplicationDraftInput>
 
-export function listLoanApplications() {
-  return apiRequest<LoanApplication[]>('/api/loan-applications')
+// export function listLoanApplications() {
+//   return apiRequest<LoanApplication[]>('/api/loan-applications')
+// }
+
+type LoanApplicationFilters = {
+  status?: string
+  page?: number
+  itemsPerPage?: number,
+}
+
+function buildQueryParams(filters: LoanApplicationFilters) {
+  const params = new URLSearchParams()
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      params.set(key, String(value))
+    }
+  })
+
+  return params.toString()
+}
+
+export function listLoanApplications(filters: LoanApplicationFilters = {}) {
+  const query = buildQueryParams(filters)
+
+  return apiRequest<PaginatedResponse<LoanApplication>>(
+    `/api/loan-applications${query ? `?${query}` : ''}`,
+  )
 }
 
 export function getLoanApplication(applicationId: string) {

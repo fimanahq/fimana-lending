@@ -166,7 +166,7 @@ export function buildLoanDueDates(
   )
 
   if (!firstPaymentMatches) {
-    throw new Error('First payment date must match one of the selected payment days')
+    throw new Error('First payment date must match one of the selected schedule preset')
   }
 
   const dueDates = [firstDate]

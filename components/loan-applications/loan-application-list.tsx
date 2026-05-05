@@ -1,21 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
-import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
+import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
 import { listLoanApplications } from '@/services'
-import { Button, DataTable, EmptyState, ErrorState, LoadingState, TableShell } from '@/components/shared'
+import { Button, DataTable, EmptyState, ErrorState, LoadingState, Pagination, TableShell } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'
 
 type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
 
+const PAGE_SIZE = 20
+
 const STATUS_FILTERS: Array<{ label: string; value: LoanApplicationQueueFilter }> = [
-  { label: 'All', value: 'all' },
   { label: 'Submitted', value: 'submitted' },
   { label: 'Approved', value: 'approved' },
   { label: 'Rejected', value: 'rejected' },
+  { label: 'All', value: 'all' },
 ]
 
 function getApplicantName(application: LoanApplication) {
@@ -32,43 +34,37 @@ function getApplicationSchedule(application: LoanApplication) {
 
 export function LoanApplicationList() {
   const [applications, setApplications] = useState<LoanApplication[]>([])
-  const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('all')
+  const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('submitted')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalApplications, setTotalApplications] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
-  const loadApplications = async () => {
+  const loadApplications = useCallback(async () => {
     setError('')
     setLoading(true)
 
     try {
-      setApplications(await listLoanApplications())
+      const response = await listLoanApplications({
+        status: activeStatus === 'all' ? undefined : activeStatus,
+        page,
+        itemsPerPage: PAGE_SIZE,
+      })
+
+      setApplications(response.items)
+      setTotalApplications(response.total)
+      setTotalPages(Math.max(response.totalPages, 1))
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan applications')
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeStatus, page])
 
   useEffect(() => {
     void loadApplications()
-  }, [])
-
-  const visibleApplications = useMemo(() => {
-    const sorted = [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-
-    if (activeStatus === 'all') {
-      return sorted
-    }
-
-    return sorted.filter((application) => {
-      const normalizedStatus = normalizeLoanApplicationStatus(application.status)
-      if (activeStatus === 'submitted') {
-        return normalizedStatus === 'submitted' || normalizedStatus === 'under_review'
-      }
-
-      return normalizedStatus === activeStatus
-    })
-  }, [activeStatus, applications])
+  }, [loadApplications])
 
   return (
     <div className="stack">
@@ -82,7 +78,10 @@ export function LoanApplicationList() {
             key={status.value}
             type="button"
             className={activeStatus === status.value ? 'is-active' : ''}
-            onClick={() => setActiveStatus(status.value)}
+            onClick={() => {
+              setActiveStatus(status.value)
+              setPage(1)
+            }}
           >
             {status.label}
           </button>
@@ -103,29 +102,33 @@ export function LoanApplicationList() {
 
       {!loading && !error && applications.length === 0 ? (
         <EmptyState
-          title="No applications yet"
-          description="Create an application to preview terms and submit it for review."
+          title={activeStatus === 'all' ? 'No applications yet' : 'No applications match this status'}
+          description={
+            activeStatus === 'all'
+              ? 'Create an application to preview terms and submit it for review.'
+              : 'Try another status filter or create a new application.'
+          }
           action={<Link href="/loan-applications/new" className="button">New application</Link>}
         />
       ) : null}
 
       {!loading && !error && applications.length > 0 ? (
-        <TableShell label="Loan applications">
-          <DataTable>
-            <thead>
-              <tr>
-                <th>Applicant</th>
-                <th>Amount</th>
-                <th>Schedule</th>
-                <th>First Payment</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleApplications.length > 0 ? (
-                visibleApplications.map((application) => (
+        <>
+          <TableShell label="Loan applications">
+            <DataTable>
+              <thead>
+                <tr>
+                  <th>Applicant</th>
+                  <th>Amount</th>
+                  <th>Schedule</th>
+                  <th>First Payment</th>
+                  <th>Status</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applications.map((application) => (
                   <tr key={application.id}>
                     <td>
                       <Link className="data-card__titleLink" href={`/loan-applications/${application.id}`}>
@@ -135,7 +138,12 @@ export function LoanApplicationList() {
                         {application.applicationNumber || application.borrower?.mobileNumber || application.email || application.phone || 'No contact'}
                       </div>
                     </td>
-                    <td>{formatCurrency((application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1), application.loanProduct?.currency)}</td>
+                    <td>
+                      {formatCurrency(
+                        (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
+                        application.loanProduct?.currency,
+                      )}
+                    </td>
                     <td>{getApplicationSchedule(application)}</td>
                     <td>{formatDate(application.startDate || application.firstPaymentDate || application.createdAt)}</td>
                     <td>
@@ -155,15 +163,20 @@ export function LoanApplicationList() {
                       </Link>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="muted">No applications match this status.</td>
-                </tr>
-              )}
-            </tbody>
-          </DataTable>
-        </TableShell>
+                ))}
+              </tbody>
+            </DataTable>
+          </TableShell>
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalApplications}
+            itemLabel="applications"
+            loading={loading}
+            onPageChange={setPage}
+          />
+        </>
       ) : null}
     </div>
   )

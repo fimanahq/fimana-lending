@@ -19,3 +19,5 @@ export type {
   User,
   UserAppCode,
 } from '@/lib/types'
+
+export type { PaginatedResponse } from './pagination'
