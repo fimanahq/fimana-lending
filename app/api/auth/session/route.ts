@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { hasLendingAccess } from '@/lib/access'
+import { hasLoanAppAccess } from '@/lib/access'
 import { clearSessionCookies, getSessionUser, jsonError } from '@/lib/server/backend'
 
 export async function GET() {
@@ -8,7 +8,7 @@ export async function GET() {
     return jsonError('Unauthorized', 401)
   }
 
-  if (!hasLendingAccess(user)) {
+  if (!hasLoanAppAccess(user)) {
     await clearSessionCookies()
     return jsonError('This account does not have access to FiMana Lending.', 403)
   }

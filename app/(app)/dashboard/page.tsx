@@ -6,7 +6,7 @@ export default async function DashboardPage() {
   const [summaryResult, applicationResult, reminderResult] = await Promise.allSettled([
     authorizedBackendRequest<LoanDashboardSummary>('/loans/dashboard-summary'),
     authorizedBackendRequest<LoanApplication[]>('/loan-applications/applications'),
-    authorizedBackendRequest<UpcomingLoanReminder[]>('/lendings/reminders/upcoming'),
+    authorizedBackendRequest<UpcomingLoanReminder[]>('/loans/reminders/upcoming'),
   ])
 
   const failedSources: DashboardDataSource[] = []

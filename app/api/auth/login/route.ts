@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/constants'
 import { createSession, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import { hasLendingAccess } from '@/lib/access'
+import { hasLoanAppAccess } from '@/lib/access'
 import type { User } from '@/lib/types'
 
 interface AuthPayload {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   }
 
   const authPayload = payload.data as AuthPayload
-  if (!hasLendingAccess(authPayload.user)) {
+  if (!hasLoanAppAccess(authPayload.user)) {
     await fetch(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: {

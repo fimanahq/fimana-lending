@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState, type FormEvent, type WheelEvent } fro
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationCutoffPatternCode, LoanApplicationPaymentType, LoanApplicationStatus } from '@/lib/types'
-import { getLoanApplication, listLendingBorrowers, updateLoanApplication, updateLoanApplicationStatus } from '@/services'
+import { getLoanApplication, listLoanBorrowers, updateLoanApplication, updateLoanApplicationStatus } from '@/services'
 import { Button, Card, EmptyState, ErrorState, Input, LoadingState, Select, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 
@@ -109,7 +109,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
     try {
       const [loaded, borrowerRows] = await Promise.all([
         getLoanApplication(applicationId),
-        listLendingBorrowers(),
+        listLoanBorrowers(),
       ])
       setApplication(loaded)
       setBorrowers(borrowerRows)

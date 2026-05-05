@@ -10,7 +10,7 @@ import type {
 } from '@/lib/types'
 import {
   createLoanApplication,
-  listLendingBorrowers,
+  listLoanBorrowers,
 } from '@/services'
 import {
   Button,
@@ -88,7 +88,7 @@ export function LoanApplicationForm() {
   useEffect(() => {
     const loadBorrowers = async () => {
       try {
-        const rows = await listLendingBorrowers()
+        const rows = await listLoanBorrowers()
         setBorrowers(rows)
         // Only update borrowerId if it's empty and we have borrowers
         setForm((current) => {

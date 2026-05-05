@@ -1,10 +1,6 @@
 import { apiRequest } from '@/lib/client-api'
-import type { LoanRecord, Loan } from '@/lib/types'
+import type { LoanRecord } from '@/lib/types'
 import { PaginatedResponse } from '@/types'
-
-export function listLoans() {
-  return apiRequest<Loan[]>('/api/lendings')
-}
 
 export function getLoan(loanId: string) {
   return apiRequest<LoanRecord>(`/api/loans/${loanId}`)
@@ -39,6 +35,13 @@ export function listLoanRecords(filters: LoanRecordFilters = {}) {
 
 export function listLoansByBorrowerId(borrowerId: string) {
   return apiRequest<LoanRecord[]>(`/api/borrowers/${borrowerId}/loans`)
+}
+
+export function postLoan(input: Record<string, unknown>) {
+  return apiRequest<LoanRecord>('/api/loans', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 export function deleteLoan(loanId: string) {

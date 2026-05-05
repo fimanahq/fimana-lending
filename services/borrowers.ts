@@ -14,7 +14,7 @@ export function listBorrowers() {
   return apiRequest<Borrower[]>('/api/borrowers')
 }
 
-export function listLendingBorrowers() {
+export function listLoanBorrowers() {
   return apiRequest<Borrower[]>('/api/borrowers')
 }
 
