@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { AppLogo } from '@/components/app-logo'
+import { AppLogo } from '@/components/shared/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { classNames } from '@/utils/class-names'
 import {

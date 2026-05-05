@@ -2,8 +2,7 @@ import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
 
-const editorialImageUrl =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAk2wKt3CmqISCd14AYUzSwmx7gj6IjhhLeqzWmaEHi5JlehlPgnwt4wbPpEV0pZN1V2xejPqTiGCKm8XLU44sjKeow1tuB4wNWYaVoOFO4SwVpC2R5Qg8Lr09YS0ux9ZjDl1L9M66OeoEKMuHUl8XRIDNOi5tIpqzM54YWFdgCjklspZMst5skXFyWoQ75-IS3H81oJsX-p5LD8UfXphRtM8SSSvptP3HDeoy3EJMOvXZOabRAcXxVS6HiCtnQ47ZrRzOVbhFknGc'
+const editorialImageUrl = '/images/request-loan-minimal-office.png'
 
 export default function RequestLoanPage() {
   return (
@@ -33,7 +32,6 @@ export default function RequestLoanPage() {
                 alt="Luxury minimalist office interior with warm wooden accents and soft sunlight."
                 className="request-homepage__image"
               />
-              <div className="request-homepage__imageOverlay" />
 
               <div className="request-homepage__statusCard">
                 <div className="request-homepage__statusIcon" aria-hidden="true">

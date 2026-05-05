@@ -11,11 +11,13 @@ export function AppLogo({ className, suffix }: AppLogoProps) {
     <span className={classNames('app-logo', className)}>
       <Image
         className="app-logo__mark"
-        src="/brand/fimana-mark.svg"
+        src="/brand/fimana-mark.svg?v=2"
         alt=""
         aria-hidden="true"
         width={1024}
         height={1024}
+        style={{ width: 'var(--app-logo-mark-size)', height: 'var(--app-logo-mark-size)' }}
+        unoptimized
       />
 
       <span className="app-logo__wordmark">

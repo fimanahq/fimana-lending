@@ -1,4 +1,4 @@
-import { LoanDetail } from '@/components/loan-detail'
+import { LoanDetail } from '@/components/loan-list/loan-detail'
 
 export default async function LoanDetailPage({
   params,

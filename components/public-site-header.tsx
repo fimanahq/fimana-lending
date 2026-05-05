@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { AppLogo } from '@/components/app-logo'
+import { AppLogo } from '@/components/shared/app-logo'
 
 type PublicSiteHeaderProps = {
   headerClassName?: string

@@ -1,4 +1,4 @@
-import { LoansList } from '@/components/loans-list'
+import { LoansList } from '@/components/loan-list/loans-list'
 
 export default function LoansPage() {
   return <LoansList />
