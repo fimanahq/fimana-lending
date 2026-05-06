@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent, type WheelEvent } from 'r
 import { useRouter } from 'next/navigation'
 import type {
   Borrower,
+  LoanApplication,
   LoanApplicationDraftInput,
   LoanApplicationPaymentType,
 } from '@/lib/types'
@@ -12,6 +13,7 @@ import { formatDate } from '@/lib/format'
 import {
   createLoanApplication,
   listLoanBorrowers,
+  updateLoanApplication,
 } from '@/services'
 import {
   Button,
@@ -26,14 +28,43 @@ import {
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
 
-const initialForm = {
+export const loanApplicationLabels = {
+  borrower: 'Borrower',
+  firstPaymentDay: 'First Payment Day',
+  loanAmount: 'Loan Amount',
+  loanPurpose: 'Loan Purpose',
+  numberOfInstallments: 'Number of Installments',
+  paymentFrequency: 'Payment Frequency',
+  secondPaymentDay: 'Second Payment Day',
+  startDate: 'Start Date',
+} as const
+
+export interface LoanApplicationFormValues {
+  borrowerId: string
+  loanAmount: string
+  numberOfInstallments: string
+  startDate: string
+  paymentType: LoanApplicationPaymentType
+  purpose: string
+}
+
+interface LoanApplicationFormProps {
+  applicationId?: string
+  borrowers?: Borrower[]
+  initialValues?: LoanApplicationFormValues
+  loadingBorrowers?: boolean
+  mode?: 'create' | 'edit'
+  onCancel?: () => void
+  onSaved?: (application: LoanApplication) => void
+  showCard?: boolean
+}
+
+const initialFormValues: LoanApplicationFormValues = {
   borrowerId: '',
   loanAmount: '',
-  numberOfCutoffs: '2',
+  numberOfInstallments: '2',
   startDate: '',
-  paymentType: 'semi_monthly' as LoanApplicationPaymentType,
-  firstDay: '15',
-  secondDay: 'month_end',
+  paymentType: 'semi_monthly',
   purpose: '',
 }
 
@@ -51,67 +82,60 @@ function getDateParts(value: string) {
   return { year, month, day }
 }
 
-function deriveSemiMonthlyPaymentDaysFromStartDate(startDate: string) {
+function derivePaymentDaysFromStartDate(startDate: string, paymentType: LoanApplicationPaymentType) {
   const parts = getDateParts(startDate)
   if (!parts) {
-    return null
+    return paymentType === 'monthly' ? [''] : ['', '']
   }
 
   const firstDay = String(parts.day)
 
+  if (paymentType === 'monthly') {
+    return [firstDay]
+  }
+
   if (parts.day === 15) {
-    return {
-      firstDay,
-      secondDay: 'month_end',
-    }
+    return [firstDay, 'month_end']
   }
 
   const startDateValue = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12))
   const secondDateValue = new Date(startDateValue)
   secondDateValue.setUTCDate(secondDateValue.getUTCDate() + 15)
 
-  return {
-    firstDay,
-    secondDay: String(secondDateValue.getUTCDate()),
-  }
-}
-
-function deriveMonthlyPaymentDayFromStartDate(startDate: string) {
-  const parts = getDateParts(startDate)
-  return parts ? String(parts.day) : null
+  return [firstDay, String(secondDateValue.getUTCDate())]
 }
 
 function pesosToMinor(value: string) {
   return Math.round(Number(value) * 100)
 }
 
-function getDraftPayload(form: typeof initialForm): LoanApplicationDraftInput {
-  const paymentDays = buildPaymentDays(form.paymentType, form.firstDay, form.secondDay)
+function getDraftPayload(form: LoanApplicationFormValues): LoanApplicationDraftInput {
+  const [firstDay = '', secondDay = ''] = derivePaymentDaysFromStartDate(form.startDate, form.paymentType)
 
   return {
     borrowerId: form.borrowerId,
     loanAmountMinor: pesosToMinor(form.loanAmount),
-    numberOfCutoffs: Number(form.numberOfCutoffs),
+    numberOfCutoffs: Number(form.numberOfInstallments),
     startDate: form.startDate,
     paymentType: form.paymentType,
-    paymentDays,
+    paymentDays: buildPaymentDays(form.paymentType, firstDay, secondDay),
     purpose: form.purpose.trim() || undefined,
   }
 }
 
-function validateForm(form: typeof initialForm) {
+function validateForm(form: LoanApplicationFormValues) {
   if (!form.borrowerId) {
     return 'Borrower is required'
   }
 
   const amountMinor = pesosToMinor(form.loanAmount)
   if (!Number.isFinite(amountMinor) || amountMinor < 1) {
-    return 'Requested amount must be greater than zero'
+    return 'Loan amount must be greater than zero'
   }
 
-  const cutoffs = Number(form.numberOfCutoffs)
-  if (!Number.isInteger(cutoffs) || cutoffs < 1) {
-    return 'Number of cutoffs must be a whole number of at least 1'
+  const installments = Number(form.numberOfInstallments)
+  if (!Number.isInteger(installments) || installments < 1) {
+    return 'Number of installments must be a whole number of at least 1'
   }
 
   if (!form.startDate) {
@@ -121,28 +145,64 @@ function validateForm(form: typeof initialForm) {
   return ''
 }
 
-export function LoanApplicationForm() {
+function minorToPesos(value?: number) {
+  return value ? String(value / 100) : ''
+}
+
+export function getLoanApplicationFormValues(application: LoanApplication): LoanApplicationFormValues {
+  const paymentType = (
+    application.paymentType || (application.paymentFrequency === 'monthly' ? 'monthly' : 'semi_monthly')
+  ) as LoanApplicationPaymentType
+
+  return {
+    borrowerId: application.borrowerId || application.borrower?.id || '',
+    loanAmount: minorToPesos(application.loanAmountMinor ?? (application.principal ? application.principal * 100 : 0)),
+    numberOfInstallments: String(application.numberOfCutoffs ?? application.gives ?? 1),
+    startDate: application.startDate || application.firstPaymentDate || '',
+    paymentType,
+    purpose: application.purpose || application.notes || '',
+  }
+}
+
+export function LoanApplicationForm({
+  applicationId,
+  borrowers: providedBorrowers,
+  initialValues,
+  loadingBorrowers: providedLoadingBorrowers = false,
+  mode = 'create',
+  onCancel,
+  onSaved,
+  showCard = true,
+}: LoanApplicationFormProps) {
   const router = useRouter()
-  const [borrowers, setBorrowers] = useState<Borrower[]>([])
+  const [borrowers, setBorrowers] = useState<Borrower[]>(providedBorrowers ?? [])
   const [error, setError] = useState('')
-  const [form, setForm] = useState(initialForm)
-  const [loadingBorrowers, setLoadingBorrowers] = useState(true)
+  const [form, setForm] = useState<LoanApplicationFormValues>(initialValues ?? initialFormValues)
+  const [loadingBorrowers, setLoadingBorrowers] = useState(providedBorrowers ? providedLoadingBorrowers : true)
+  const [showBorrowerModal, setShowBorrowerModal] = useState(false)
   const [showValidation, setShowValidation] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [showBorrowerModal, setShowBorrowerModal] = useState(false)
 
   const validationError = useMemo(() => validateForm(form), [form])
-  const computedPaymentDays = useMemo(
-    () => buildPaymentDays(form.paymentType, form.firstDay, form.secondDay),
-    [form.firstDay, form.paymentType, form.secondDay],
+  const derivedPaymentDays = useMemo(
+    () => derivePaymentDaysFromStartDate(form.startDate, form.paymentType),
+    [form.paymentType, form.startDate],
   )
-  const computedPaymentDates = useMemo(() => {
+  const [firstPaymentDay = '', secondPaymentDay = ''] = derivedPaymentDays
+  const derivedPaymentDates = useMemo(() => {
     if (!form.startDate) {
       return { first: '', second: '' }
     }
 
     try {
-      const dueDates = buildLoanDueDates(2, form.paymentType, computedPaymentDays, form.startDate)
+      const paymentDays = buildPaymentDays(form.paymentType, firstPaymentDay, secondPaymentDay)
+      const dueDates = buildLoanDueDates(
+        form.paymentType === 'monthly' ? 1 : 2,
+        form.paymentType,
+        paymentDays,
+        form.startDate,
+      )
+
       return {
         first: dueDates[0] ? formatDate(dueDates[0]) : '',
         second: dueDates[1] ? formatDate(dueDates[1]) : '',
@@ -150,18 +210,43 @@ export function LoanApplicationForm() {
     } catch {
       return { first: '', second: '' }
     }
-  }, [computedPaymentDays, form.paymentType, form.startDate])
+  }, [firstPaymentDay, form.paymentType, form.startDate, secondPaymentDay])
+  const shouldLoadBorrowers = providedBorrowers === undefined
 
   useEffect(() => {
+    if (initialValues) {
+      setForm(initialValues)
+    }
+  }, [initialValues])
+
+  useEffect(() => {
+    if (providedBorrowers !== undefined) {
+      setBorrowers(providedBorrowers)
+      setLoadingBorrowers(providedLoadingBorrowers)
+      setForm((current) => {
+        if (current.borrowerId || providedBorrowers.length === 0) {
+          return current
+        }
+
+        return { ...current, borrowerId: providedBorrowers[0].id }
+      })
+    }
+  }, [providedBorrowers, providedLoadingBorrowers])
+
+  useEffect(() => {
+    if (!shouldLoadBorrowers) {
+      return
+    }
+
     const loadBorrowers = async () => {
       try {
         const rows = await listLoanBorrowers()
         setBorrowers(rows)
-        // Only update borrowerId if it's empty and we have borrowers
         setForm((current) => {
           if (current.borrowerId === '' && rows.length > 0) {
             return { ...current, borrowerId: rows[0].id }
           }
+
           return current
         })
       } catch (caughtError) {
@@ -172,37 +257,14 @@ export function LoanApplicationForm() {
     }
 
     void loadBorrowers()
-  }, [])
+  }, [shouldLoadBorrowers])
 
   const preventWheelValueChange = (event: WheelEvent<HTMLInputElement>) => {
     event.currentTarget.blur()
   }
 
-  const updateForm = (updates: Partial<typeof initialForm>) => {
+  const updateForm = (updates: Partial<LoanApplicationFormValues>) => {
     setForm((current) => ({ ...current, ...updates }))
-    setError('')
-  }
-
-  const updateStartDate = (startDate: string) => {
-    setForm((current) => {
-      if (current.paymentType === 'monthly') {
-        const monthlyPaymentDay = deriveMonthlyPaymentDayFromStartDate(startDate)
-        return {
-          ...current,
-          startDate,
-          firstDay: monthlyPaymentDay ?? current.firstDay,
-          secondDay: monthlyPaymentDay ?? current.secondDay,
-        }
-      }
-
-      const semiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(startDate)
-      return {
-        ...current,
-        startDate,
-        firstDay: semiMonthlyDays?.firstDay ?? current.firstDay,
-        secondDay: semiMonthlyDays?.secondDay ?? current.secondDay,
-      }
-    })
     setError('')
   }
 
@@ -218,10 +280,21 @@ export function LoanApplicationForm() {
     setSubmitting(true)
 
     try {
-      const created = await createLoanApplication(getDraftPayload(form))
-      router.push(`/loan-applications/${created.id}`)
+      const payload = getDraftPayload(form)
+      const saved = mode === 'edit' && applicationId
+        ? await updateLoanApplication(applicationId, payload)
+        : await createLoanApplication(payload)
+
+      onSaved?.(saved)
+
+      if (mode === 'create') {
+        router.push(`/loan-applications/${saved.id}`)
+      }
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit application')
+      const fallbackMessage = mode === 'edit'
+        ? 'Unable to update loan application'
+        : 'Unable to create loan application'
+      setError(caughtError instanceof Error ? caughtError.message : fallbackMessage)
     } finally {
       setSubmitting(false)
     }
@@ -233,174 +306,175 @@ export function LoanApplicationForm() {
     setForm((current) => ({ ...current, borrowerId: newBorrower.id }))
   }
 
-  const handleAddBorrowerClick = () => {
-    setShowBorrowerModal(true)
-  }
-
-  return (
-    <div className="stack">
-      {error ? <ErrorState title="Application not ready" description={error} /> : null}
+  const formContent = (
+    <>
+      {error ? <ErrorState title="Loan application not ready" description={error} /> : null}
       {showValidation && validationError ? (
-        <ErrorState title="Missing application details" description={validationError} />
+        <ErrorState title="Missing loan application details" description={validationError} />
       ) : null}
 
       {loadingBorrowers ? (
-        <LoadingState title="Loading borrowers" description="Fetching borrower records for the application." />
+        <LoadingState title="Loading borrowers" description="Fetching borrower records for the loan application." />
       ) : null}
 
       {!loadingBorrowers && borrowers.length === 0 ? (
         <EmptyState title="No active borrowers found" description="Create a borrower before starting a loan application." />
       ) : null}
 
-      <div className="application-workspace-grid">
-        <Card title="Application form" description="This creates an application-stage record, not a loan record.">
-          <form className="stack" onSubmit={handleSubmit}>
+      {!loadingBorrowers && borrowers.length > 0 ? (
+        <form className="stack" onSubmit={handleSubmit}>
+          <Select
+            id={`${mode}ApplicationBorrower`}
+            label={loanApplicationLabels.borrower}
+            value={form.borrowerId}
+            disabled={loadingBorrowers || borrowers.length === 0}
+            onChange={(event) => {
+              if (event.target.value === '__add_new__') {
+                setShowBorrowerModal(true)
+              } else {
+                updateForm({ borrowerId: event.target.value })
+              }
+            }}
+          >
+            <option value="">Select borrower</option>
+            {borrowers.map((borrower) => (
+              <option key={borrower.id} value={borrower.id}>
+                {borrower.fullName} ({borrower.borrowerNumber})
+              </option>
+            ))}
+            {mode === 'create' ? <option value="__add_new__">+ Add new borrower</option> : null}
+          </Select>
+
+          <div className="grid two">
+            <Input
+              id={`${mode}ApplicationLoanAmount`}
+              label={loanApplicationLabels.loanAmount}
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputMode="decimal"
+              inputClassName="input-no-spinner"
+              value={form.loanAmount}
+              onWheel={preventWheelValueChange}
+              onChange={(event) => updateForm({ loanAmount: event.target.value })}
+            />
+            <Input
+              id={`${mode}ApplicationInstallments`}
+              label={loanApplicationLabels.numberOfInstallments}
+              type="number"
+              min="1"
+              step="1"
+              inputMode="numeric"
+              inputClassName="input-no-spinner"
+              value={form.numberOfInstallments}
+              onWheel={preventWheelValueChange}
+              onChange={(event) => updateForm({ numberOfInstallments: event.target.value })}
+            />
+          </div>
+
+          <div className="grid two">
+            <Input
+              id={`${mode}ApplicationStartDate`}
+              label={loanApplicationLabels.startDate}
+              type="date"
+              value={form.startDate}
+              onChange={(event) => updateForm({ startDate: event.target.value })}
+            />
             <Select
-              id="applicationBorrower"
-              label="Borrower"
-              value={form.borrowerId}
-              disabled={loadingBorrowers || borrowers.length === 0}
+              id={`${mode}ApplicationFrequency`}
+              label={loanApplicationLabels.paymentFrequency}
+              value={form.paymentType}
               onChange={(event) => {
-                if (event.target.value === '__add_new__') {
-                  handleAddBorrowerClick()
-                } else {
-                  updateForm({ borrowerId: event.target.value })
-                }
+                updateForm({ paymentType: event.target.value as LoanApplicationPaymentType })
               }}
             >
-              <option value="">Select borrower</option>
-              {borrowers.map((borrower) => (
-                <option key={borrower.id} value={borrower.id}>
-                  {borrower.fullName} ({borrower.borrowerNumber})
-                </option>
-              ))}
-              <option value="__add_new__">+ Add new borrower</option>
+              <option value="monthly">Monthly</option>
+              <option value="semi_monthly">Semi-Monthly</option>
             </Select>
+          </div>
 
+          {form.paymentType === 'monthly' ? (
             <div className="grid two">
               <Input
-                id="applicationPrincipal"
-                label="Requested amount"
-                type="number"
-                min="0.01"
-                step="0.01"
-                inputMode="decimal"
-                inputClassName="input-no-spinner"
-                value={form.loanAmount}
-                onWheel={preventWheelValueChange}
-                onChange={(event) => updateForm({ loanAmount: event.target.value })}
+                id={`${mode}ApplicationFirstPaymentDay`}
+                label={loanApplicationLabels.firstPaymentDay}
+                type="text"
+                value={derivedPaymentDates.first}
+                readOnly
               />
-              <Input
-                id="applicationCutoffs"
-                label="Number of cutoffs"
-                type="number"
-                min="1"
-                step="1"
-                inputMode="numeric"
-                inputClassName="input-no-spinner"
-                value={form.numberOfCutoffs}
-                onWheel={preventWheelValueChange}
-                onChange={(event) => updateForm({ numberOfCutoffs: event.target.value })}
-              />
+              <div />
             </div>
-
+          ) : (
             <div className="grid two">
               <Input
-                id="applicationStartDate"
-                label="Start date"
-                type="date"
-                value={form.startDate}
-                onChange={(event) => updateStartDate(event.target.value)}
+                id={`${mode}ApplicationFirstPaymentDay`}
+                label={loanApplicationLabels.firstPaymentDay}
+                type="text"
+                value={derivedPaymentDates.first}
+                readOnly
               />
-              <Select
-                id="applicationFrequency"
-                label="Payment type"
-                value={form.paymentType}
-                onChange={(event) => {
-                  const nextPaymentType = event.target.value as LoanApplicationPaymentType
-                  if (nextPaymentType === 'monthly') {
-                    const monthlyPaymentDay = deriveMonthlyPaymentDayFromStartDate(form.startDate)
-                    updateForm({
-                      paymentType: nextPaymentType,
-                      firstDay: monthlyPaymentDay ?? form.firstDay,
-                      secondDay: monthlyPaymentDay ?? form.secondDay,
-                    })
-                    return
-                  }
-
-                  const semiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(form.startDate)
-                  updateForm({
-                    paymentType: nextPaymentType,
-                    firstDay: semiMonthlyDays?.firstDay ?? form.firstDay,
-                    secondDay: semiMonthlyDays?.secondDay ?? form.secondDay,
-                  })
-                }}
-              >
-                <option value="monthly">Monthly</option>
-                <option value="semi_monthly">Semi-monthly</option>
-              </Select>
+              <Input
+                id={`${mode}ApplicationSecondPaymentDay`}
+                label={loanApplicationLabels.secondPaymentDay}
+                type="text"
+                value={derivedPaymentDates.second}
+                readOnly
+              />
             </div>
+          )}
 
-            {form.paymentType === 'monthly' ? (
-              <div className="grid two">
-                <Input
-                  id="applicationMonthlyPaymentDayComputed"
-                  label="Monthly payment day"
-                  type="text"
-                  value={computedPaymentDates.first}
-                  readOnly
-                />
-                <div />
-              </div>
-            ) : (
-              <div className="grid two">
-                <Input
-                  id="applicationFirstPaymentDayComputed"
-                  label="First payment day"
-                  type="text"
-                  value={computedPaymentDates.first}
-                  readOnly
-                />
-                <Input
-                  id="applicationSecondPaymentDayComputed"
-                  label="Second payment day"
-                  type="text"
-                  value={computedPaymentDates.second}
-                  readOnly
-                />
-              </div>
-            )}
+          <Textarea
+            id={`${mode}ApplicationPurpose`}
+            label={loanApplicationLabels.loanPurpose}
+            value={form.purpose}
+            onChange={(event) => updateForm({ purpose: event.target.value })}
+          />
 
-            <Textarea
-              id="applicationPurpose"
-              label="Purpose"
-              value={form.purpose}
-              onChange={(event) => updateForm({ purpose: event.target.value })}
-            />
-
-            <div className="application-form-actions">
-              <Button
-                type="submit"
-                disabled={submitting || borrowers.length === 0}
-              >
-                {submitting ? 'Creating...' : 'Create application'}
+          <div className="application-form-actions">
+            <Button type="submit" disabled={submitting || borrowers.length === 0}>
+              {submitting
+                ? mode === 'edit' ? 'Saving...' : 'Creating...'
+                : mode === 'edit' ? 'Save loan application' : 'Create loan application'}
+            </Button>
+            {mode === 'edit' && onCancel ? (
+              <Button type="button" variant="ghost" disabled={submitting} onClick={onCancel}>
+                Cancel
               </Button>
-            </div>
-          </form>
+            ) : null}
+          </div>
+        </form>
+      ) : null}
+
+      {mode === 'create' ? (
+        <Dialog
+          id="add-borrower-modal"
+          title="Add new borrower"
+          description="Create a new borrower record for the loan application."
+          open={showBorrowerModal}
+          onClose={() => setShowBorrowerModal(false)}
+        >
+          <div className="stack">
+            <BorrowerForm mode="create" onSaved={handleBorrowerCreated} />
+          </div>
+        </Dialog>
+      ) : null}
+    </>
+  )
+
+  if (!showCard) {
+    return formContent
+  }
+
+  return (
+    <div className="stack">
+      <div className="application-workspace-grid">
+        <Card
+          title="Loan application form"
+          description="This creates an application-stage record, not a loan record."
+        >
+          {formContent}
         </Card>
       </div>
-
-      <Dialog
-        id="add-borrower-modal"
-        title="Add new borrower"
-        description="Create a new borrower record for the loan application."
-        open={showBorrowerModal}
-        onClose={() => setShowBorrowerModal(false)}
-      >
-        <div className="stack">
-          <BorrowerForm mode="create" onSaved={handleBorrowerCreated} />
-        </div>
-      </Dialog>
     </div>
   )
 }

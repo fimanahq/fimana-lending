@@ -179,7 +179,7 @@ export function LoanApplicationIntakeForm() {
         gives: false,
       })
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit application')
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit loan application')
     } finally {
       setSubmitting(false)
     }
@@ -189,7 +189,7 @@ export function LoanApplicationIntakeForm() {
     <form className="request-loan-form" onSubmit={handleSubmit}>
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestFirstName">First name</label>
+          <label htmlFor="requestFirstName">First Name</label>
           <input
             id="requestFirstName"
             autoComplete="given-name"
@@ -205,7 +205,7 @@ export function LoanApplicationIntakeForm() {
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestLastName">Last name</label>
+          <label htmlFor="requestLastName">Last Name</label>
           <input
             id="requestLastName"
             autoComplete="family-name"
@@ -224,7 +224,7 @@ export function LoanApplicationIntakeForm() {
 
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestEmail">Email</label>
+          <label htmlFor="requestEmail">Email Address</label>
           <input
             id="requestEmail"
             type="email"
@@ -243,7 +243,7 @@ export function LoanApplicationIntakeForm() {
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestPhone">Phone</label>
+          <label htmlFor="requestPhone">Phone Number</label>
           <input
             id="requestPhone"
             type="tel"
@@ -262,7 +262,7 @@ export function LoanApplicationIntakeForm() {
 
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestPrincipal">Requested amount</label>
+          <label htmlFor="requestPrincipal">Loan Amount</label>
           <input
             id="requestPrincipal"
             type="number"
@@ -280,7 +280,7 @@ export function LoanApplicationIntakeForm() {
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestIncome">Monthly income</label>
+          <label htmlFor="requestIncome">Monthly Income</label>
           <input
             id="requestIncome"
             type="number"
@@ -301,7 +301,7 @@ export function LoanApplicationIntakeForm() {
 
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestGives">Number of gives</label>
+          <label htmlFor="requestGives">Number of Installments</label>
           <input
             id="requestGives"
             type="number"
@@ -329,7 +329,7 @@ export function LoanApplicationIntakeForm() {
       </div>
 
       <div className="request-loan-form__field">
-        <label htmlFor="requestPurpose">Loan purpose</label>
+          <label htmlFor="requestPurpose">Loan Purpose</label>
         <textarea
           id="requestPurpose"
           value={form.purpose}
@@ -347,7 +347,7 @@ export function LoanApplicationIntakeForm() {
       {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
       {success ? (
         <div className="notice request-loan-form__notice">
-          Application submitted for {success.borrower?.displayName || `${form.firstName} ${form.lastName}`.trim()}. Reference: {success.applicationNumber || success.id}
+          Loan application submitted for {success.borrower?.displayName || `${form.firstName} ${form.lastName}`.trim()}. Reference: {success.applicationNumber || success.id}
         </div>
       ) : null}
 
@@ -356,7 +356,7 @@ export function LoanApplicationIntakeForm() {
         type="submit"
         disabled={submitting || !validation.isValid}
       >
-        <span>{submitting ? 'Submitting application...' : 'Submit application'}</span>
+        <span>{submitting ? 'Submitting loan application...' : 'Submit loan application'}</span>
         <span className="request-loan-form__submitArrow" aria-hidden="true">→</span>
       </button>
 

@@ -127,15 +127,15 @@ export async function POST(request: NextRequest) {
   }
 
   if (!Number.isFinite(principal) || principal <= 0) {
-    return jsonError('Requested amount must be greater than zero', 400)
+    return jsonError('Loan amount must be greater than zero', 400)
   }
 
   if (income === null) {
-    return jsonError('Monthly income is required', 400)
+    return jsonError('Monthly Income is required', 400)
   }
 
   if (!Number.isFinite(income) || income < 0) {
-    return jsonError('Monthly income must be zero or greater', 400)
+    return jsonError('Monthly Income must be zero or greater', 400)
   }
 
   if (!purpose) {
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!Number.isInteger(gives) || gives < 1) {
-    return jsonError('Number of gives must be a whole number of at least 1', 400)
+    return jsonError('Number of installments must be a whole number of at least 1', 400)
   }
 
   if (!isPaymentFrequency(paymentFrequency)) {
@@ -178,17 +178,17 @@ export async function POST(request: NextRequest) {
 
     const payload = (await response.json().catch(() => null)) as BackendEnvelope<LoanApplication> | { message?: string } | null
     if (!response.ok) {
-      return jsonError(payload?.message || 'Unable to submit application', response.status)
+      return jsonError(payload?.message || 'Unable to submit loan application', response.status)
     }
 
     const created = payload && 'data' in payload ? payload.data : payload as LoanApplication | null
     if (!created) {
-      return jsonError('Unable to submit application', 502)
+      return jsonError('Unable to submit loan application', 502)
     }
 
     return NextResponse.json(created, { status: 201 })
   } catch (caughtError) {
-    const message = caughtError instanceof Error ? caughtError.message : 'Unable to submit application'
+    const message = caughtError instanceof Error ? caughtError.message : 'Unable to submit loan application'
 
     if (message === 'fetch failed') {
       return jsonError(`Fimana API is unavailable at ${API_BASE_URL}`, 503)

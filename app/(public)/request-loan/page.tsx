@@ -16,14 +16,14 @@ export default function RequestLoanPage() {
       <main className="request-homepage__main">
         <div className="request-homepage__layout">
           <section className="request-homepage__editorial">
-            <div className="request-homepage__eyebrow">Lending journey</div>
+            <div className="request-homepage__eyebrow">Loan application</div>
 
             <h1 className="request-homepage__title">
-              Crafting Your <span>Financial Future.</span>
+              Complete Your <span>Loan Application.</span>
             </h1>
 
             <p className="request-homepage__lede">
-              Apply online and complete your loan request in a few simple steps.
+              Apply online and complete your loan application in a few simple steps.
             </p>
 
             <div className="request-homepage__imageCard">
@@ -39,7 +39,7 @@ export default function RequestLoanPage() {
                   <span />
                 </div>
                 <div>
-                  <strong>Secure Application</strong>
+                  <strong>Secure Loan Application</strong>
                 </div>
               </div>
             </div>

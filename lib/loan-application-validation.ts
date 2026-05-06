@@ -152,13 +152,13 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
   }
 
   if (!Number.isFinite(input.principal) || input.principal <= 0) {
-    errors.principal = 'Requested amount must be greater than zero'
+    errors.principal = 'Loan amount must be greater than zero'
   }
 
   if (income === null) {
-    errors.income = 'Monthly income is required'
+    errors.income = 'Monthly Income is required'
   } else if (!Number.isFinite(income) || income < 0) {
-    errors.income = 'Monthly income must be zero or greater'
+    errors.income = 'Monthly Income must be zero or greater'
   }
 
   if (!purpose) {
@@ -166,11 +166,11 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
   }
 
   if (!Number.isInteger(input.gives) || input.gives < 1) {
-    errors.gives = 'Number of gives must be a whole number of at least 1'
+    errors.gives = 'Number of installments must be a whole number of at least 1'
   }
 
   if (!firstPaymentDate) {
-    errors.firstPaymentDate = 'Preferred first payment date is required'
+    errors.firstPaymentDate = 'Start date is required'
   }
 
   if (paymentFrequency === 'semi_monthly' && input.firstDay === input.secondDay) {

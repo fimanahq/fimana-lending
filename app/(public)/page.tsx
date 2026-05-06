@@ -43,7 +43,7 @@ export default function LandingPage() {
           <section className="landing-homepage__hero" id="vision" data-node-id="2003:4">
             <div className="landing-homepage__copy" data-node-id="2003:17">
               <h1 className="landing-homepage__title" data-node-id="2003:20">
-                <span>Request a loan</span>
+                <span>Start a loan application</span>
                 <span>online with</span>
                 <span>
                   <em>FiMana</em> <span className="landing-homepage__titleAccent">Lending.</span>
@@ -51,7 +51,7 @@ export default function LandingPage() {
               </h1>
 
               <p className="landing-homepage__body" data-node-id="2003:22">
-                Complete your request online with a simple, guided process.
+                Complete your loan application online with a simple, guided process.
               </p>
 
               <div className="landing-homepage__actions" data-node-id="2003:24">
@@ -60,7 +60,7 @@ export default function LandingPage() {
                   className="landing-homepage__button landing-homepage__button--primary"
                   data-node-id="2003:25"
                 >
-                  Request loan
+                  Loan application
                 </Link>
               </div>
             </div>
