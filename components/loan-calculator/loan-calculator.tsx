@@ -33,7 +33,7 @@ export function LoanCalculator() {
   const [form, setForm] = useState({
     principal: '5000',
     gives: '2',
-    paymentFrequency: 'twice_monthly' as PaymentFrequency,
+    paymentFrequency: 'semi_monthly' as PaymentFrequency,
     preset: '15_month_end' as LoanSchedulePreset,
     firstDay: '15',
     secondDay: 'month_end',
@@ -191,11 +191,11 @@ export function LoanCalculator() {
               }
             >
               <option value="monthly">Monthly</option>
-              <option value="twice_monthly">Twice monthly</option>
+              <option value="semi_monthly">Semi-monthly</option>
             </select>
           </div>
 
-          {form.paymentFrequency === 'twice_monthly' ? (
+          {form.paymentFrequency === 'semi_monthly' ? (
             <>
               <div className="field">
                 <label htmlFor="calculatorPreset">Schedule preset</label>

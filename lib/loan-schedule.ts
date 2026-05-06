@@ -87,8 +87,8 @@ export function normalizePaymentDays(paymentFrequency: PaymentFrequency, rawDays
     throw new Error('Monthly schedule requires exactly one payment day')
   }
 
-  if (paymentFrequency === 'twice_monthly' && unique.length !== 2) {
-    throw new Error('Twice-monthly schedule requires exactly two payment days')
+  if (paymentFrequency === 'semi_monthly' && unique.length !== 2) {
+    throw new Error('Semi-monthly schedule requires exactly two payment days')
   }
 
   return unique.sort((left, right) => {

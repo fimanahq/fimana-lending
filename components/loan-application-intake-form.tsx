@@ -16,7 +16,7 @@ const initialForm = {
   phone: PHONE_PREFIX,
   principal: '',
   gives: '12',
-  paymentFrequency: 'twice_monthly' as const,
+  paymentFrequency: 'semi_monthly' as const,
   firstDay: '15',
   secondDay: 'month_end',
   paymentPreset: '15_month_end' as LoanSchedulePreset,

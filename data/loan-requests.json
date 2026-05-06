@@ -7,7 +7,7 @@
     "phone": "+63 9266162798",
     "principal": 123,
     "gives": 12,
-    "paymentFrequency": "twice_monthly",
+    "paymentFrequency": "semi_monthly",
     "paymentDays": [
       "15",
       "month_end"
@@ -30,7 +30,7 @@
     "phone": "+63 9266162798",
     "principal": 10004,
     "gives": 12,
-    "paymentFrequency": "twice_monthly",
+    "paymentFrequency": "semi_monthly",
     "paymentDays": [
       "15",
       "month_end"

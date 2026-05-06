@@ -1,8 +1,8 @@
 export type UserAppCode = 'fimana-lending' | 'fimana-web'
 export const settingsCurrencyValues = ['PHP', 'USD', 'EUR'] as const
 export type SettingsCurrency = (typeof settingsCurrencyValues)[number]
-export type PaymentFrequency = 'monthly' | 'twice_monthly'
-export type LoanApplicationPaymentType = 'monthly' | 'semi_monthly'
+export type PaymentFrequency = 'monthly' | 'semi_monthly'
+export type LoanApplicationPaymentType = PaymentFrequency
 export type LoanApplicationCutoffPatternCode = '5_20' | '15_month_end'
 export type LoanApplicationSource = 'internal' | 'public'
 export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled'

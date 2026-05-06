@@ -25,7 +25,7 @@ export default function RulesPage() {
             <tr><td>1 give</td><td>1 payment</td></tr>
             <tr><td>2 gives</td><td>2 payments</td></tr>
             <tr><td>Cutoff</td><td>Scheduled payment slot</td></tr>
-            <tr><td>Payment dates</td><td>Borrower chooses monthly or twice-monthly dates when the loan is created.</td></tr>
+            <tr><td>Payment dates</td><td>Borrower chooses monthly or semi-monthly dates when the loan is created.</td></tr>
             <tr><td>Equal payment</td><td>All scheduled payments are equal except the final rounding adjustment that makes the ending balance exactly zero.</td></tr>
           </tbody>
         </table>

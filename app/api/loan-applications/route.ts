@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   isPaymentFrequency,
   isPaymentPreset,
+  normalizeIncomingPaymentFrequency,
   validateLoanApplicationInput,
 } from '@/lib/loan-application-validation'
 import { API_BASE_URL } from '@/lib/constants'
@@ -101,7 +102,10 @@ export async function POST(request: NextRequest) {
     ? null
     : Number(body.income)
   const gives = Number(body.gives)
-  const paymentFrequency = body.paymentFrequency
+  const rawPaymentFrequency = body.paymentFrequency
+  const paymentFrequency = rawPaymentFrequency === 'twice_monthly'
+    ? normalizeIncomingPaymentFrequency(rawPaymentFrequency)
+    : rawPaymentFrequency
   const paymentPreset = body.paymentPreset
 
   if (!firstName || !lastName) {

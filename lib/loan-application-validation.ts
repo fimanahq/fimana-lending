@@ -75,7 +75,13 @@ const EMPTY_ERRORS: LoanApplicationValidationErrors = {
 }
 
 export function isPaymentFrequency(value: unknown): value is PaymentFrequency {
-  return value === 'monthly' || value === 'twice_monthly'
+  return value === 'monthly' || value === 'semi_monthly'
+}
+
+export function normalizeIncomingPaymentFrequency(
+  value: PaymentFrequency | 'twice_monthly',
+): PaymentFrequency {
+  return value === 'twice_monthly' ? 'semi_monthly' : value
 }
 
 export function isPaymentPreset(value: unknown): value is LoanSchedulePreset {
@@ -120,6 +126,7 @@ function getFirstValidationError(errors: LoanApplicationValidationErrors) {
 }
 
 export function getLoanApplicationValidationResult(input: LoanApplicationValidationInput): LoanApplicationValidationResult {
+  const paymentFrequency = normalizeIncomingPaymentFrequency(input.paymentFrequency)
   const firstName = input.firstName.trim()
   const lastName = input.lastName.trim()
   const email = input.email.trim()
@@ -173,16 +180,16 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
   }
 
   if (
-    input.paymentFrequency === 'twice_monthly' &&
+    paymentFrequency === 'semi_monthly' &&
     input.paymentPreset === 'custom' &&
     input.firstDay === input.secondDay
   ) {
-    errors.paymentDays = 'Choose two different payment days for a twice-monthly schedule'
+    errors.paymentDays = 'Choose two different payment days for a semi-monthly schedule'
   }
 
   if (!errors.paymentDays) {
     paymentDays = buildPaymentDays(
-      input.paymentFrequency,
+      paymentFrequency,
       input.firstDay,
       input.secondDay,
       input.paymentPreset,
@@ -191,7 +198,7 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
 
   if (!errors.gives && !errors.paymentDays && !errors.firstPaymentDate) {
     try {
-      buildLoanDueDates(input.gives, input.paymentFrequency, paymentDays, firstPaymentDate)
+      buildLoanDueDates(input.gives, paymentFrequency, paymentDays, firstPaymentDate)
     } catch (caughtError) {
       errors.firstPaymentDate = caughtError instanceof Error
         ? caughtError.message
@@ -230,7 +237,7 @@ export function validateLoanApplicationInput(input: LoanApplicationValidationInp
     phone: validation.normalized.phone || undefined,
     principal: input.principal,
     gives: input.gives,
-    paymentFrequency: input.paymentFrequency,
+    paymentFrequency: normalizeIncomingPaymentFrequency(input.paymentFrequency),
     paymentDays: validation.normalized.paymentDays,
     paymentPreset: input.paymentPreset,
     firstPaymentDate: validation.normalized.firstPaymentDate,
