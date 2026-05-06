@@ -1,17 +1,21 @@
 import { apiRequest } from '@/lib/client-api'
 import type { Borrower } from '@/lib/types'
+import { PaginatedResponse } from '@/types'
+import { CreateBorrowerInput, ListBorrowersParams, UpdateBorrowerInput } from '@/types'
 
-export interface CreateBorrowerInput {
-  fullName: string
-  email?: string
-  contactNumber?: string
-  notes?: string
-}
+export function listBorrowersPaginated(params: ListBorrowersParams = {}) {
+  const searchParams = new URLSearchParams()
 
-export type UpdateBorrowerInput = CreateBorrowerInput
+  searchParams.set('page', String(params.page ?? 1))
+  searchParams.set('itemsPerPage', String(params.itemsPerPage ?? 10))
 
-export function listBorrowers() {
-  return apiRequest<Borrower[]>('/api/borrowers')
+  if (params.search?.trim()) {
+    searchParams.set('search', params.search.trim())
+  }
+
+  return apiRequest<PaginatedResponse<Borrower>>(
+    `/api/borrowers?${searchParams.toString()}`,
+  )
 }
 
 export function listLoanBorrowers() {
