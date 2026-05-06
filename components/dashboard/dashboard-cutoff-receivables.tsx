@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { Button, Dialog } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { DashboardCutoffReceivable } from '@/lib/types'
+import { ViewIcon } from '../shared/table-icons'
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)
@@ -87,10 +88,13 @@ export function DashboardCutoffReceivables({
         <div>
           <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
           <p className="muted">
-            Group unpaid or partially paid schedules by cutoff date so the nearest collection target and the next receivable dates are visible at a glance.
+            Group unpaid or partially paid schedules by cutoff date so the
+            nearest collection target and the next receivable dates are visible
+            at a glance.
           </p>
           <p className="muted">
-            Collected reflects actual applied payments, including advance payments posted before an upcoming cutoff date.
+            Collected reflects actual applied payments, including advance
+            payments posted before an upcoming cutoff date.
           </p>
         </div>
       </div>
@@ -99,36 +103,59 @@ export function DashboardCutoffReceivables({
         <section className="dashboard-overview__miniGrid dashboard-overview__miniGrid--five">
           <MiniMetric
             label="Due this cutoff"
-            value={formatMinorCurrency(currentCutoffReceivable.totalReceivableMinor, currency)}
+            value={formatMinorCurrency(
+              currentCutoffReceivable.totalReceivableMinor,
+              currency,
+            )}
             meta={formatDate(currentCutoffReceivable.cutoffDate)}
           />
           <MiniMetric
             label="Principal due"
-            value={formatMinorCurrency(currentCutoffReceivable.principalDueMinor, currency)}
+            value={formatMinorCurrency(
+              currentCutoffReceivable.principalDueMinor,
+              currency,
+            )}
             meta="Scheduled principal on this cutoff"
           />
           <MiniMetric
             label="Interest due"
-            value={formatMinorCurrency(currentCutoffReceivable.interestDueMinor, currency)}
+            value={formatMinorCurrency(
+              currentCutoffReceivable.interestDueMinor,
+              currency,
+            )}
             meta="Scheduled interest on this cutoff"
           />
           <MiniMetric
             label="Remaining to collect"
-            value={formatMinorCurrency(currentCutoffReceivable.remainingMinor, currency)}
-            meta={formatMinorCurrency(currentCutoffReceivable.totalCollectedMinor, currency) + ' already collected'}
+            value={formatMinorCurrency(
+              currentCutoffReceivable.remainingMinor,
+              currency,
+            )}
+            meta={
+              formatMinorCurrency(
+                currentCutoffReceivable.totalCollectedMinor,
+                currency,
+              ) + " already collected"
+            }
           />
           <MiniMetric
             label="Borrowers due"
-            value={currentCutoffReceivable.borrowerCount.toLocaleString('en-PH')}
-            meta={`${currentCutoffReceivable.loanCount.toLocaleString('en-PH')} loan${currentCutoffReceivable.loanCount === 1 ? '' : 's'} due`}
+            value={currentCutoffReceivable.borrowerCount.toLocaleString(
+              "en-PH",
+            )}
+            meta={`${currentCutoffReceivable.loanCount.toLocaleString("en-PH")} loan${currentCutoffReceivable.loanCount === 1 ? "" : "s"} due`}
           />
         </section>
       ) : (
         <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-          <span className="dashboard-overview__emptyIcon dashboard-overview__emptyIcon--text">+</span>
+          <span className="dashboard-overview__emptyIcon dashboard-overview__emptyIcon--text">
+            +
+          </span>
           <div>
             <strong>No upcoming receivables</strong>
-            <p>No unpaid or partially paid cutoff rows are scheduled right now.</p>
+            <p>
+              No unpaid or partially paid cutoff rows are scheduled right now.
+            </p>
           </div>
         </div>
       )}
@@ -140,9 +167,15 @@ export function DashboardCutoffReceivables({
               <thead>
                 <tr>
                   <th>Cutoff date</th>
-                  <th className="dashboard-overview__tableAmount">Principal due</th>
-                  <th className="dashboard-overview__tableAmount">Interest due</th>
-                  <th className="dashboard-overview__tableAmount">Total receivable</th>
+                  <th className="dashboard-overview__tableAmount">
+                    Principal due
+                  </th>
+                  <th className="dashboard-overview__tableAmount">
+                    Interest due
+                  </th>
+                  <th className="dashboard-overview__tableAmount">
+                    Total receivable
+                  </th>
                   <th className="dashboard-overview__tableAmount">Collected</th>
                   <th className="dashboard-overview__tableAmount">Remaining</th>
                   <th>Borrowers due</th>
@@ -155,22 +188,41 @@ export function DashboardCutoffReceivables({
                 {visibleReceivables.map((entry) => (
                   <tr key={entry.cutoffDate}>
                     <td>{formatDate(entry.cutoffDate)}</td>
-                    <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.principalDueMinor, currency)}</td>
-                    <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.interestDueMinor, currency)}</td>
-                    <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.totalReceivableMinor, currency)}</td>
-                    <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.totalCollectedMinor, currency)}</td>
-                    <td className="dashboard-overview__tableAmount">{formatMinorCurrency(entry.remainingMinor, currency)}</td>
-                    <td>{entry.borrowerCount.toLocaleString('en-PH')}</td>
-                    <td>{entry.loanCount.toLocaleString('en-PH')}</td>
+                    <td className="dashboard-overview__tableAmount">
+                      {formatMinorCurrency(entry.principalDueMinor, currency)}
+                    </td>
+                    <td className="dashboard-overview__tableAmount">
+                      {formatMinorCurrency(entry.interestDueMinor, currency)}
+                    </td>
+                    <td className="dashboard-overview__tableAmount">
+                      {formatMinorCurrency(
+                        entry.totalReceivableMinor,
+                        currency,
+                      )}
+                    </td>
+                    <td className="dashboard-overview__tableAmount">
+                      {formatMinorCurrency(entry.totalCollectedMinor, currency)}
+                    </td>
+                    <td className="dashboard-overview__tableAmount">
+                      {formatMinorCurrency(entry.remainingMinor, currency)}
+                    </td>
+                    <td>{entry.borrowerCount.toLocaleString("en-PH")}</td>
+                    <td>{entry.loanCount.toLocaleString("en-PH")}</td>
                     <td className="dashboard-overview__tableStatus">
-                      <span className={`dashboard-overview__statusBadge dashboard-overview__statusBadge--${entry.status}`}>
+                      <span
+                        className={`dashboard-overview__statusBadge dashboard-overview__statusBadge--${entry.status}`}
+                      >
                         {getReceivableStatusLabel(entry.status)}
                       </span>
                     </td>
-                    <td className="dashboard-overview__tableActions">
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedCutoffDate(entry.cutoffDate)}>
-                        View loans
-                      </Button>
+                    <td>
+                      <div
+                        aria-hidden="true"
+                        className="button-ghost table-action-icon"
+                        onClick={() => setSelectedCutoffDate(entry.cutoffDate)}
+                      >
+                      <ViewIcon/>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -179,10 +231,15 @@ export function DashboardCutoffReceivables({
           </div>
         ) : (
           <div className="dashboard-overview__emptyState">
-            <span className="dashboard-overview__emptyIcon dashboard-overview__emptyIcon--text">+</span>
+            <span className="dashboard-overview__emptyIcon dashboard-overview__emptyIcon--text">
+              +
+            </span>
             <div>
               <strong>No receivable cutoffs yet</strong>
-              <p>Open receivable cutoff groups will appear here once active schedules are generated.</p>
+              <p>
+                Open receivable cutoff groups will appear here once active
+                schedules are generated.
+              </p>
             </div>
           </div>
         )}
@@ -191,10 +248,16 @@ export function DashboardCutoffReceivables({
       <Dialog
         id="dashboard-cutoff-receivable-dialog"
         open={selectedCutoff !== null}
-        title={selectedCutoff ? `Loans due on ${formatDate(selectedCutoff.cutoffDate)}` : 'Loans due on cutoff'}
-        description={selectedCutoff
-          ? `${selectedCutoff.loanCount.toLocaleString('en-PH')} loan${selectedCutoff.loanCount === 1 ? '' : 's'} with ${formatMinorCurrency(selectedCutoff.remainingMinor, currency)} remaining to collect.`
-          : undefined}
+        title={
+          selectedCutoff
+            ? `Loans due on ${formatDate(selectedCutoff.cutoffDate)}`
+            : "Loans due on cutoff"
+        }
+        description={
+          selectedCutoff
+            ? `${selectedCutoff.loanCount.toLocaleString("en-PH")} loan${selectedCutoff.loanCount === 1 ? "" : "s"} with ${formatMinorCurrency(selectedCutoff.remainingMinor, currency)} remaining to collect.`
+            : undefined
+        }
         onClose={() => setSelectedCutoffDate(null)}
         className="dashboard-overview__cutoffDialog"
       >
@@ -203,27 +266,42 @@ export function DashboardCutoffReceivables({
             <div className="dashboard-overview__cutoffDialogSummary">
               <MiniMetric
                 label="Principal due"
-                value={formatMinorCurrency(selectedCutoff.principalDueMinor, currency)}
+                value={formatMinorCurrency(
+                  selectedCutoff.principalDueMinor,
+                  currency,
+                )}
                 meta="Scheduled principal across loans in this cutoff"
               />
               <MiniMetric
                 label="Interest due"
-                value={formatMinorCurrency(selectedCutoff.interestDueMinor, currency)}
+                value={formatMinorCurrency(
+                  selectedCutoff.interestDueMinor,
+                  currency,
+                )}
                 meta="Scheduled interest across loans in this cutoff"
               />
               <MiniMetric
                 label="Total receivable"
-                value={formatMinorCurrency(selectedCutoff.totalReceivableMinor, currency)}
+                value={formatMinorCurrency(
+                  selectedCutoff.totalReceivableMinor,
+                  currency,
+                )}
                 meta="Scheduled across all loans in this cutoff"
               />
               <MiniMetric
                 label="Collected"
-                value={formatMinorCurrency(selectedCutoff.totalCollectedMinor, currency)}
+                value={formatMinorCurrency(
+                  selectedCutoff.totalCollectedMinor,
+                  currency,
+                )}
                 meta="Already collected on this cutoff"
               />
               <MiniMetric
                 label="Remaining"
-                value={formatMinorCurrency(selectedCutoff.remainingMinor, currency)}
+                value={formatMinorCurrency(
+                  selectedCutoff.remainingMinor,
+                  currency,
+                )}
                 meta="Still due from this cutoff"
               />
             </div>
@@ -234,11 +312,21 @@ export function DashboardCutoffReceivables({
                   <tr>
                     <th>Borrower</th>
                     <th>Loan</th>
-                    <th className="dashboard-overview__tableAmount">Principal due</th>
-                    <th className="dashboard-overview__tableAmount">Interest due</th>
-                    <th className="dashboard-overview__tableAmount">Total receivable</th>
-                    <th className="dashboard-overview__tableAmount">Collected</th>
-                    <th className="dashboard-overview__tableAmount">Remaining</th>
+                    <th className="dashboard-overview__tableAmount">
+                      Principal due
+                    </th>
+                    <th className="dashboard-overview__tableAmount">
+                      Interest due
+                    </th>
+                    <th className="dashboard-overview__tableAmount">
+                      Total receivable
+                    </th>
+                    <th className="dashboard-overview__tableAmount">
+                      Collected
+                    </th>
+                    <th className="dashboard-overview__tableAmount">
+                      Remaining
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,22 +334,48 @@ export function DashboardCutoffReceivables({
                     <tr key={loan.loanId}>
                       <td>
                         <div className="dashboard-overview__loanCell">
-                          <Link href={`/loans/${loan.loanId}`} className="data-card__titleLink" onClick={() => setSelectedCutoffDate(null)}>
+                          <Link
+                            href={`/loans/${loan.loanId}`}
+                            className="data-card__titleLink"
+                            onClick={() => setSelectedCutoffDate(null)}
+                          >
                             {loan.borrowerDisplayName}
                           </Link>
-                          <span className="muted micro-copy">{loan.borrowerNumber}</span>
+                          <span className="muted micro-copy">
+                            {loan.borrowerNumber}
+                          </span>
                         </div>
                       </td>
                       <td>
-                        <Link href={`/loans/${loan.loanId}`} className="data-card__titleLink" onClick={() => setSelectedCutoffDate(null)}>
+                        <Link
+                          href={`/loans/${loan.loanId}`}
+                          className="data-card__titleLink"
+                          onClick={() => setSelectedCutoffDate(null)}
+                        >
                           {loan.loanNumber}
                         </Link>
                       </td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(loan.principalDueMinor, currency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(loan.interestDueMinor, currency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(loan.totalReceivableMinor, currency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(loan.totalCollectedMinor, currency)}</td>
-                      <td className="dashboard-overview__tableAmount">{formatMinorCurrency(loan.remainingMinor, currency)}</td>
+                      <td className="dashboard-overview__tableAmount">
+                        {formatMinorCurrency(loan.principalDueMinor, currency)}
+                      </td>
+                      <td className="dashboard-overview__tableAmount">
+                        {formatMinorCurrency(loan.interestDueMinor, currency)}
+                      </td>
+                      <td className="dashboard-overview__tableAmount">
+                        {formatMinorCurrency(
+                          loan.totalReceivableMinor,
+                          currency,
+                        )}
+                      </td>
+                      <td className="dashboard-overview__tableAmount">
+                        {formatMinorCurrency(
+                          loan.totalCollectedMinor,
+                          currency,
+                        )}
+                      </td>
+                      <td className="dashboard-overview__tableAmount">
+                        {formatMinorCurrency(loan.remainingMinor, currency)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -271,5 +385,5 @@ export function DashboardCutoffReceivables({
         ) : null}
       </Dialog>
     </section>
-  )
+  );
 }
