@@ -1,7 +1,6 @@
 import { defaultLoanInterestRules } from '@/content/rules'
 import type {
   LoanInterestRulesConfig,
-  LoanSchedulePreset,
   LoanSchedulePreviewRow,
   PaymentFrequency,
 } from '@/lib/types'
@@ -13,18 +12,9 @@ export function buildPaymentDays(
   paymentFrequency: PaymentFrequency,
   firstDay: string,
   secondDay: string,
-  preset: LoanSchedulePreset,
 ) {
   if (paymentFrequency === 'monthly') {
     return [firstDay]
-  }
-
-  if (preset === '15_month_end') {
-    return ['15', 'month_end']
-  }
-
-  if (preset === '5_20') {
-    return ['5', '20']
   }
 
   return [firstDay, secondDay]
@@ -152,6 +142,35 @@ export function getRecommendedFirstPaymentDate(
   }
 }
 
+export function getBorrowerRequestSemiMonthlyFirstPaymentDate(
+  options: {
+    fromDate?: Date
+    minimumLeadDays?: number
+  } = {},
+) {
+  const minimumLeadDays = options.minimumLeadDays ?? 15
+  const anchorDate = toDateOnlyFromLocalDate(options.fromDate ?? new Date())
+  const year = anchorDate.getUTCFullYear()
+  const month = anchorDate.getUTCMonth()
+
+  const fifteenth = resolveMonthDate(year, month, 15)
+  const monthEnd = resolveMonthDate(year, month, 'month_end')
+  const daysToFifteenth = Math.round((fifteenth.getTime() - anchorDate.getTime()) / DAY_IN_MILLISECONDS)
+  const daysToMonthEnd = Math.round((monthEnd.getTime() - anchorDate.getTime()) / DAY_IN_MILLISECONDS)
+
+  if (fifteenth.getTime() >= anchorDate.getTime() && daysToFifteenth >= minimumLeadDays) {
+    return formatDateOnly(fifteenth)
+  }
+
+  if (monthEnd.getTime() >= anchorDate.getTime() && daysToMonthEnd >= minimumLeadDays) {
+    return formatDateOnly(monthEnd)
+  }
+
+  const nextMonth = month === 11 ? 0 : month + 1
+  const nextMonthYear = month === 11 ? year + 1 : year
+  return formatDateOnly(resolveMonthDate(nextMonthYear, nextMonth, 15))
+}
+
 export function buildLoanDueDates(
   gives: number,
   paymentFrequency: PaymentFrequency,
@@ -166,7 +185,7 @@ export function buildLoanDueDates(
   )
 
   if (!firstPaymentMatches) {
-    throw new Error('First payment date must match one of the selected schedule preset')
+    throw new Error('First payment date must match one of the selected payment days')
   }
 
   const dueDates = [firstDate]

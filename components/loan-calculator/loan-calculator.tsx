@@ -11,7 +11,7 @@ import {
   getInterestRateFromRules,
   paymentDayOptions,
 } from '@/lib/loan-schedule'
-import type { InterestMode, LoanInterestRulesConfig, LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
+import type { InterestMode, LoanInterestRulesConfig, PaymentFrequency } from '@/lib/types'
 
 function getGivesBucketLabel(gives: number) {
   if (gives <= 1) {
@@ -34,7 +34,6 @@ export function LoanCalculator() {
     principal: '5000',
     gives: '2',
     paymentFrequency: 'semi_monthly' as PaymentFrequency,
-    preset: '15_month_end' as LoanSchedulePreset,
     firstDay: '15',
     secondDay: 'month_end',
     firstPaymentDate: '',
@@ -45,8 +44,8 @@ export function LoanCalculator() {
   const [rules, setRules] = useState<LoanInterestRulesConfig>(defaultLoanInterestRules)
 
   const paymentDays = useMemo(
-    () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay, form.preset),
-    [form.firstDay, form.paymentFrequency, form.preset, form.secondDay],
+    () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay),
+    [form.firstDay, form.paymentFrequency, form.secondDay],
   )
 
   useEffect(() => {
@@ -196,58 +195,36 @@ export function LoanCalculator() {
           </div>
 
           {form.paymentFrequency === 'semi_monthly' ? (
-            <>
+            <div className="grid two">
               <div className="field">
-                <label htmlFor="calculatorPreset">Schedule preset</label>
+                <label htmlFor="calculatorFirstDay">First payment day</label>
                 <select
-                  id="calculatorPreset"
-                  value={form.preset}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      preset: event.target.value as LoanSchedulePreset,
-                    }))
-                  }
+                  id="calculatorFirstDay"
+                  value={form.firstDay}
+                  onChange={(event) => setForm((current) => ({ ...current, firstDay: event.target.value }))}
                 >
-                  <option value="15_month_end">15th + month end</option>
-                  <option value="5_20">5th + 20th</option>
-                  <option value="custom">Custom dates</option>
+                  {paymentDayOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 'month_end' ? 'Month end' : option}
+                    </option>
+                  ))}
                 </select>
               </div>
-
-              {form.preset === 'custom' ? (
-                <div className="grid two">
-                  <div className="field">
-                    <label htmlFor="calculatorFirstDay">First payment day</label>
-                    <select
-                      id="calculatorFirstDay"
-                      value={form.firstDay}
-                      onChange={(event) => setForm((current) => ({ ...current, firstDay: event.target.value }))}
-                    >
-                      {paymentDayOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option === 'month_end' ? 'Month end' : option}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label htmlFor="calculatorSecondDay">Second payment day</label>
-                    <select
-                      id="calculatorSecondDay"
-                      value={form.secondDay}
-                      onChange={(event) => setForm((current) => ({ ...current, secondDay: event.target.value }))}
-                    >
-                      {paymentDayOptions.map((option) => (
-                        <option key={option} value={option}>
-                          {option === 'month_end' ? 'Month end' : option}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              ) : null}
-            </>
+              <div className="field">
+                <label htmlFor="calculatorSecondDay">Second payment day</label>
+                <select
+                  id="calculatorSecondDay"
+                  value={form.secondDay}
+                  onChange={(event) => setForm((current) => ({ ...current, secondDay: event.target.value }))}
+                >
+                  {paymentDayOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 'month_end' ? 'Month end' : option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           ) : (
             <div className="field">
               <label htmlFor="calculatorMonthlyDay">Monthly payment day</label>

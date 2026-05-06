@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState, type FormEvent, type WheelEvent } from 'r
 import { useRouter } from 'next/navigation'
 import type {
   Borrower,
-  LoanApplicationCutoffPatternCode,
   LoanApplicationDraftInput,
   LoanApplicationPaymentType,
 } from '@/lib/types'
+import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
+import { formatDate } from '@/lib/format'
 import {
   createLoanApplication,
   listLoanBorrowers,
@@ -31,8 +32,53 @@ const initialForm = {
   numberOfCutoffs: '2',
   startDate: '',
   paymentType: 'semi_monthly' as LoanApplicationPaymentType,
-  cutoffPatternCode: '15_month_end' as LoanApplicationCutoffPatternCode,
+  firstDay: '15',
+  secondDay: 'month_end',
   purpose: '',
+}
+
+function getDateParts(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) {
+    return null
+  }
+
+  const [, yearRaw, monthRaw, dayRaw] = match
+  const year = Number(yearRaw)
+  const month = Number(monthRaw)
+  const day = Number(dayRaw)
+
+  return { year, month, day }
+}
+
+function deriveSemiMonthlyPaymentDaysFromStartDate(startDate: string) {
+  const parts = getDateParts(startDate)
+  if (!parts) {
+    return null
+  }
+
+  const firstDay = String(parts.day)
+
+  if (parts.day === 15) {
+    return {
+      firstDay,
+      secondDay: 'month_end',
+    }
+  }
+
+  const startDateValue = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12))
+  const secondDateValue = new Date(startDateValue)
+  secondDateValue.setUTCDate(secondDateValue.getUTCDate() + 15)
+
+  return {
+    firstDay,
+    secondDay: String(secondDateValue.getUTCDate()),
+  }
+}
+
+function deriveMonthlyPaymentDayFromStartDate(startDate: string) {
+  const parts = getDateParts(startDate)
+  return parts ? String(parts.day) : null
 }
 
 function pesosToMinor(value: string) {
@@ -40,13 +86,15 @@ function pesosToMinor(value: string) {
 }
 
 function getDraftPayload(form: typeof initialForm): LoanApplicationDraftInput {
+  const paymentDays = buildPaymentDays(form.paymentType, form.firstDay, form.secondDay)
+
   return {
     borrowerId: form.borrowerId,
     loanAmountMinor: pesosToMinor(form.loanAmount),
     numberOfCutoffs: Number(form.numberOfCutoffs),
     startDate: form.startDate,
     paymentType: form.paymentType,
-    cutoffPatternCode: form.paymentType === 'semi_monthly' ? form.cutoffPatternCode : null,
+    paymentDays,
     purpose: form.purpose.trim() || undefined,
   }
 }
@@ -84,6 +132,25 @@ export function LoanApplicationForm() {
   const [showBorrowerModal, setShowBorrowerModal] = useState(false)
 
   const validationError = useMemo(() => validateForm(form), [form])
+  const computedPaymentDays = useMemo(
+    () => buildPaymentDays(form.paymentType, form.firstDay, form.secondDay),
+    [form.firstDay, form.paymentType, form.secondDay],
+  )
+  const computedPaymentDates = useMemo(() => {
+    if (!form.startDate) {
+      return { first: '', second: '' }
+    }
+
+    try {
+      const dueDates = buildLoanDueDates(2, form.paymentType, computedPaymentDays, form.startDate)
+      return {
+        first: dueDates[0] ? formatDate(dueDates[0]) : '',
+        second: dueDates[1] ? formatDate(dueDates[1]) : '',
+      }
+    } catch {
+      return { first: '', second: '' }
+    }
+  }, [computedPaymentDays, form.paymentType, form.startDate])
 
   useEffect(() => {
     const loadBorrowers = async () => {
@@ -113,6 +180,29 @@ export function LoanApplicationForm() {
 
   const updateForm = (updates: Partial<typeof initialForm>) => {
     setForm((current) => ({ ...current, ...updates }))
+    setError('')
+  }
+
+  const updateStartDate = (startDate: string) => {
+    setForm((current) => {
+      if (current.paymentType === 'monthly') {
+        const monthlyPaymentDay = deriveMonthlyPaymentDayFromStartDate(startDate)
+        return {
+          ...current,
+          startDate,
+          firstDay: monthlyPaymentDay ?? current.firstDay,
+          secondDay: monthlyPaymentDay ?? current.secondDay,
+        }
+      }
+
+      const semiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(startDate)
+      return {
+        ...current,
+        startDate,
+        firstDay: semiMonthlyDays?.firstDay ?? current.firstDay,
+        secondDay: semiMonthlyDays?.secondDay ?? current.secondDay,
+      }
+    })
     setError('')
   }
 
@@ -220,34 +310,66 @@ export function LoanApplicationForm() {
                 label="Start date"
                 type="date"
                 value={form.startDate}
-                onChange={(event) => updateForm({ startDate: event.target.value })}
+                onChange={(event) => updateStartDate(event.target.value)}
               />
               <Select
                 id="applicationFrequency"
                 label="Payment type"
                 value={form.paymentType}
-                onChange={(event) =>
-                  updateForm({ paymentType: event.target.value as LoanApplicationPaymentType })
-                }
+                onChange={(event) => {
+                  const nextPaymentType = event.target.value as LoanApplicationPaymentType
+                  if (nextPaymentType === 'monthly') {
+                    const monthlyPaymentDay = deriveMonthlyPaymentDayFromStartDate(form.startDate)
+                    updateForm({
+                      paymentType: nextPaymentType,
+                      firstDay: monthlyPaymentDay ?? form.firstDay,
+                      secondDay: monthlyPaymentDay ?? form.secondDay,
+                    })
+                    return
+                  }
+
+                  const semiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(form.startDate)
+                  updateForm({
+                    paymentType: nextPaymentType,
+                    firstDay: semiMonthlyDays?.firstDay ?? form.firstDay,
+                    secondDay: semiMonthlyDays?.secondDay ?? form.secondDay,
+                  })
+                }}
               >
                 <option value="monthly">Monthly</option>
                 <option value="semi_monthly">Semi-monthly</option>
               </Select>
             </div>
 
-            {form.paymentType === 'semi_monthly' ? (
-              <Select
-                id="applicationCutoffPattern"
-                label="Cutoff pattern"
-                value={form.cutoffPatternCode}
-                onChange={(event) =>
-                  updateForm({ cutoffPatternCode: event.target.value as LoanApplicationCutoffPatternCode })
-                }
-              >
-                <option value="15_month_end">15th + month end</option>
-                <option value="5_20">5th + 20th</option>
-              </Select>
-            ) : null}
+            {form.paymentType === 'monthly' ? (
+              <div className="grid two">
+                <Input
+                  id="applicationMonthlyPaymentDayComputed"
+                  label="Monthly payment day"
+                  type="text"
+                  value={computedPaymentDates.first}
+                  readOnly
+                />
+                <div />
+              </div>
+            ) : (
+              <div className="grid two">
+                <Input
+                  id="applicationFirstPaymentDayComputed"
+                  label="First payment day"
+                  type="text"
+                  value={computedPaymentDates.first}
+                  readOnly
+                />
+                <Input
+                  id="applicationSecondPaymentDayComputed"
+                  label="Second payment day"
+                  type="text"
+                  value={computedPaymentDates.second}
+                  readOnly
+                />
+              </div>
+            )}
 
             <Textarea
               id="applicationPurpose"

@@ -4,8 +4,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, type FormEvent, type WheelEvent } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
-import type { Borrower, LoanApplication, LoanApplicationCutoffPatternCode, LoanApplicationPaymentType, LoanApplicationStatus } from '@/lib/types'
+import type { Borrower, LoanApplication, LoanApplicationPaymentType, LoanApplicationStatus } from '@/lib/types'
 import { getLoanApplication, listLoanBorrowers, updateLoanApplication, updateLoanApplicationStatus } from '@/services'
 import { Button, Card, EmptyState, ErrorState, Input, LoadingState, Select, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
@@ -50,34 +51,75 @@ function getDateParts(value: string) {
   const day = Number(dayRaw)
   const lastDay = new Date(Date.UTC(year, month, 0, 12)).getUTCDate()
 
-  return { day, lastDay }
+  return { year, month, day, lastDay }
 }
 
-function getCutoffPatternForDate(value: string): LoanApplicationCutoffPatternCode | null {
-  const parts = getDateParts(value)
+function deriveSemiMonthlyPaymentDaysFromStartDate(startDate: string) {
+  const parts = getDateParts(startDate)
   if (!parts) {
     return null
   }
 
-  if (parts.day === 5 || parts.day === 20) {
-    return '5_20'
+  const firstPaymentDay = String(parts.day)
+
+  if (parts.day === 15) {
+    return {
+      firstPaymentDay,
+      secondPaymentDay: 'month_end',
+    }
   }
 
-  if (parts.day === 15 || parts.day === parts.lastDay) {
-    return '15_month_end'
+  const startDateValue = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12))
+  const secondDateValue = new Date(startDateValue)
+  secondDateValue.setUTCDate(secondDateValue.getUTCDate() + 15)
+
+  return {
+    firstPaymentDay,
+    secondPaymentDay: String(secondDateValue.getUTCDate()),
+  }
+}
+
+function deriveMonthlyPaymentDayFromStartDate(startDate: string) {
+  const parts = getDateParts(startDate)
+  return parts ? String(parts.day) : null
+}
+
+function mapLegacyCutoffToPaymentDays(cutoffPatternCode?: LoanApplication['cutoffPatternCode'] | null) {
+  if (cutoffPatternCode === '5_20') {
+    return ['5', '20'] as const
+  }
+
+  if (cutoffPatternCode === '15_month_end') {
+    return ['15', 'month_end'] as const
   }
 
   return null
 }
 
 function getApplicationEditForm(application: LoanApplication) {
+  const paymentType = (application.paymentType || (application.paymentFrequency === 'monthly' ? 'monthly' : 'semi_monthly')) as LoanApplicationPaymentType
+  const legacyPaymentDays = mapLegacyCutoffToPaymentDays(application.cutoffPatternCode)
+  const selectedPaymentDays = application.paymentDays.length > 0
+    ? application.paymentDays
+    : legacyPaymentDays ?? []
+  const startDate = application.startDate || application.firstPaymentDate || ''
+  const startDateParts = getDateParts(startDate)
+  const derivedSemiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(startDate)
+  const defaultMonthlyDay = startDateParts ? String(startDateParts.day) : '15'
+  const [firstPaymentDay = defaultMonthlyDay, secondPaymentDay = 'month_end'] = paymentType === 'semi_monthly'
+    ? derivedSemiMonthlyDays
+      ? [derivedSemiMonthlyDays.firstPaymentDay, derivedSemiMonthlyDays.secondPaymentDay]
+      : (selectedPaymentDays.length >= 2 ? selectedPaymentDays : (legacyPaymentDays ?? ['15', 'month_end']))
+    : [selectedPaymentDays[0] || defaultMonthlyDay, selectedPaymentDays[1] || 'month_end']
+
   return {
     borrowerId: application.borrowerId || application.borrower?.id || '',
     loanAmount: minorToPesos(application.loanAmountMinor ?? (application.principal ? application.principal * 100 : 0)),
     numberOfCutoffs: String(application.numberOfCutoffs ?? application.gives ?? 1),
-    startDate: application.startDate || application.firstPaymentDate || '',
-    paymentType: (application.paymentType || (application.paymentFrequency === 'monthly' ? 'monthly' : 'semi_monthly')) as LoanApplicationPaymentType,
-    cutoffPatternCode: (application.cutoffPatternCode || '15_month_end') as LoanApplicationCutoffPatternCode,
+    startDate,
+    paymentType,
+    firstPaymentDay,
+    secondPaymentDay,
     purpose: application.purpose || application.notes || '',
   }
 }
@@ -165,12 +207,29 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   }
 
   const updateStartDate = (startDate: string) => {
-    const inferredPattern = getCutoffPatternForDate(startDate)
-    setEditForm((current) => ({
-      ...current,
-      startDate,
-      cutoffPatternCode: inferredPattern ?? current.cutoffPatternCode,
-    }))
+    setEditForm((current) => {
+      if (current.paymentType === 'monthly') {
+        const derivedMonthlyPaymentDay = deriveMonthlyPaymentDayFromStartDate(startDate)
+        return {
+          ...current,
+          startDate,
+          firstPaymentDay: derivedMonthlyPaymentDay ?? current.firstPaymentDay,
+          secondPaymentDay: derivedMonthlyPaymentDay ?? current.secondPaymentDay,
+        }
+      }
+
+      const derivedSemiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(startDate)
+      if (!derivedSemiMonthlyDays) {
+        return { ...current, startDate }
+      }
+
+      return {
+        ...current,
+        startDate,
+        firstPaymentDay: derivedSemiMonthlyDays.firstPaymentDay,
+        secondPaymentDay: derivedSemiMonthlyDays.secondPaymentDay,
+      }
+    })
     setError('')
     setMessage('')
   }
@@ -198,8 +257,20 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
       return 'Start date is required'
     }
 
-    if (editForm.paymentType === 'semi_monthly' && !getCutoffPatternForDate(editForm.startDate)) {
-      return 'Semi-monthly start date must be on the 5th, 15th, 20th, or month end'
+    if (editForm.paymentType === 'semi_monthly' && editForm.firstPaymentDay === editForm.secondPaymentDay) {
+      return 'Choose two different payment days for a semi-monthly schedule'
+    }
+
+    const paymentDays = buildPaymentDays(
+      editForm.paymentType,
+      editForm.firstPaymentDay,
+      editForm.secondPaymentDay,
+    )
+
+    try {
+      buildLoanDueDates(1, editForm.paymentType, paymentDays, editForm.startDate)
+    } catch (caughtError) {
+      return caughtError instanceof Error ? caughtError.message : 'Start date must match one of the selected payment days'
     }
 
     return ''
@@ -229,7 +300,11 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         numberOfCutoffs: Number(editForm.numberOfCutoffs),
         startDate: editForm.startDate,
         paymentType: editForm.paymentType,
-        cutoffPatternCode: editForm.paymentType === 'semi_monthly' ? editForm.cutoffPatternCode : null,
+        paymentDays: buildPaymentDays(
+          editForm.paymentType,
+          editForm.firstPaymentDay,
+          editForm.secondPaymentDay,
+        ),
         purpose: editForm.purpose.trim(),
       })
 
@@ -249,6 +324,26 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const frequency = application?.paymentType || application?.paymentFrequency
   const frequencyLabel = frequency === 'monthly' ? 'Monthly' : 'Semi-monthly'
   const firstPaymentDate = application?.startDate || application?.firstPaymentDate || application?.createdAt || ''
+  const computedPaymentDays = buildPaymentDays(
+    editForm.paymentType,
+    editForm.firstPaymentDay,
+    editForm.secondPaymentDay,
+  )
+  const computedPaymentDates = (() => {
+    if (!editForm.startDate) {
+      return { first: '', second: '' }
+    }
+
+    try {
+      const dueDates = buildLoanDueDates(2, editForm.paymentType, computedPaymentDays, editForm.startDate)
+      return {
+        first: dueDates[0] ? formatDate(dueDates[0]) : '',
+        second: dueDates[1] ? formatDate(dueDates[1]) : '',
+      }
+    } catch {
+      return { first: '', second: '' }
+    }
+  })()
 
   if (loading) {
     return <LoadingState title="Loading application" description="Fetching borrower application details." />
@@ -357,37 +452,83 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
                 onWheel={preventWheelValueChange}
                 onChange={(event) => updateEditForm({ numberOfCutoffs: event.target.value })}
               />
-              <Input
-                id="editApplicationStartDate"
-                label="Start date"
-                type="date"
-                value={editForm.startDate}
-                onChange={(event) => updateStartDate(event.target.value)}
-              />
-            </div>
-
-            <div className="grid two">
               <Select
                 id="editApplicationFrequency"
                 label="Payment type"
                 value={editForm.paymentType}
-                onChange={(event) => updateEditForm({ paymentType: event.target.value as LoanApplicationPaymentType })}
+                onChange={(event) => {
+                  const nextPaymentType = event.target.value as LoanApplicationPaymentType
+                  if (nextPaymentType === 'monthly') {
+                    const derivedMonthlyPaymentDay = deriveMonthlyPaymentDayFromStartDate(editForm.startDate)
+                    updateEditForm({
+                      paymentType: nextPaymentType,
+                      firstPaymentDay: derivedMonthlyPaymentDay ?? editForm.firstPaymentDay,
+                      secondPaymentDay: derivedMonthlyPaymentDay ?? editForm.secondPaymentDay,
+                    })
+                    return
+                  }
+
+                  const derivedSemiMonthlyDays = deriveSemiMonthlyPaymentDaysFromStartDate(editForm.startDate)
+                  updateEditForm({
+                    paymentType: nextPaymentType,
+                    firstPaymentDay: derivedSemiMonthlyDays?.firstPaymentDay ?? editForm.firstPaymentDay,
+                    secondPaymentDay: derivedSemiMonthlyDays?.secondPaymentDay ?? editForm.secondPaymentDay,
+                  })
+                }}
               >
                 <option value="monthly">Monthly</option>
                 <option value="semi_monthly">Semi-monthly</option>
               </Select>
-              {editForm.paymentType === 'semi_monthly' ? (
-                <Select
-                  id="editApplicationCutoffPattern"
-                  label="Cutoff pattern"
-                  value={editForm.cutoffPatternCode}
-                  onChange={(event) => updateEditForm({ cutoffPatternCode: event.target.value as LoanApplicationCutoffPatternCode })}
-                >
-                  <option value="15_month_end">15th + month end</option>
-                  <option value="5_20">5th + 20th</option>
-                </Select>
-              ) : null}
             </div>
+
+            {editForm.paymentType === 'monthly' ? (
+              <div className="grid two">
+                <Input
+                  id="editApplicationStartDate"
+                  label="Start date"
+                  type="date"
+                  value={editForm.startDate}
+                  onChange={(event) => updateStartDate(event.target.value)}
+                />
+                <Input
+                  id="editApplicationMonthlyPaymentDayComputed"
+                  label="Monthly payment day"
+                  type="text"
+                  value={computedPaymentDates.first}
+                  readOnly
+                />
+              </div>
+            ) : (
+              <div className="grid two">
+                <Input
+                  id="editApplicationStartDate"
+                  label="Start date"
+                  type="date"
+                  value={editForm.startDate}
+                  onChange={(event) => updateStartDate(event.target.value)}
+                />
+                <div />
+              </div>
+            )}
+
+            {editForm.paymentType === 'semi_monthly' ? (
+              <div className="grid two">
+                <Input
+                  id="editApplicationFirstPaymentDateComputed"
+                  label="First payment day"
+                  type="text"
+                  value={computedPaymentDates.first}
+                  readOnly
+                />
+                <Input
+                  id="editApplicationSecondPaymentDateComputed"
+                  label="Second payment day"
+                  type="text"
+                  value={computedPaymentDates.second}
+                  readOnly
+                />
+              </div>
+            ) : null}
 
             <Textarea
               id="editApplicationPurpose"

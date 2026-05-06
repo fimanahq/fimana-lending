@@ -1,5 +1,5 @@
 import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
-import type { LoanSchedulePreset, PaymentFrequency } from '@/lib/types'
+import type { PaymentFrequency } from '@/lib/types'
 
 export interface LoanApplicationValidationInput {
   firstName: string
@@ -11,7 +11,6 @@ export interface LoanApplicationValidationInput {
   paymentFrequency: PaymentFrequency
   firstDay: string
   secondDay: string
-  paymentPreset: LoanSchedulePreset
   firstPaymentDate: string
   purpose: string
   income?: number | null
@@ -26,7 +25,6 @@ export interface ValidatedLoanApplicationInput {
   gives: number
   paymentFrequency: PaymentFrequency
   paymentDays: string[]
-  paymentPreset: LoanSchedulePreset
   firstPaymentDate: string
   purpose: string
   income: number
@@ -82,10 +80,6 @@ export function normalizeIncomingPaymentFrequency(
   value: PaymentFrequency | 'twice_monthly',
 ): PaymentFrequency {
   return value === 'twice_monthly' ? 'semi_monthly' : value
-}
-
-export function isPaymentPreset(value: unknown): value is LoanSchedulePreset {
-  return value === '15_month_end' || value === '5_20' || value === 'custom'
 }
 
 function normalizePhone(value: string) {
@@ -179,11 +173,7 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
     errors.firstPaymentDate = 'Preferred first payment date is required'
   }
 
-  if (
-    paymentFrequency === 'semi_monthly' &&
-    input.paymentPreset === 'custom' &&
-    input.firstDay === input.secondDay
-  ) {
+  if (paymentFrequency === 'semi_monthly' && input.firstDay === input.secondDay) {
     errors.paymentDays = 'Choose two different payment days for a semi-monthly schedule'
   }
 
@@ -192,7 +182,6 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
       paymentFrequency,
       input.firstDay,
       input.secondDay,
-      input.paymentPreset,
     )
   }
 
@@ -239,7 +228,6 @@ export function validateLoanApplicationInput(input: LoanApplicationValidationInp
     gives: input.gives,
     paymentFrequency: normalizeIncomingPaymentFrequency(input.paymentFrequency),
     paymentDays: validation.normalized.paymentDays,
-    paymentPreset: input.paymentPreset,
     firstPaymentDate: validation.normalized.firstPaymentDate,
     purpose: validation.normalized.purpose,
     income: validation.normalized.income!,

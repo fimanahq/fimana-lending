@@ -1,28 +1,29 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getLoanApplicationValidationResult, validateLoanApplicationInput } from '@/lib/loan-application-validation'
-import { buildPaymentDays, getRecommendedFirstPaymentDate } from '@/lib/loan-schedule'
-import type { LoanApplication, LoanSchedulePreset } from '@/lib/types'
+import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
+import type { LoanApplication } from '@/lib/types'
 import { createPublicLoanApplication } from '@/services'
 
 const PHONE_PREFIX = '+63 '
 const REQUIRED_ERROR_SUFFIX = 'is required'
+const BORROWER_REQUEST_PAYMENT_FREQUENCY = 'semi_monthly' as const
+const BORROWER_REQUEST_FIRST_DAY = '15'
+const BORROWER_REQUEST_SECOND_DAY = 'month_end'
 
-const initialForm = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  phone: PHONE_PREFIX,
-  principal: '',
-  gives: '12',
-  paymentFrequency: 'semi_monthly' as const,
-  firstDay: '15',
-  secondDay: 'month_end',
-  paymentPreset: '15_month_end' as LoanSchedulePreset,
-  firstPaymentDate: '',
-  income: '',
-  purpose: '',
+function buildInitialForm() {
+  return {
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: PHONE_PREFIX,
+    principal: '',
+    gives: '12',
+    firstPaymentDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
+    income: '',
+    purpose: '',
+  }
 }
 
 function coercePhoneValue(value: string) {
@@ -66,8 +67,7 @@ function parseOptionalNumber(value: string) {
 }
 
 export function LoanApplicationIntakeForm() {
-  const [form, setForm] = useState(initialForm)
-  const [firstPaymentDateIsAuto, setFirstPaymentDateIsAuto] = useState(true)
+  const [form, setForm] = useState(() => buildInitialForm())
   const [touchedFields, setTouchedFields] = useState({
     firstName: false,
     lastName: false,
@@ -77,15 +77,10 @@ export function LoanApplicationIntakeForm() {
     income: false,
     purpose: false,
     gives: false,
-    firstPaymentDate: false,
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<LoanApplication | null>(null)
-  const paymentDays = useMemo(
-    () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay, form.paymentPreset),
-    [form.firstDay, form.paymentFrequency, form.paymentPreset, form.secondDay],
-  )
   const validation = useMemo(
     () =>
       getLoanApplicationValidationResult({
@@ -93,6 +88,9 @@ export function LoanApplicationIntakeForm() {
         principal: Number(form.principal),
         income: parseOptionalNumber(form.income),
         gives: Number(form.gives),
+        paymentFrequency: BORROWER_REQUEST_PAYMENT_FREQUENCY,
+        firstDay: BORROWER_REQUEST_FIRST_DAY,
+        secondDay: BORROWER_REQUEST_SECOND_DAY,
       }),
     [form],
   )
@@ -103,19 +101,6 @@ export function LoanApplicationIntakeForm() {
   const phoneDigits = form.phone.replace(/\D/g, '').replace(/^63/, '')
   const phoneIsDirty = phoneDigits.length > 0
   const phoneHasLengthError = touchedFields.phone && phoneIsDirty && Boolean(validation.errors.phone) && !isRequiredError(validation.errors.phone)
-
-  useEffect(() => {
-    if (!firstPaymentDateIsAuto) {
-      return
-    }
-
-    const recommendedDate = getRecommendedFirstPaymentDate(form.paymentFrequency, paymentDays)
-    setForm((current) =>
-      current.firstPaymentDate === recommendedDate
-        ? current
-        : { ...current, firstPaymentDate: recommendedDate },
-    )
-  }, [firstPaymentDateIsAuto, form.paymentFrequency, paymentDays])
 
   const markTouched = (field: keyof typeof touchedFields) => {
     setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }))
@@ -139,8 +124,6 @@ export function LoanApplicationIntakeForm() {
         return form.purpose.trim().length === 0
       case 'gives':
         return form.gives.trim().length === 0
-      case 'firstPaymentDate':
-        return form.firstPaymentDate.trim().length === 0
     }
   }
 
@@ -148,8 +131,8 @@ export function LoanApplicationIntakeForm() {
     touchedFields[field] && (isMissingValue(field) || isRequiredError(error))
 
   const getVisibleError = (field: keyof typeof validation.errors, touched: boolean) => {
-    const error = validation.errors[field]
-    if (!touched || !error) {
+    const fieldError = validation.errors[field]
+    if (!touched || !fieldError) {
       return ''
     }
 
@@ -157,11 +140,11 @@ export function LoanApplicationIntakeForm() {
       return ''
     }
 
-    if (isRequiredError(error)) {
+    if (isRequiredError(fieldError)) {
       return ''
     }
 
-    return error
+    return fieldError
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -176,13 +159,15 @@ export function LoanApplicationIntakeForm() {
         principal: Number(form.principal),
         income: parseOptionalNumber(form.income),
         gives: Number(form.gives),
+        paymentFrequency: BORROWER_REQUEST_PAYMENT_FREQUENCY,
+        firstDay: BORROWER_REQUEST_FIRST_DAY,
+        secondDay: BORROWER_REQUEST_SECOND_DAY,
       })
 
       const created = await createPublicLoanApplication(validated)
 
       setSuccess(created)
-      setForm(initialForm)
-      setFirstPaymentDateIsAuto(true)
+      setForm(buildInitialForm())
       setTouchedFields({
         firstName: false,
         lastName: false,
@@ -192,7 +177,6 @@ export function LoanApplicationIntakeForm() {
         income: false,
         purpose: false,
         gives: false,
-        firstPaymentDate: false,
       })
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit application')
@@ -334,43 +318,14 @@ export function LoanApplicationIntakeForm() {
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestPreset">Schedule preset</label>
-          <select
-            id="requestPreset"
-            value={form.paymentPreset}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                paymentPreset: event.target.value as LoanSchedulePreset,
-              }))
-            }
-          >
-            <option value="15_month_end">15th + month end</option>
-            <option value="5_20">5th + 20th</option>
-          </select>
+          <label htmlFor="requestSchedule">Schedule</label>
+          <input id="requestSchedule" value="Semi-monthly (15th and month end)" readOnly />
         </div>
       </div>
 
       <div className="request-loan-form__field request-loan-form__field--full">
-        <label htmlFor="requestFirstPaymentDate">Preferred first payment date</label>
-        <input
-          id="requestFirstPaymentDate"
-          type="date"
-          className={showDirtyField('firstPaymentDate', validation.errors.firstPaymentDate)
-            ? 'request-loan-form__input--dirty'
-            : ''}
-          aria-invalid={Boolean(getVisibleError('firstPaymentDate', touchedFields.firstPaymentDate))}
-          value={form.firstPaymentDate}
-          onBlur={() => markTouched('firstPaymentDate')}
-          onChange={(event) => {
-            const nextValue = event.target.value
-            setFirstPaymentDateIsAuto(nextValue.length === 0)
-            setForm((current) => ({ ...current, firstPaymentDate: nextValue }))
-          }}
-        />
-        {getVisibleError('firstPaymentDate', touchedFields.firstPaymentDate) ? (
-          <p className="request-loan-form__error">{getVisibleError('firstPaymentDate', touchedFields.firstPaymentDate)}</p>
-        ) : null}
+        <label htmlFor="requestFirstPaymentDate">First due date (computed)</label>
+        <input id="requestFirstPaymentDate" type="date" value={form.firstPaymentDate} readOnly />
       </div>
 
       <div className="request-loan-form__field">

@@ -11,7 +11,6 @@ export type {
   LoanReminderStatus,
   LoanApplication,
   LoanApplicationRecordStatus,
-  LoanSchedulePreset,
   LoanSchedulePreviewRow,
   LoanStatus,
   PaymentFrequency,

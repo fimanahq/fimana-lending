@@ -24,7 +24,6 @@ export type LoanApplicationStatus =
   | 'withdrawn'
   | 'expired'
 export type LoanApplicationRecordStatus = LoanApplicationStatus | 'pending'
-export type LoanSchedulePreset = '15_month_end' | '5_20' | 'custom'
 export type InterestMode = 'rules' | 'manual'
 
 export interface ApiErrorPayload {
@@ -430,7 +429,6 @@ export interface LoanApplication {
   gives?: number
   paymentFrequency?: PaymentFrequency
   paymentDays: string[]
-  paymentPreset?: LoanSchedulePreset
   firstPaymentDate?: string
   notes?: string
   status: LoanApplicationRecordStatus
@@ -515,6 +513,7 @@ export interface LoanApplicationDraftInput {
   numberOfCutoffs: number
   startDate: string
   paymentType: LoanApplicationPaymentType
+  paymentDays: string[]
   cutoffPatternCode?: LoanApplicationCutoffPatternCode | null
   purpose?: string
 }

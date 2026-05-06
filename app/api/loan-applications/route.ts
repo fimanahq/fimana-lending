@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import {
   isPaymentFrequency,
-  isPaymentPreset,
-  normalizeIncomingPaymentFrequency,
   validateLoanApplicationInput,
 } from '@/lib/loan-application-validation'
 import { API_BASE_URL } from '@/lib/constants'
+import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
 import type {
@@ -23,6 +22,23 @@ function isDraftApplicationPayload(body: Record<string, unknown>) {
 }
 
 function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInput {
+  const rawPaymentDays = Array.isArray(body.paymentDays)
+    ? body.paymentDays
+      .map((day) => (typeof day === 'string' ? day.trim().toLowerCase() : String(day)))
+      .filter((day) => day.length > 0)
+    : []
+  const legacyCutoffPatternCode =
+    body.cutoffPatternCode === '5_20' || body.cutoffPatternCode === '15_month_end'
+      ? body.cutoffPatternCode
+      : null
+  const paymentDays = rawPaymentDays.length > 0
+    ? rawPaymentDays
+    : legacyCutoffPatternCode === '5_20'
+      ? ['5', '20']
+      : legacyCutoffPatternCode === '15_month_end'
+        ? ['15', 'month_end']
+        : []
+
   return {
     borrowerId: typeof body.borrowerId === 'string' ? body.borrowerId : '',
     loanProductId:
@@ -33,10 +49,8 @@ function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInp
     numberOfCutoffs: Number(body.numberOfCutoffs),
     startDate: typeof body.startDate === 'string' ? body.startDate : '',
     paymentType: body.paymentType === 'monthly' ? 'monthly' : 'semi_monthly',
-    cutoffPatternCode:
-      body.cutoffPatternCode === '5_20' || body.cutoffPatternCode === '15_month_end'
-        ? body.cutoffPatternCode
-        : null,
+    paymentDays,
+    cutoffPatternCode: legacyCutoffPatternCode,
     purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
   }
 }
@@ -94,19 +108,15 @@ export async function POST(request: NextRequest) {
     : typeof body.notes === 'string'
       ? body.notes.trim()
       : ''
-  const firstPaymentDate = typeof body.firstPaymentDate === 'string' ? body.firstPaymentDate : ''
-  const firstDay = typeof body.firstDay === 'string' ? body.firstDay : '15'
-  const secondDay = typeof body.secondDay === 'string' ? body.secondDay : 'month_end'
+  const firstPaymentDate = getBorrowerRequestSemiMonthlyFirstPaymentDate()
+  const firstDay = '15'
+  const secondDay = 'month_end'
   const principal = Number(body.principal)
   const income = body.income === undefined || body.income === null || body.income === ''
     ? null
     : Number(body.income)
   const gives = Number(body.gives)
-  const rawPaymentFrequency = body.paymentFrequency
-  const paymentFrequency = rawPaymentFrequency === 'twice_monthly'
-    ? normalizeIncomingPaymentFrequency(rawPaymentFrequency)
-    : rawPaymentFrequency
-  const paymentPreset = body.paymentPreset
+  const paymentFrequency = 'semi_monthly' as const
 
   if (!firstName || !lastName) {
     return jsonError('Borrower first and last name are required', 400)
@@ -140,10 +150,6 @@ export async function POST(request: NextRequest) {
     return jsonError('Invalid payment frequency', 400)
   }
 
-  if (!isPaymentPreset(paymentPreset)) {
-    return jsonError('Invalid payment schedule preset', 400)
-  }
-
   try {
     const validated = validateLoanApplicationInput({
       firstName,
@@ -155,7 +161,6 @@ export async function POST(request: NextRequest) {
       paymentFrequency,
       firstDay,
       secondDay,
-      paymentPreset,
       firstPaymentDate,
       purpose,
       income,
