@@ -1,10 +1,42 @@
 import Link from 'next/link'
-import { DashboardCutoffReceivables } from '@/components/dashboard/dashboard-cutoff-receivables'
-import { DashboardPortfolioChart } from '@/components/dashboard/dashboard-portfolio-chart'
+import dynamic from 'next/dynamic'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
+
+const DashboardPortfolioChart = dynamic(
+  () => import('@/components/dashboard/dashboard-portfolio-chart').then((module) => module.DashboardPortfolioChart),
+  {
+    loading: () => (
+      <div className="dashboard-overview__progressChartPanel dashboard-overview__deferredBlock">
+        <div className="ui-skeleton" aria-hidden="true">
+          <span className="ui-skeleton__line" />
+          <span className="ui-skeleton__line" />
+          <span className="ui-skeleton__line" />
+        </div>
+      </div>
+    ),
+  },
+)
+
+const DashboardCutoffReceivables = dynamic(
+  () => import('@/components/dashboard/dashboard-cutoff-receivables').then((module) => module.DashboardCutoffReceivables),
+  {
+    loading: () => (
+      <section className="dashboard-overview__operator">
+        <div className="dashboard-overview__tableCard dashboard-overview__deferredBlock">
+          <div className="ui-skeleton" aria-hidden="true">
+            <span className="ui-skeleton__line" />
+            <span className="ui-skeleton__line" />
+            <span className="ui-skeleton__line" />
+            <span className="ui-skeleton__line" />
+          </div>
+        </div>
+      </section>
+    ),
+  },
+)
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)

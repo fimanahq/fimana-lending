@@ -2528,6 +2528,29 @@ th {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.dashboard-overview--loading .ui-skeleton__line {
+  height: 1.1rem;
+}
+
+.dashboard-overview--loading .dashboard-overview__statCard .ui-skeleton {
+  margin-top: auto;
+}
+
+.dashboard-overview--loading .dashboard-overview__progressCard .ui-skeleton,
+.dashboard-overview--loading .dashboard-overview__tableCard .ui-skeleton {
+  min-height: 12rem;
+  align-content: start;
+}
+
+.dashboard-overview__deferredBlock {
+  min-height: 12rem;
+}
+
+.dashboard-overview__deferredBlock .ui-skeleton {
+  min-height: 100%;
+  align-content: start;
+}
+
 .dashboard-overview__statCard,
 .dashboard-overview__actionCard,
 .dashboard-overview__tableCard,

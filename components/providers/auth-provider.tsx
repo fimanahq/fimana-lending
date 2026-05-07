@@ -12,9 +12,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+interface AuthProviderProps {
+  children: React.ReactNode
+  initialUser?: User | null
+  shouldRefreshOnMount?: boolean
+}
+
+export function AuthProvider({
+  children,
+  initialUser = null,
+  shouldRefreshOnMount = true,
+}: AuthProviderProps) {
+  const [user, setUser] = useState<User | null>(initialUser)
+  const [loading, setLoading] = useState(initialUser ? false : shouldRefreshOnMount)
 
   const refresh = async () => {
     setLoading(true)
@@ -33,8 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    if (!shouldRefreshOnMount || initialUser) {
+      return
+    }
+
     void refresh()
-  }, [])
+  }, [initialUser, shouldRefreshOnMount])
 
   const value = useMemo(() => ({
     user,
