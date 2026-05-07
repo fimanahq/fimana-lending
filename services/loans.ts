@@ -2,6 +2,8 @@ import { apiRequest } from '@/lib/client-api'
 import type { LoanRecord } from '@/lib/types'
 import { PaginatedResponse } from '@/types'
 
+const loanListRequests = new Map<string, Promise<PaginatedResponse<LoanRecord> | LoanRecord[]>>()
+
 export function getLoan(loanId: string) {
   return apiRequest<LoanRecord>(`/api/loans/${loanId}`)
 }
@@ -27,14 +29,39 @@ function buildQueryParams(filters: LoanRecordFilters) {
 
 export function listLoanRecords(filters: LoanRecordFilters = {}) {
   const query = buildQueryParams(filters)
+  const requestPath = `/api/loans${query ? `?${query}` : ''}`
+  const inflightRequest = loanListRequests.get(requestPath)
 
-  return apiRequest<PaginatedResponse<LoanRecord>>(
-    `/api/loans${query ? `?${query}` : ''}`,
-  )
+  if (inflightRequest) {
+    return inflightRequest as Promise<PaginatedResponse<LoanRecord>>
+  }
+
+  const request = apiRequest<PaginatedResponse<LoanRecord>>(requestPath)
+    .finally(() => {
+      loanListRequests.delete(requestPath)
+    })
+
+  loanListRequests.set(requestPath, request)
+
+  return request
 }
 
 export function listLoansByBorrowerId(borrowerId: string) {
-  return apiRequest<LoanRecord[]>(`/api/borrowers/${borrowerId}/loans`)
+  const requestPath = `/api/borrowers/${borrowerId}/loans`
+  const inflightRequest = loanListRequests.get(requestPath)
+
+  if (inflightRequest) {
+    return inflightRequest as Promise<LoanRecord[]>
+  }
+
+  const request = apiRequest<LoanRecord[]>(requestPath)
+    .finally(() => {
+      loanListRequests.delete(requestPath)
+    })
+
+  loanListRequests.set(requestPath, request)
+
+  return request
 }
 
 export function postLoan(input: Record<string, unknown>) {

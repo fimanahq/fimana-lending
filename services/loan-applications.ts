@@ -17,6 +17,8 @@ type LoanApplicationFilters = {
   itemsPerPage?: number,
 }
 
+const loanApplicationListRequests = new Map<string, Promise<PaginatedResponse<LoanApplication>>>()
+
 function buildQueryParams(filters: LoanApplicationFilters) {
   const params = new URLSearchParams()
 
@@ -31,10 +33,21 @@ function buildQueryParams(filters: LoanApplicationFilters) {
 
 export function listLoanApplications(filters: LoanApplicationFilters = {}) {
   const query = buildQueryParams(filters)
+  const requestPath = `/api/loan-applications${query ? `?${query}` : ''}`
+  const inflightRequest = loanApplicationListRequests.get(requestPath)
 
-  return apiRequest<PaginatedResponse<LoanApplication>>(
-    `/api/loan-applications${query ? `?${query}` : ''}`,
-  )
+  if (inflightRequest) {
+    return inflightRequest
+  }
+
+  const request = apiRequest<PaginatedResponse<LoanApplication>>(requestPath)
+    .finally(() => {
+      loanApplicationListRequests.delete(requestPath)
+    })
+
+  loanApplicationListRequests.set(requestPath, request)
+
+  return request
 }
 
 export function getLoanApplication(applicationId: string) {

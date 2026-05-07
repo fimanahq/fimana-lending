@@ -3,6 +3,8 @@ import type { Borrower } from '@/lib/types'
 import { PaginatedResponse } from '@/types'
 import { CreateBorrowerInput, ListBorrowersParams, UpdateBorrowerInput } from '@/types'
 
+const borrowerListRequests = new Map<string, Promise<PaginatedResponse<Borrower> | Borrower[]>>()
+
 export function listBorrowersPaginated(params: ListBorrowersParams = {}) {
   const searchParams = new URLSearchParams()
 
@@ -13,13 +15,39 @@ export function listBorrowersPaginated(params: ListBorrowersParams = {}) {
     searchParams.set('search', params.search.trim())
   }
 
-  return apiRequest<PaginatedResponse<Borrower>>(
-    `/api/borrowers?${searchParams.toString()}`,
-  )
+  const requestPath = `/api/borrowers?${searchParams.toString()}`
+  const inflightRequest = borrowerListRequests.get(requestPath)
+
+  if (inflightRequest) {
+    return inflightRequest as Promise<PaginatedResponse<Borrower>>
+  }
+
+  const request = apiRequest<PaginatedResponse<Borrower>>(requestPath)
+    .finally(() => {
+      borrowerListRequests.delete(requestPath)
+    })
+
+  borrowerListRequests.set(requestPath, request)
+
+  return request
 }
 
 export function listLoanBorrowers() {
-  return apiRequest<Borrower[]>('/api/borrowers')
+  const requestPath = '/api/borrowers'
+  const inflightRequest = borrowerListRequests.get(requestPath)
+
+  if (inflightRequest) {
+    return inflightRequest as Promise<Borrower[]>
+  }
+
+  const request = apiRequest<Borrower[]>(requestPath)
+    .finally(() => {
+      borrowerListRequests.delete(requestPath)
+    })
+
+  borrowerListRequests.set(requestPath, request)
+
+  return request
 }
 
 export function getBorrower(borrowerId: string) {
