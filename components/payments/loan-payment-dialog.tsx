@@ -190,6 +190,11 @@ export function LoanPaymentDialog({
   }, [open])
 
   const handleSubmit = async () => {
+    if (!detail?.loan || detail.loan.status !== 'active' || detail.loan.balances.totalOutstandingAmountMinor <= 0) {
+      setSubmitError('Loan has no outstanding balance to post')
+      return
+    }
+
     const amountMinor = toAmountMinor(amount)
     if (!amountMinor || amountMinor <= 0) {
       setSubmitError('Enter a payment amount greater than 0')
@@ -213,6 +218,7 @@ export function LoanPaymentDialog({
       })
       setAmount('')
       setReferenceNo('')
+      setSubmitError('')
       await onPaymentPosted?.(response.loan)
     } catch (caughtError) {
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to post payment')
@@ -224,6 +230,7 @@ export function LoanPaymentDialog({
   const loan = detail?.loan ?? null
   const currency = loan?.loanProduct.currency || 'PHP'
   const openScheduleRows = (loan?.schedule ?? []).filter((row) => row.outstandingTotalAmountMinor > 0)
+  const canPostPayment = loan?.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
 
   return (
     <Dialog
@@ -298,7 +305,7 @@ export function LoanPaymentDialog({
               </div>
 
               <div className="ui-card__actions" style={{ justifyContent: 'flex-start' }}>
-                <Button onClick={() => void handleSubmit()} disabled={submitting}>
+                <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostPayment}>
                   {submitting ? 'Posting…' : 'Post payment'}
                 </Button>
               </div>
