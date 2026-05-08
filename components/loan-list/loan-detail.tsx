@@ -20,8 +20,16 @@ import {
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { LoanPaymentHistory, LoanPaymentMethod, LoanRecord } from '@/lib/types'
-import { deleteLoanPayment, getLoan, getLoanPaymentDetail, updateLoanPayment } from '@/services'
+import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord } from '@/lib/types'
+import { getLoan } from '@/services/loans'
+import {
+  deleteLoanAdjustment,
+  deleteLoanPayment,
+  getLoanAdjustmentDetail,
+  getLoanPaymentDetail,
+  updateLoanAdjustment,
+  updateLoanPayment,
+} from '@/services/payments'
 
 interface LoanDetailProps {
   loanId: string
@@ -61,6 +69,10 @@ function getPaymentStatusClassName(status: LoanPaymentHistory['status']) {
   return status === 'posted' ? 'status-active' : 'status-cancelled'
 }
 
+function getAdjustmentStatusClassName(status: LoanAdjustmentRecord['status']) {
+  return status === 'posted' ? 'status-active' : 'status-cancelled'
+}
+
 function toAmountMinor(amount: string) {
   const parsed = Number(amount)
   if (!Number.isFinite(parsed)) {
@@ -84,15 +96,24 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false)
   const [payments, setPayments] = useState<LoanPaymentHistory[]>([])
+  const [adjustments, setAdjustments] = useState<LoanAdjustmentRecord[]>([])
   const [selectedPayment, setSelectedPayment] = useState<LoanPaymentHistory | null>(null)
+  const [selectedAdjustment, setSelectedAdjustment] = useState<LoanAdjustmentRecord | null>(null)
   const [deletePaymentId, setDeletePaymentId] = useState('')
+  const [deleteAdjustmentId, setDeleteAdjustmentId] = useState('')
   const [deletingPayment, setDeletingPayment] = useState(false)
+  const [deletingAdjustment, setDeletingAdjustment] = useState(false)
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<LoanPaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
+  const [adjustmentDate, setAdjustmentDate] = useState('')
+  const [adjustmentAmount, setAdjustmentAmount] = useState('')
+  const [adjustmentReason, setAdjustmentReason] = useState('')
   const [submittingPaymentEdit, setSubmittingPaymentEdit] = useState(false)
+  const [submittingAdjustmentEdit, setSubmittingAdjustmentEdit] = useState(false)
   const [paymentActionError, setPaymentActionError] = useState('')
+  const [adjustmentActionError, setAdjustmentActionError] = useState('')
 
   useEffect(() => {
     const loadLoan = async () => {
@@ -100,12 +121,14 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       setError('')
 
       try {
-        const [loanRecord, paymentDetail] = await Promise.all([
+        const [loanRecord, paymentDetail, adjustmentDetail] = await Promise.all([
           getLoan(loanId),
           getLoanPaymentDetail(loanId),
+          getLoanAdjustmentDetail(loanId),
         ])
         setLoan(loanRecord)
         setPayments(paymentDetail.payments)
+        setAdjustments(adjustmentDetail.adjustments)
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan')
       } finally {
@@ -207,6 +230,69 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     }
   }
 
+  const openEditAdjustmentDialog = (adjustment: LoanAdjustmentRecord) => {
+    setSelectedAdjustment(adjustment)
+    setAdjustmentDate(adjustment.adjustmentDate.slice(0, 10))
+    setAdjustmentAmount((adjustment.amountMinor / 100).toFixed(2))
+    setAdjustmentReason(adjustment.reason)
+    setAdjustmentActionError('')
+  }
+
+  const handleAdjustmentEdit = async () => {
+    if (!selectedAdjustment) {
+      return
+    }
+
+    const amountMinor = toAmountMinor(adjustmentAmount)
+    if (!amountMinor || amountMinor <= 0) {
+      setAdjustmentActionError('Enter an adjustment amount greater than 0')
+      return
+    }
+
+    if (!adjustmentReason.trim()) {
+      setAdjustmentActionError('Enter a reason for the loan adjustment')
+      return
+    }
+
+    setSubmittingAdjustmentEdit(true)
+    setAdjustmentActionError('')
+    try {
+      const response = await updateLoanAdjustment(loanId, selectedAdjustment.id, {
+        adjustmentDate,
+        amountMinor,
+        reason: adjustmentReason.trim(),
+      })
+      setLoan(response.loan)
+      const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
+      setAdjustments(adjustmentDetail.adjustments)
+      setSelectedAdjustment(null)
+    } catch (caughtError) {
+      setAdjustmentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to update adjustment')
+    } finally {
+      setSubmittingAdjustmentEdit(false)
+    }
+  }
+
+  const handleDeleteAdjustment = async () => {
+    if (!deleteAdjustmentId) {
+      return
+    }
+
+    setDeletingAdjustment(true)
+    setAdjustmentActionError('')
+    try {
+      const response = await deleteLoanAdjustment(loanId, deleteAdjustmentId)
+      setLoan(response.loan)
+      const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
+      setAdjustments(adjustmentDetail.adjustments)
+      setDeleteAdjustmentId('')
+    } catch (caughtError) {
+      setAdjustmentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to delete adjustment')
+    } finally {
+      setDeletingAdjustment(false)
+    }
+  }
+
   return (
     <div className="stack">
       <div className="inline-actions">
@@ -222,6 +308,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           description={error}
           action={<Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>}
         />
+      ) : null}
+
+      {adjustmentActionError && !selectedAdjustment ? (
+        <ErrorBanner title="Unable to update adjustment" message={adjustmentActionError} />
       ) : null}
 
       <Card
@@ -409,6 +499,68 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         </DataTable>
       </TableShell>
 
+      <TableShell label={`${loan.loanNumber} adjustment history`}>
+        <DataTable>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reason</th>
+              <th>Applied rows</th>
+              <th>Principal</th>
+              <th>Interest</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {adjustments.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="muted">No adjustments have been posted yet.</td>
+              </tr>
+            ) : (
+              adjustments.map((adjustment) => {
+                const principalAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + allocation.principalAmountMinor, 0)
+                const interestAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + allocation.interestAmountMinor, 0)
+                return (
+                  <tr key={adjustment.id}>
+                    <td>{formatDate(adjustment.adjustmentDate)}</td>
+                    <td><strong>{adjustment.reason}</strong></td>
+                    <td>{adjustment.allocations.map((allocation) => `#${allocation.sequence}`).join(', ') || 'None'}</td>
+                    <td>{formatMinorCurrency(principalAmountMinor, currency)}</td>
+                    <td>{formatMinorCurrency(interestAmountMinor, currency)}</td>
+                    <td>{formatMinorCurrency(adjustment.amountMinor, currency)}</td>
+                    <td><span className={getAdjustmentStatusClassName(adjustment.status)}>{adjustment.status}</span></td>
+                    <td>
+                      <div className="loan-schedule__actions">
+                        <button
+                          type="button"
+                          className="button-ghost table-action-icon"
+                          aria-label={`Edit adjustment ${adjustment.reason}`}
+                          title="Edit adjustment"
+                          onClick={() => openEditAdjustmentDialog(adjustment)}
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className="button-ghost table-action-icon"
+                          aria-label={`Delete adjustment ${adjustment.reason}`}
+                          title="Delete adjustment"
+                          onClick={() => setDeleteAdjustmentId(adjustment.id)}
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </DataTable>
+      </TableShell>
+
       <LoanPaymentDialog
         open={paymentDialogOpen}
         loanId={loanId}
@@ -427,6 +579,8 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         onClose={() => setAdjustmentDialogOpen(false)}
         onAdjustmentPosted={async (updatedLoan) => {
           setLoan(updatedLoan)
+          const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
+          setAdjustments(adjustmentDetail.adjustments)
         }}
       />
 
@@ -482,6 +636,52 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         </div>
       </Dialog>
 
+      <Dialog
+        id="loan-edit-adjustment-dialog"
+        open={Boolean(selectedAdjustment)}
+        onClose={() => setSelectedAdjustment(null)}
+        title="Edit adjustment"
+      >
+        <div className="stack">
+          {adjustmentActionError ? <ErrorBanner title="Unable to update adjustment" message={adjustmentActionError} /> : null}
+          <div className="grid two">
+            <Input
+              id="edit-adjustment-date"
+              label="Adjustment date"
+              type="date"
+              value={adjustmentDate}
+              onChange={(event) => setAdjustmentDate(event.target.value)}
+            />
+            <Input
+              id="edit-adjustment-amount"
+              label="Amount"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={adjustmentAmount}
+              onChange={(event) => setAdjustmentAmount(event.target.value)}
+            />
+            <Input
+              id="edit-adjustment-reason"
+              label="Reason"
+              value={adjustmentReason}
+              onChange={(event) => setAdjustmentReason(event.target.value)}
+              placeholder="Loan adjustment reason"
+              className="grid-span-2"
+            />
+          </div>
+          <div className="inline-actions">
+            <Button onClick={() => void handleAdjustmentEdit()} disabled={submittingAdjustmentEdit}>
+              {submittingAdjustmentEdit ? 'Saving…' : 'Save changes'}
+            </Button>
+            <Button variant="secondary" onClick={() => setSelectedAdjustment(null)} disabled={submittingAdjustmentEdit}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
       <ConfirmationDialog
         open={Boolean(deletePaymentId)}
         title="Delete payment"
@@ -492,6 +692,18 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         confirmDisabled={deletingPayment}
         onConfirm={() => void handleDeletePayment()}
         onClose={() => setDeletePaymentId('')}
+      />
+
+      <ConfirmationDialog
+        open={Boolean(deleteAdjustmentId)}
+        title="Delete adjustment"
+        message="Are you sure you want to delete this adjustment? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        confirmDisabled={deletingAdjustment}
+        onConfirm={() => void handleDeleteAdjustment()}
+        onClose={() => setDeleteAdjustmentId('')}
       />
     </div>
   )

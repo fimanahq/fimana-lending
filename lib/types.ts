@@ -325,6 +325,12 @@ export interface PostLoanAdjustmentInput {
   reason: string
 }
 
+export interface UpdateLoanAdjustmentInput {
+  adjustmentDate: string
+  amountMinor: number
+  reason: string
+}
+
 export interface LoanAdjustmentPostResponse {
   adjustment: LoanAdjustmentRecord
   loan: LoanRecord
