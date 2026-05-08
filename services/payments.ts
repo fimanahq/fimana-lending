@@ -7,6 +7,7 @@ import type {
   LoanPaymentQueueItem,
   PostLoanAdjustmentInput,
   PostLoanPaymentInput,
+  UpdateLoanPaymentInput,
 } from '@/lib/types'
 
 export function listLoanPaymentQueue() {
@@ -32,5 +33,18 @@ export function postLoanAdjustment(loanId: string, input: PostLoanAdjustmentInpu
   return apiRequest<LoanAdjustmentPostResponse>(`/api/loans/${loanId}/adjustments`, {
     method: 'POST',
     body: JSON.stringify(input),
+  })
+}
+
+export function updateLoanPayment(loanId: string, paymentId: string, input: UpdateLoanPaymentInput) {
+  return apiRequest<LoanPaymentPostResponse>(`/api/loans/${loanId}/payments/${paymentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteLoanPayment(loanId: string, paymentId: string) {
+  return apiRequest<LoanPaymentPostResponse>(`/api/loans/${loanId}/payments/${paymentId}`, {
+    method: 'DELETE',
   })
 }

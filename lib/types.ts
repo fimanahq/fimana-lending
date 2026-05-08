@@ -279,6 +279,13 @@ export interface PostLoanPaymentInput {
   referenceNo?: string
 }
 
+export interface UpdateLoanPaymentInput {
+  paymentDate: string
+  amountMinor: number
+  method: LoanPaymentMethod
+  referenceNo?: string
+}
+
 export interface LoanPaymentPostResponse {
   payment: LoanPaymentHistory
   payments: LoanPaymentHistory[]

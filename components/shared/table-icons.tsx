@@ -41,3 +41,13 @@ export function DeleteIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function EditIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M4 20h4.8l9.7-9.7-4.8-4.8L4 15.2V20Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="m12.8 6.2 4.8 4.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M14.7 4.3 16.3 2.7a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8l-1.6 1.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
