@@ -357,8 +357,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               </p>
             </div>
             <div className="dashboard-overview__progressSummary">
-              <span className="dashboard-overview__progressSummaryLabel">Total active loan outstanding</span>
-              <strong>{formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}</strong>
+              <span className="dashboard-overview__progressSummaryLabel">Total active receivable</span>
+              <strong>{formatMinorCurrency(summary.moneyWithBorrowersMinor + summary.remainingProjectedInterestMinor, dashboardCurrency)}</strong>
               <span>{summary.activeLoanCount === 1 ? '1 active loan' : `${summary.activeLoanCount.toLocaleString('en-PH')} active loans`}</span>
             </div>
           </div>
