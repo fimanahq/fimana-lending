@@ -2900,6 +2900,10 @@ th {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.dashboard-overview__miniGrid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .dashboard-overview__miniCard {
   display: flex;
   min-height: 8.5rem;

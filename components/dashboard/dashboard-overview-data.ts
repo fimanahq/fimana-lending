@@ -22,6 +22,7 @@ export interface DashboardProgressSegment {
 
 export interface DashboardOverviewData {
   summary: DashboardSummaryMetrics
+  activeLoanBalanceSegments: DashboardProgressSegment[]
   capitalPositionSegments: DashboardProgressSegment[]
   interestOutlookSegments: DashboardProgressSegment[]
   recentApplications: LoanApplication[]
@@ -98,6 +99,37 @@ export function buildDashboardOverviewData({
   }
 
   const capitalPositionBaseMinor = Math.max(0, mergedSummary.currentCapitalBasisMinor)
+  const activeLoanBalanceBaseMinor = Math.max(
+    0,
+    mergedSummary.moneyWithBorrowersMinor + mergedSummary.collectedInterestMinor + mergedSummary.remainingProjectedInterestMinor,
+  )
+  const activeLoanBalanceSegments: DashboardProgressSegment[] = [
+    {
+      key: 'capital_in_active_loans',
+      label: 'Capital in active loans',
+      description: 'Principal currently deployed across active loans.',
+      valueMinor: mergedSummary.moneyWithBorrowersMinor,
+      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.moneyWithBorrowersMinor / activeLoanBalanceBaseMinor) * 100 : 0,
+      tone: 'amber',
+    },
+    {
+      key: 'collected_interest',
+      label: 'Collected interest',
+      description: 'Interest already collected and realized.',
+      valueMinor: mergedSummary.collectedInterestMinor,
+      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.collectedInterestMinor / activeLoanBalanceBaseMinor) * 100 : 0,
+      tone: 'green',
+    },
+    {
+      key: 'incoming_interest',
+      label: 'Incoming interest',
+      description: 'Projected interest remaining from active schedules.',
+      valueMinor: mergedSummary.remainingProjectedInterestMinor,
+      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.remainingProjectedInterestMinor / activeLoanBalanceBaseMinor) * 100 : 0,
+      tone: 'olive',
+    },
+  ]
+
   const capitalPositionSegments: DashboardProgressSegment[] = [
     {
       key: 'cash_on_hand',
@@ -139,6 +171,7 @@ export function buildDashboardOverviewData({
 
   return {
     summary: mergedSummary,
+    activeLoanBalanceSegments,
     capitalPositionSegments,
     interestOutlookSegments,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),

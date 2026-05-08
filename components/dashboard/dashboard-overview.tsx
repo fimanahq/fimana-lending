@@ -243,6 +243,7 @@ function MiniMetric({
 export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const {
     summary,
+    activeLoanBalanceSegments,
     capitalPositionSegments,
     interestOutlookSegments,
     recentApplications,
@@ -345,6 +346,70 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
           </article>
         </section>
+
+        <article className="dashboard-overview__progressCard">
+          <div className="dashboard-overview__progressHeader">
+            <div>
+              <span className="dashboard-overview__statLabel">Active Loans</span>
+              <h2>Portfolio mix across active loans</h2>
+              <p>
+                Track active principal deployment together with realized and incoming interest to see what is already earned and what is still expected.
+              </p>
+            </div>
+            <div className="dashboard-overview__progressSummary">
+              <span className="dashboard-overview__progressSummaryLabel">Active loan portfolio</span>
+              <strong>{summary.activeLoanCount.toLocaleString('en-PH')}</strong>
+              <span>{summary.activeLoanCount === 1 ? '1 active loan' : `${summary.activeLoanCount.toLocaleString('en-PH')} active loans`}</span>
+            </div>
+          </div>
+
+          <div className="dashboard-overview__progressBody">
+            {summary.moneyWithBorrowersMinor > 0
+              || summary.collectedInterestMinor > 0
+              || summary.remainingProjectedInterestMinor > 0 ? (
+              <DashboardPortfolioChart
+                caption="This view combines deployed principal, collected interest, and incoming interest for active loans."
+                centerKicker="Active loan balance mix"
+                centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
+                centerValueMinor={
+                  summary.moneyWithBorrowersMinor
+                  + summary.collectedInterestMinor
+                  + summary.remainingProjectedInterestMinor
+                }
+                currency={dashboardCurrency}
+                segments={activeLoanBalanceSegments}
+              />
+            ) : (
+              <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
+                <span className="dashboard-overview__emptyIcon">
+                  <OverviewGlyph name="applications" />
+                </span>
+                <div>
+                  <strong>No active loan mix yet</strong>
+                  <p>Disburse and activate loans to start tracking active capital and interest mix.</p>
+                </div>
+              </div>
+            )}
+
+            <div className="dashboard-overview__miniGrid dashboard-overview__miniGrid--three">
+              <MiniMetric
+                label="Capital in active loans"
+                value={formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
+                meta="Outstanding principal still deployed"
+              />
+              <MiniMetric
+                label="Collected interest"
+                value={formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)}
+                meta="Already realized interest"
+              />
+              <MiniMetric
+                label="Incoming interest"
+                value={formatMinorCurrency(summary.remainingProjectedInterestMinor, dashboardCurrency)}
+                meta="Projected interest still to be collected"
+              />
+            </div>
+          </div>
+        </article>
 
         <div className="grid two">
           <article className="dashboard-overview__progressCard">
