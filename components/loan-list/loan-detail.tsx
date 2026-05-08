@@ -86,7 +86,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
   const currency = loan.loanProduct.currency || 'PHP'
   const schedule = loan.schedule ?? []
-  const overallProfitAmountMinor = schedule.reduce((sum, row) => sum + row.scheduledInterestAmountMinor, 0)
+  const overallProfitAmountMinor = loan.balances.interestPaidAmountMinor + loan.balances.interestOutstandingAmountMinor
   const overallProfitPercentage = loan.principalAmountMinor > 0
     ? (overallProfitAmountMinor / loan.principalAmountMinor) * 100
     : 0
