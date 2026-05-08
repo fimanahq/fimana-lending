@@ -404,6 +404,7 @@ export interface LoanDashboardSummary {
   currency: SettingsCurrency
   startingCapitalMinor: number
   collectedInterestMinor: number
+  activeCollectedInterestMinor: number
   currentCapitalBasisMinor: number
   cashOnHandMinor: number
   outstandingPrincipalMinor: number

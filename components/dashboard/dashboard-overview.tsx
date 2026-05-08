@@ -365,7 +365,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
 
           <div className="dashboard-overview__progressBody">
             {summary.moneyWithBorrowersMinor > 0
-              || summary.collectedInterestMinor > 0
+              || summary.activeCollectedInterestMinor > 0
               || summary.remainingProjectedInterestMinor > 0 ? (
               <DashboardPortfolioChart
                 caption="This view combines deployed principal, collected interest, and incoming interest for active loans."
@@ -373,7 +373,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
                 centerValueMinor={
                   summary.moneyWithBorrowersMinor
-                  + summary.collectedInterestMinor
+                  + summary.activeCollectedInterestMinor
                   + summary.remainingProjectedInterestMinor
                 }
                 currency={dashboardCurrency}
@@ -399,7 +399,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               />
               <MiniMetric
                 label="Collected interest"
-                value={formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)}
+                value={formatMinorCurrency(summary.activeCollectedInterestMinor, dashboardCurrency)}
                 meta="Already realized interest"
               />
               <MiniMetric

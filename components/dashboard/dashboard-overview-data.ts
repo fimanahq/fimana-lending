@@ -67,6 +67,7 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     currency: 'PHP' as SettingsCurrency,
     startingCapitalMinor: 0,
     collectedInterestMinor: 0,
+    activeCollectedInterestMinor: 0,
     currentCapitalBasisMinor: 0,
     cashOnHandMinor: 0,
     outstandingPrincipalMinor: 0,
@@ -101,7 +102,7 @@ export function buildDashboardOverviewData({
   const capitalPositionBaseMinor = Math.max(0, mergedSummary.currentCapitalBasisMinor)
   const activeLoanBalanceBaseMinor = Math.max(
     0,
-    mergedSummary.moneyWithBorrowersMinor + mergedSummary.collectedInterestMinor + mergedSummary.remainingProjectedInterestMinor,
+    mergedSummary.moneyWithBorrowersMinor + mergedSummary.activeCollectedInterestMinor + mergedSummary.remainingProjectedInterestMinor,
   )
   const activeLoanBalanceSegments: DashboardProgressSegment[] = [
     {
@@ -116,8 +117,8 @@ export function buildDashboardOverviewData({
       key: 'collected_interest',
       label: 'Collected interest',
       description: 'Interest already collected and realized.',
-      valueMinor: mergedSummary.collectedInterestMinor,
-      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.collectedInterestMinor / activeLoanBalanceBaseMinor) * 100 : 0,
+      valueMinor: mergedSummary.activeCollectedInterestMinor,
+      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.activeCollectedInterestMinor / activeLoanBalanceBaseMinor) * 100 : 0,
       tone: 'green',
     },
     {
