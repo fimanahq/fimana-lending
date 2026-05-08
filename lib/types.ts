@@ -3,6 +3,9 @@ export const settingsCurrencyValues = ['PHP', 'USD', 'EUR'] as const
 export type SettingsCurrency = (typeof settingsCurrencyValues)[number]
 export type PaymentFrequency = 'monthly' | 'semi_monthly'
 export type LoanApplicationPaymentType = PaymentFrequency
+export type LoanCalculationMethod = 'reducing_balance' | 'flat_rate' | 'interest_only' | 'simple_interest' | 'fixed_total_interest'
+export type PostInterestOnlyMethod = 'bullet' | 'amortizing'
+export type SimpleInterestMethod = 'equal_principal' | 'equal_payment'
 export type LoanApplicationCutoffPatternCode = '5_20' | '15_month_end'
 export type LoanApplicationSource = 'internal' | 'public'
 export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled'
@@ -430,6 +433,11 @@ export interface LoanApplication {
   paymentFrequency?: PaymentFrequency
   paymentDays: string[]
   firstPaymentDate?: string
+  interestRate?: number | null
+  calculationMethod?: LoanCalculationMethod | string | null
+  interestOnlyPeriod?: number | null
+  postInterestOnlyMethod?: PostInterestOnlyMethod | string | null
+  simpleInterestMethod?: SimpleInterestMethod | string | null
   notes?: string
   status: LoanApplicationRecordStatus
   previewSnapshot?: LoanApplicationPreviewSnapshot | null
@@ -493,6 +501,9 @@ export interface LoanApplicationComputedPreviewSnapshot {
     rateBps: number
     ratePeriod: string
     roundingMode: string
+    interestOnlyPeriod?: number | null
+    postInterestOnlyMethod?: string | null
+    simpleInterestMethod?: string | null
   }
   processingFeeConfig: {
     mode: string
@@ -515,6 +526,11 @@ export interface LoanApplicationDraftInput {
   paymentType: LoanApplicationPaymentType
   paymentDays: string[]
   cutoffPatternCode?: LoanApplicationCutoffPatternCode | null
+  interestRate?: number | null
+  calculationMethod?: LoanCalculationMethod
+  interestOnlyPeriod?: number | null
+  postInterestOnlyMethod?: PostInterestOnlyMethod | null
+  simpleInterestMethod?: SimpleInterestMethod | null
   purpose?: string
 }
 
@@ -526,6 +542,10 @@ export interface LoanApplicationPreviewSnapshot {
   paymentDays: string[]
   firstPaymentDate: string
   interestRate?: number
+  calculationMethod?: LoanCalculationMethod | string | null
+  interestOnlyPeriod?: number | null
+  postInterestOnlyMethod?: PostInterestOnlyMethod | string | null
+  simpleInterestMethod?: SimpleInterestMethod | string | null
   totalInterest?: number
   totalPayment?: number
   schedule?: LoanSchedulePreviewRow[]

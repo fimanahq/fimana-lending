@@ -7,7 +7,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types'
 import { getLoanApplication, listLoanBorrowers, updateLoanApplicationStatus } from '@/services'
-import { Button, Card, EmptyState, ErrorState, LoadingState, Textarea } from '@/components/shared'
+import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 import {
   getLoanApplicationFormValues,
@@ -108,6 +108,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const frequency = application?.paymentType || application?.paymentFrequency
   const frequencyLabel = frequency === 'monthly' ? 'Monthly' : 'Semi-Monthly'
   const firstPaymentDate = application?.startDate || application?.firstPaymentDate || application?.createdAt || ''
+  const interestRate = application?.interestRate ?? application?.computedPreviewSnapshot?.interestRate ?? null
 
   if (loading) {
     return <LoadingState title="Loading application" description="Fetching borrower application details." />
@@ -170,92 +171,76 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           </div>
         }
       >
-        {isEditing ? (
-          <LoanApplicationForm
-            applicationId={application.id}
-            borrowers={borrowers}
-            initialValues={getLoanApplicationFormValues(application)}
-            loadingBorrowers={loadingBorrowers}
-            mode="edit"
-            onCancel={cancelEditing}
-            onSaved={(updated) => {
-              setApplication(updated)
-              setIsEditing(false)
-              setError('')
-              setMessage('Loan application updated.')
-            }}
-            showCard={false}
-          />
-        ) : (
-          <>
-            <div className="application-summary-grid">
-              <div className="data-card">
-                <span className="muted">Borrower</span>
-                <strong>{getApplicantName(application)}</strong>
-              </div>
-              <div className="data-card">
-                <span className="muted">{loanApplicationLabels.loanAmount}</span>
-                <strong>{formatCurrency(amount, application.loanProduct?.currency)}</strong>
-              </div>
-              <div className="data-card">
-                <span className="muted">{loanApplicationLabels.numberOfInstallments}</span>
-                <strong>{cutoffs}</strong>
-              </div>
-              <div className="data-card">
-                <span className="muted">{loanApplicationLabels.paymentFrequency}</span>
-                <strong>
-                  {frequencyLabel} on{' '}
-                  {application.paymentDays.map(formatPaymentDay).join(' and ')}
-                </strong>
-              </div>
-              <div className="data-card">
-                <span className="muted">{loanApplicationLabels.startDate}</span>
-                <strong>{formatDate(firstPaymentDate)}</strong>
-              </div>
-            </div>
+        <div className="application-summary-grid">
+          <div className="data-card">
+            <span className="muted">Borrower</span>
+            <strong>{getApplicantName(application)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">{loanApplicationLabels.loanAmount}</span>
+            <strong>{formatCurrency(amount, application.loanProduct?.currency)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">{loanApplicationLabels.numberOfInstallments}</span>
+            <strong>{cutoffs}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">{loanApplicationLabels.paymentFrequency}</span>
+            <strong>
+              {frequencyLabel} on{' '}
+              {application.paymentDays.map(formatPaymentDay).join(' and ')}
+            </strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">{loanApplicationLabels.startDate}</span>
+            <strong>{formatDate(firstPaymentDate)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">{loanApplicationLabels.interestRate}</span>
+            <strong>{interestRate !== null ? `${interestRate}%` : 'Not returned'}</strong>
+          </div>
+        </div>
 
-            <div className="grid two">
-              <div>
-                <div className="muted">Email Address</div>
-                <strong>{application.borrower?.email || application.email || 'Not provided'}</strong>
-              </div>
-              <div>
-                <div className="muted">Phone Number</div>
-                <strong>{application.borrower?.mobileNumber || application.phone || 'Not provided'}</strong>
-              </div>
-              <div>
-                <div className="muted">Monthly Income</div>
-                <strong>
-                  {application.borrower?.income !== null && application.borrower?.income !== undefined
-                    ? formatCurrency(application.borrower.income, application.loanProduct?.currency)
-                    : 'Not provided'}
-                </strong>
-              </div>
-              <div>
-                <div className="muted">Source</div>
-                <strong>{formatApplicationSource(application.source)}</strong>
-              </div>
-              <div>
-                <div className="muted">Application number</div>
-                <strong>{application.applicationNumber || application.id}</strong>
-              </div>
-              <div>
-                <div className="muted">Loan product</div>
-                <strong>{application.loanProduct?.name || application.loanProductId || 'Not provided'}</strong>
-              </div>
-              <div>
-                <div className="muted">Created</div>
-                <strong>{formatDate(application.createdAt)}</strong>
-              </div>
-              <div>
-                <div className="muted">Reviewed</div>
-                <strong>{application.reviewedAt ? formatDate(application.reviewedAt) : 'Not reviewed'}</strong>
-              </div>
-            </div>
+        <div className="grid two">
+          <div>
+            <div className="muted">Email Address</div>
+            <strong>{application.borrower?.email || application.email || 'Not provided'}</strong>
+          </div>
+          <div>
+            <div className="muted">Phone Number</div>
+            <strong>{application.borrower?.mobileNumber || application.phone || 'Not provided'}</strong>
+          </div>
+          <div>
+            <div className="muted">Monthly Income</div>
+            <strong>
+              {application.borrower?.income !== null && application.borrower?.income !== undefined
+                ? formatCurrency(application.borrower.income, application.loanProduct?.currency)
+                : 'Not provided'}
+            </strong>
+          </div>
+          <div>
+            <div className="muted">Source</div>
+            <strong>{formatApplicationSource(application.source)}</strong>
+          </div>
+          <div>
+            <div className="muted">Application number</div>
+            <strong>{application.applicationNumber || application.id}</strong>
+          </div>
+          <div>
+            <div className="muted">Loan product</div>
+            <strong>{application.loanProduct?.name || application.loanProductId || 'Not provided'}</strong>
+          </div>
+          <div>
+            <div className="muted">Created</div>
+            <strong>{formatDate(application.createdAt)}</strong>
+          </div>
+          <div>
+            <div className="muted">Reviewed</div>
+            <strong>{application.reviewedAt ? formatDate(application.reviewedAt) : 'Not reviewed'}</strong>
+          </div>
+        </div>
 
-            {application.purpose || application.notes ? <div className="notice">{application.purpose || application.notes}</div> : null}
-          </>
-        )}
+        {application.purpose || application.notes ? <div className="notice">{application.purpose || application.notes}</div> : null}
         {application.reviewerRemarks || application.approvalNotes || application.rejectionReason || application.decisionNotes ? (
           <div className="notice">
             {application.reviewerRemarks || application.approvalNotes || application.rejectionReason || application.decisionNotes}
@@ -290,6 +275,31 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           </div>
         ) : null}
       </Card>
+
+      <Dialog
+        id="loan-application-edit-dialog"
+        title="Edit loan application"
+        description="Update the application terms and regenerate the preview."
+        open={isEditing}
+        onClose={cancelEditing}
+        className="loan-application-edit-dialog"
+      >
+        <LoanApplicationForm
+          applicationId={application.id}
+          borrowers={borrowers}
+          initialValues={getLoanApplicationFormValues(application)}
+          loadingBorrowers={loadingBorrowers}
+          mode="edit"
+          onCancel={cancelEditing}
+          onSaved={(updated) => {
+            setApplication(updated)
+            setIsEditing(false)
+            setError('')
+            setMessage('Loan application updated.')
+          }}
+          showCard={false}
+        />
+      </Dialog>
 
       <ApplicationBreakdownPreview preview={application.computedPreviewSnapshot ?? application.previewSnapshot ?? null} />
     </div>

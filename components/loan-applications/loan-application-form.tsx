@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState, type FormEvent, type WheelEvent } from 'r
 import { useRouter } from 'next/navigation'
 import type {
   Borrower,
+  LoanCalculationMethod,
   LoanApplication,
   LoanApplicationDraftInput,
   LoanApplicationPaymentType,
+  PostInterestOnlyMethod,
+  SimpleInterestMethod,
 } from '@/lib/types'
 import { buildLoanDueDates, buildPaymentDays, getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { formatDate } from '@/lib/format'
@@ -36,6 +39,12 @@ export const loanApplicationLabels = {
   loanPurpose: 'Loan Purpose',
   numberOfInstallments: 'Number of Installments',
   paymentFrequency: 'Payment Frequency',
+  calculationMethod: 'Calculation Method',
+  interestRate: 'Interest Rate (%)',
+  fixedTotalInterestRate: 'Whole-loan interest rate (%)',
+  interestOnlyPeriod: 'Interest-Only Cutoffs',
+  postInterestOnlyMethod: 'After Interest-Only',
+  simpleInterestMethod: 'Simple Interest Type',
   secondPaymentDay: 'Second Payment Day',
   startDate: 'Start Date',
 } as const
@@ -46,6 +55,11 @@ export interface LoanApplicationFormValues {
   numberOfInstallments: string
   startDate: string
   paymentType: LoanApplicationPaymentType
+  interestRate: string
+  calculationMethod: LoanCalculationMethod
+  interestOnlyPeriod: string
+  postInterestOnlyMethod: PostInterestOnlyMethod
+  simpleInterestMethod: SimpleInterestMethod
   purpose: string
 }
 
@@ -66,6 +80,11 @@ const initialFormValues: LoanApplicationFormValues = {
   numberOfInstallments: '2',
   startDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
   paymentType: 'semi_monthly',
+  interestRate: '',
+  calculationMethod: 'reducing_balance',
+  interestOnlyPeriod: '1',
+  postInterestOnlyMethod: 'bullet',
+  simpleInterestMethod: 'equal_principal',
   purpose: '',
 }
 
@@ -73,6 +92,42 @@ const paymentFrequencyOptions: SearchableSelectOption[] = [
   { label: 'Monthly', value: 'monthly' },
   { label: 'Semi-Monthly', value: 'semi_monthly' },
 ]
+
+const calculationMethodOptions: SearchableSelectOption[] = [
+  { label: 'Reducing balance', value: 'reducing_balance' },
+  { label: 'Flat rate', value: 'flat_rate' },
+  { label: 'Interest only', value: 'interest_only' },
+  { label: 'Simple interest', value: 'simple_interest' },
+  { label: 'Fixed Total Interest', value: 'fixed_total_interest' },
+]
+
+const fixedTotalInterestHelperText = 'Interest is calculated once for the whole loan term and spread across all cutoffs.'
+
+const postInterestOnlyMethodOptions: SearchableSelectOption[] = [
+  { label: 'Bullet principal payoff', value: 'bullet' },
+  { label: 'Amortize remaining principal', value: 'amortizing' },
+]
+
+const simpleInterestMethodOptions: SearchableSelectOption[] = [
+  { label: 'Equal principal', value: 'equal_principal' },
+  { label: 'Equal payment', value: 'equal_payment' },
+]
+
+function normalizeCalculationMethod(value: LoanApplication['calculationMethod']): LoanCalculationMethod {
+  if (value === 'flat' || value === 'flat_rate') {
+    return 'flat_rate'
+  }
+
+  if (value === 'diminishing_balance' || value === 'reducing_balance') {
+    return 'reducing_balance'
+  }
+
+  if (value === 'interest_only' || value === 'simple_interest' || value === 'fixed_total_interest') {
+    return value
+  }
+
+  return 'reducing_balance'
+}
 
 function getDateParts(value: string) {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -125,6 +180,17 @@ function getDraftPayload(form: LoanApplicationFormValues): LoanApplicationDraftI
     startDate: form.startDate,
     paymentType: form.paymentType,
     paymentDays: buildPaymentDays(form.paymentType, firstDay, secondDay),
+    interestRate: form.interestRate.trim() ? Number(form.interestRate) : null,
+    calculationMethod: form.calculationMethod,
+    interestOnlyPeriod: form.calculationMethod === 'interest_only'
+      ? Number(form.interestOnlyPeriod)
+      : null,
+    postInterestOnlyMethod: form.calculationMethod === 'interest_only'
+      ? form.postInterestOnlyMethod
+      : null,
+    simpleInterestMethod: form.calculationMethod === 'simple_interest'
+      ? form.simpleInterestMethod
+      : null,
     purpose: form.purpose.trim() || undefined,
   }
 }
@@ -148,6 +214,28 @@ function validateForm(form: LoanApplicationFormValues) {
     return 'Start date is required'
   }
 
+  if (form.calculationMethod === 'fixed_total_interest' && !form.interestRate.trim()) {
+    return 'Whole-loan interest rate is required for fixed total interest'
+  }
+
+  if (form.interestRate.trim()) {
+    const interestRate = Number(form.interestRate)
+    if (!Number.isFinite(interestRate) || interestRate < 0) {
+      return 'Interest rate must be zero or greater'
+    }
+  }
+
+  if (form.calculationMethod === 'interest_only') {
+    const interestOnlyPeriod = Number(form.interestOnlyPeriod)
+    if (!Number.isInteger(interestOnlyPeriod) || interestOnlyPeriod < 0) {
+      return 'Interest-only cutoffs must be a whole number of at least 0'
+    }
+
+    if (interestOnlyPeriod >= installments) {
+      return 'Interest-only cutoffs must be less than the number of installments'
+    }
+  }
+
   return ''
 }
 
@@ -166,6 +254,11 @@ export function getLoanApplicationFormValues(application: LoanApplication): Loan
     numberOfInstallments: String(application.numberOfCutoffs ?? application.gives ?? 1),
     startDate: application.startDate || application.firstPaymentDate || '',
     paymentType,
+    interestRate: String(application.interestRate ?? application.computedPreviewSnapshot?.interestRate ?? ''),
+    calculationMethod: normalizeCalculationMethod(application.calculationMethod),
+    interestOnlyPeriod: String(application.interestOnlyPeriod ?? 1),
+    postInterestOnlyMethod: (application.postInterestOnlyMethod as PostInterestOnlyMethod) || 'bullet',
+    simpleInterestMethod: (application.simpleInterestMethod as SimpleInterestMethod) || 'equal_principal',
     purpose: application.purpose || application.notes || '',
   }
 }
@@ -365,6 +458,66 @@ export function LoanApplicationForm({
               onChange={(event) => updateForm({ numberOfInstallments: event.target.value })}
             />
           </div>
+
+          <SearchableSelect
+            id={`${mode}ApplicationCalculationMethod`}
+            label={loanApplicationLabels.calculationMethod}
+            options={calculationMethodOptions}
+            searchable={false}
+            value={form.calculationMethod}
+            onChange={(nextValue) => updateForm({ calculationMethod: nextValue as LoanCalculationMethod })}
+          />
+
+          <Input
+            id={`${mode}ApplicationInterestRate`}
+            label={form.calculationMethod === 'fixed_total_interest'
+              ? loanApplicationLabels.fixedTotalInterestRate
+              : loanApplicationLabels.interestRate}
+            type="number"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            inputClassName="input-no-spinner"
+            placeholder={form.calculationMethod === 'fixed_total_interest' ? 'Enter whole-loan rate' : 'Uses product rate'}
+            hint={form.calculationMethod === 'fixed_total_interest' ? fixedTotalInterestHelperText : undefined}
+            value={form.interestRate}
+            onWheel={preventWheelValueChange}
+            onChange={(event) => updateForm({ interestRate: event.target.value })}
+          />
+
+          {form.calculationMethod === 'interest_only' ? (
+            <div className="grid two">
+              <Input
+                id={`${mode}ApplicationInterestOnlyPeriod`}
+                label={loanApplicationLabels.interestOnlyPeriod}
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                inputClassName="input-no-spinner"
+                value={form.interestOnlyPeriod}
+                onWheel={preventWheelValueChange}
+                onChange={(event) => updateForm({ interestOnlyPeriod: event.target.value })}
+              />
+              <SearchableSelect
+                id={`${mode}ApplicationPostInterestOnlyMethod`}
+                label={loanApplicationLabels.postInterestOnlyMethod}
+                options={postInterestOnlyMethodOptions}
+                value={form.postInterestOnlyMethod}
+                onChange={(nextValue) => updateForm({ postInterestOnlyMethod: nextValue as PostInterestOnlyMethod })}
+              />
+            </div>
+          ) : null}
+
+          {form.calculationMethod === 'simple_interest' ? (
+            <SearchableSelect
+              id={`${mode}ApplicationSimpleInterestMethod`}
+              label={loanApplicationLabels.simpleInterestMethod}
+              options={simpleInterestMethodOptions}
+              value={form.simpleInterestMethod}
+              onChange={(nextValue) => updateForm({ simpleInterestMethod: nextValue as SimpleInterestMethod })}
+            />
+          ) : null}
 
           <div className="grid two">
             <Input

@@ -6,13 +6,20 @@ import { defaultLoanInterestRules } from '@/content/rules'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
   buildLoanDueDates,
-  buildLoanSchedule,
+  buildScheduleForCalculationMethod,
   buildPaymentDays,
   getRecommendedFirstPaymentDate,
   getInterestRateFromRules,
   paymentDayOptions,
 } from '@/lib/loan-schedule'
-import type { InterestMode, LoanInterestRulesConfig, PaymentFrequency } from '@/lib/types'
+import type {
+  InterestMode,
+  LoanCalculationMethod,
+  LoanInterestRulesConfig,
+  PaymentFrequency,
+  PostInterestOnlyMethod,
+  SimpleInterestMethod,
+} from '@/lib/types'
 
 function getGivesBucketLabel(gives: number) {
   if (gives <= 1) {
@@ -41,6 +48,23 @@ const interestModeOptions: SearchableSelectOption[] = [
   { label: 'Manual interest rate', value: 'manual' },
 ]
 
+const calculationMethodOptions: SearchableSelectOption[] = [
+  { label: 'Reducing balance', value: 'reducing_balance' },
+  { label: 'Flat rate', value: 'flat_rate' },
+  { label: 'Interest only', value: 'interest_only' },
+  { label: 'Simple interest', value: 'simple_interest' },
+]
+
+const postInterestOnlyMethodOptions: SearchableSelectOption[] = [
+  { label: 'Bullet principal payoff', value: 'bullet' },
+  { label: 'Amortize remaining principal', value: 'amortizing' },
+]
+
+const simpleInterestMethodOptions: SearchableSelectOption[] = [
+  { label: 'Equal principal', value: 'equal_principal' },
+  { label: 'Equal payment', value: 'equal_payment' },
+]
+
 export function LoanCalculator() {
   const preventWheelValueChange = (event: WheelEvent<HTMLInputElement>) => {
     event.currentTarget.blur()
@@ -55,6 +79,10 @@ export function LoanCalculator() {
     firstPaymentDate: '',
     interestMode: 'rules' as InterestMode,
     manualInterestRate: '9',
+    calculationMethod: 'reducing_balance' as LoanCalculationMethod,
+    interestOnlyPeriod: '1',
+    postInterestOnlyMethod: 'bullet' as PostInterestOnlyMethod,
+    simpleInterestMethod: 'equal_principal' as SimpleInterestMethod,
   })
   const [firstPaymentDateIsAuto, setFirstPaymentDateIsAuto] = useState(true)
   const [rules, setRules] = useState<LoanInterestRulesConfig>(defaultLoanInterestRules)
@@ -109,7 +137,24 @@ export function LoanCalculator() {
       }
 
       const dueDates = buildLoanDueDates(gives, form.paymentFrequency, paymentDays, form.firstPaymentDate)
-      const schedule = buildLoanSchedule(principal, interestRate, dueDates)
+      const interestOnlyPeriod = Number(form.interestOnlyPeriod)
+
+      if (
+        form.calculationMethod === 'interest_only'
+        && (!Number.isInteger(interestOnlyPeriod) || interestOnlyPeriod < 0 || interestOnlyPeriod >= gives)
+      ) {
+        throw new Error('Interest-only cutoffs must be a whole number less than gives')
+      }
+
+      const schedule = buildScheduleForCalculationMethod({
+        principal,
+        interestRate,
+        dueDates,
+        calculationMethod: form.calculationMethod,
+        interestOnlyPeriod,
+        postInterestOnlyMethod: form.postInterestOnlyMethod,
+        simpleInterestMethod: form.simpleInterestMethod,
+      })
       const totalInterest = Number(schedule.reduce((sum, row) => sum + row.interest, 0).toFixed(2))
       const totalPayment = Number(schedule.reduce((sum, row) => sum + row.totalPayment, 0).toFixed(2))
 
@@ -273,6 +318,64 @@ export function LoanCalculator() {
                 onChange={(event) => setForm((current) => ({ ...current, manualInterestRate: event.target.value }))}
               />
             </div>
+          ) : null}
+
+          <SearchableSelect
+            id="calculatorCalculationMethod"
+            label="Calculation method"
+            options={calculationMethodOptions}
+            searchable={false}
+            value={form.calculationMethod}
+            onChange={(nextValue) =>
+              setForm((current) => ({
+                ...current,
+                calculationMethod: nextValue as LoanCalculationMethod,
+              }))
+            }
+          />
+
+          {form.calculationMethod === 'interest_only' ? (
+            <div className="grid two">
+              <div className="field">
+                <label htmlFor="calculatorInterestOnlyPeriod">Interest-only cutoffs</label>
+                <input
+                  id="calculatorInterestOnlyPeriod"
+                  type="number"
+                  min="0"
+                  step="1"
+                  onWheel={preventWheelValueChange}
+                  value={form.interestOnlyPeriod}
+                  onChange={(event) => setForm((current) => ({ ...current, interestOnlyPeriod: event.target.value }))}
+                />
+              </div>
+              <SearchableSelect
+                id="calculatorPostInterestOnlyMethod"
+                label="After interest-only"
+                options={postInterestOnlyMethodOptions}
+                value={form.postInterestOnlyMethod}
+                onChange={(nextValue) =>
+                  setForm((current) => ({
+                    ...current,
+                    postInterestOnlyMethod: nextValue as PostInterestOnlyMethod,
+                  }))
+                }
+              />
+            </div>
+          ) : null}
+
+          {form.calculationMethod === 'simple_interest' ? (
+            <SearchableSelect
+              id="calculatorSimpleInterestMethod"
+              label="Simple interest type"
+              options={simpleInterestMethodOptions}
+              value={form.simpleInterestMethod}
+              onChange={(nextValue) =>
+                setForm((current) => ({
+                  ...current,
+                  simpleInterestMethod: nextValue as SimpleInterestMethod,
+                }))
+              }
+            />
           ) : null}
         </section>
 

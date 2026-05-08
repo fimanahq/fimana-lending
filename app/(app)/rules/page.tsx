@@ -62,27 +62,59 @@ export default function RulesPage() {
         <table className="rule-table">
           <thead>
             <tr>
-              <th>Rule</th>
-              <th>Description</th>
+              <th>Method</th>
+              <th>Schedule behavior</th>
+              <th>Typical use</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Method</td><td>Reducing balance</td></tr>
-            <tr><td>Payment type</td><td>Equal amortization</td></tr>
-            <tr><td>Interest</td><td>Applied every cutoff</td></tr>
-            <tr><td>Balance</td><td>Must become 0 at the last payment</td></tr>
+            <tr>
+              <td>Reducing balance</td>
+              <td>Interest is charged on the outstanding principal and payments amortize the balance to zero.</td>
+              <td>Default installment loan.</td>
+            </tr>
+            <tr>
+              <td>Flat rate</td>
+              <td>Interest is constant every cutoff because it is based on the original principal.</td>
+              <td>Simple fixed-fee repayment schedules.</td>
+            </tr>
+            <tr>
+              <td>Interest only</td>
+              <td>Early cutoffs collect interest only; principal is paid by bullet payoff or later amortization.</td>
+              <td>Short bridge loans or delayed principal repayment.</td>
+            </tr>
+            <tr>
+              <td>Simple interest</td>
+              <td>Interest is recalculated from current principal each cutoff without compounding.</td>
+              <td>Equal-principal or equal-payment simple-interest products.</td>
+            </tr>
+            <tr>
+              <td>Fixed Total Interest</td>
+              <td>Interest is calculated once for the whole loan term, then spread across all cutoffs.</td>
+              <td>Loans with a known total interest amount for the full term.</td>
+            </tr>
           </tbody>
         </table>
 
         <article className="formula-card">
-          <h3 className="section-title">Formula</h3>
+          <h3 className="section-title">Rate period</h3>
           <pre>
-{`PMT = P * r * (1 + r)^n / ((1 + r)^n - 1)
+{`Most configured rates on this page are per cutoff.
+Fixed Total Interest uses a whole-loan rate for the full loan term.
+The selected calculation method changes how principal and interest are scheduled,
+and the preview labels the rate period used for the selected method.`}
+          </pre>
+        </article>
 
-Where:
-P = loan amount
-r = interest per cutoff
-n = number of gives`}
+        <article className="formula-card">
+          <h3 className="section-title">Fixed Total Interest example</h3>
+          <pre>
+{`PHP 20,000 x 20% = PHP 4,000 total interest.
+PHP 20,000 + PHP 4,000 = PHP 24,000 total payable.
+Over 12 cutoffs, payment is PHP 2,000 per cutoff.
+
+This is different from flat rate per cutoff.
+A 20% fixed total interest rate over 12 cutoffs is not 20% per cutoff.`}
           </pre>
         </article>
       </section>

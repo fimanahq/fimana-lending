@@ -28,6 +28,18 @@ function formatPercentage(value: number) {
   return `${value.toFixed(2)}%`
 }
 
+function formatCalculationMethod(method?: string | null) {
+  return {
+    diminishing_balance: 'Reducing balance',
+    reducing_balance: 'Reducing balance',
+    flat: 'Flat rate',
+    flat_rate: 'Flat rate',
+    interest_only: 'Interest only',
+    simple_interest: 'Simple interest',
+    fixed_total_interest: 'Fixed Total Interest',
+  }[method ?? ''] ?? 'Reducing balance'
+}
+
 function getSchedule(preview: LoanApplicationComputedPreviewSnapshot | LoanApplicationPreviewSnapshot): LoanSchedulePreviewRow[] {
   if (isComputedPreview(preview)) {
     return preview.installments.map((installment) => ({
@@ -78,6 +90,10 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
   const totalPayment = toFiniteNumber(
     isComputedPreview(preview) ? preview.totalPaymentAmountMinor / 100 : preview.totalPayment,
   )
+  const calculationMethod = isComputedPreview(preview)
+    ? preview.interestConfig?.method
+    : preview.calculationMethod
+  const isFixedTotalInterest = calculationMethod === 'fixed_total_interest'
   const overallProfitPercentage = totalInterest !== null && principal > 0
     ? (totalInterest / principal) * 100
     : null
@@ -96,8 +112,13 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
           <strong>{formatCurrency(principal, currency)}</strong>
         </div>
         <div className="data-card">
-          <span className="muted">Interest Rate</span>
+          <span className="muted">{isFixedTotalInterest ? 'Whole-loan Interest Rate' : 'Interest Rate'}</span>
           <strong>{interestRate !== null ? `${interestRate}%` : 'Not returned'}</strong>
+          <span className="muted">{isFixedTotalInterest ? 'Loan term' : 'Per cutoff'}</span>
+        </div>
+        <div className="data-card">
+          <span className="muted">Calculation Method</span>
+          <strong>{formatCalculationMethod(calculationMethod)}</strong>
         </div>
         <div className="data-card">
           <span className="muted">Total Interest</span>
@@ -108,9 +129,15 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
           <strong>{overallProfitPercentage !== null ? formatPercentage(overallProfitPercentage) : 'Not returned'}</strong>
         </div>
         <div className="data-card">
-          <span className="muted">Total Payment</span>
+          <span className="muted">{isFixedTotalInterest ? 'Total Payable' : 'Total Payment'}</span>
           <strong>{totalPayment !== null ? formatCurrency(totalPayment, currency) : 'Not returned'}</strong>
         </div>
+        {isFixedTotalInterest ? (
+          <div className="data-card">
+            <span className="muted">Payment per cutoff</span>
+            <strong>{schedule[0] ? formatCurrency(schedule[0].totalPayment, currency) : 'Not returned'}</strong>
+          </div>
+        ) : null}
       </div>
 
       {processingFee !== null && netDisbursement !== null ? (

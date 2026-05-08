@@ -10,6 +10,9 @@ import { readJsonBody } from '@/lib/server/request'
 import type {
   LoanApplication,
   LoanApplicationDraftInput,
+  LoanCalculationMethod,
+  PostInterestOnlyMethod,
+  SimpleInterestMethod,
 } from '@/lib/types'
 
 interface BackendEnvelope<T> {
@@ -19,6 +22,24 @@ interface BackendEnvelope<T> {
 
 function isDraftApplicationPayload(body: Record<string, unknown>) {
   return 'borrowerId' in body || 'loanProductId' in body || 'loanAmountMinor' in body
+}
+
+function toCalculationMethod(value: unknown): LoanCalculationMethod {
+  return value === 'flat_rate'
+    || value === 'interest_only'
+    || value === 'simple_interest'
+    || value === 'fixed_total_interest'
+    || value === 'reducing_balance'
+    ? value
+    : 'reducing_balance'
+}
+
+function toPostInterestOnlyMethod(value: unknown): PostInterestOnlyMethod | null {
+  return value === 'amortizing' || value === 'bullet' ? value : null
+}
+
+function toSimpleInterestMethod(value: unknown): SimpleInterestMethod | null {
+  return value === 'equal_payment' || value === 'equal_principal' ? value : null
 }
 
 function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInput {
@@ -38,6 +59,10 @@ function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInp
       : legacyCutoffPatternCode === '15_month_end'
         ? ['15', 'month_end']
         : []
+  const calculationMethod = toCalculationMethod(body.calculationMethod)
+  const interestRate = body.interestRate === '' || body.interestRate === null || body.interestRate === undefined
+    ? null
+    : Number(body.interestRate)
 
   return {
     borrowerId: typeof body.borrowerId === 'string' ? body.borrowerId : '',
@@ -51,6 +76,11 @@ function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInp
     paymentType: body.paymentType === 'monthly' ? 'monthly' : 'semi_monthly',
     paymentDays,
     cutoffPatternCode: legacyCutoffPatternCode,
+    interestRate,
+    calculationMethod,
+    interestOnlyPeriod: calculationMethod === 'interest_only' ? Number(body.interestOnlyPeriod) : null,
+    postInterestOnlyMethod: calculationMethod === 'interest_only' ? toPostInterestOnlyMethod(body.postInterestOnlyMethod) : null,
+    simpleInterestMethod: calculationMethod === 'simple_interest' ? toSimpleInterestMethod(body.simpleInterestMethod) : null,
     purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
   }
 }

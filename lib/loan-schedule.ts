@@ -1,8 +1,11 @@
 import { defaultLoanInterestRules } from '@/content/rules'
 import type {
+  LoanCalculationMethod,
   LoanInterestRulesConfig,
   LoanSchedulePreviewRow,
   PaymentFrequency,
+  PostInterestOnlyMethod,
+  SimpleInterestMethod,
 } from '@/lib/types'
 
 export const paymentDayOptions = Array.from({ length: 31 }, (_, index) => String(index + 1)).concat('month_end')
@@ -272,4 +275,177 @@ export function buildLoanSchedule(
   })
 
   return rows
+}
+
+export function buildFlatRateSchedule(
+  principal: number,
+  interestRate: number,
+  dueDates: Date[],
+): LoanSchedulePreviewRow[] {
+  const cutoffRate = interestRate / 100
+  const gives = dueDates.length
+  const interestPerInstallment = roundCurrency(principal * cutoffRate)
+  const regularPayment = roundCurrency((principal + (interestPerInstallment * gives)) / gives)
+  const rows: LoanSchedulePreviewRow[] = []
+  let balance = roundCurrency(principal)
+
+  dueDates.forEach((dueDate, index) => {
+    const sequence = index + 1
+    const beginningBalance = balance
+    const principalPaid = sequence === gives
+      ? roundCurrency(beginningBalance)
+      : roundCurrency(Math.max(0, regularPayment - interestPerInstallment))
+    const endingBalance = sequence === gives
+      ? 0
+      : roundCurrency(Math.max(0, beginningBalance - principalPaid))
+    const totalPayment = sequence === gives
+      ? roundCurrency(principalPaid + interestPerInstallment)
+      : regularPayment
+
+    rows.push({
+      sequence,
+      dueDate: dueDate.toISOString(),
+      beginningBalance,
+      interest: interestPerInstallment,
+      principalPaid,
+      endingBalance,
+      totalPayment,
+    })
+    balance = endingBalance
+  })
+
+  return rows
+}
+
+export function buildInterestOnlySchedule(
+  principal: number,
+  interestRate: number,
+  dueDates: Date[],
+  interestOnlyPeriod: number,
+  postInterestOnlyMethod: PostInterestOnlyMethod,
+): LoanSchedulePreviewRow[] {
+  if (!Number.isInteger(interestOnlyPeriod) || interestOnlyPeriod < 0 || interestOnlyPeriod >= dueDates.length) {
+    throw new Error('Interest-only cutoffs must be less than the number of gives')
+  }
+
+  const interestPerInstallment = roundCurrency(principal * (interestRate / 100))
+
+  if (postInterestOnlyMethod === 'amortizing') {
+    const interestOnlyRows = dueDates.slice(0, interestOnlyPeriod).map((dueDate, index) => ({
+      sequence: index + 1,
+      dueDate: dueDate.toISOString(),
+      beginningBalance: roundCurrency(principal),
+      interest: interestPerInstallment,
+      principalPaid: 0,
+      endingBalance: roundCurrency(principal),
+      totalPayment: interestPerInstallment,
+    }))
+    const amortizedRows = buildLoanSchedule(
+      principal,
+      interestRate,
+      dueDates.slice(interestOnlyPeriod),
+    ).map((row) => ({
+      ...row,
+      sequence: row.sequence + interestOnlyPeriod,
+    }))
+
+    return [...interestOnlyRows, ...amortizedRows]
+  }
+
+  return dueDates.map((dueDate, index) => {
+    const sequence = index + 1
+    const isFinalInstallment = sequence === dueDates.length
+    const principalPaid = isFinalInstallment ? roundCurrency(principal) : 0
+
+    return {
+      sequence,
+      dueDate: dueDate.toISOString(),
+      beginningBalance: roundCurrency(principal),
+      interest: interestPerInstallment,
+      principalPaid,
+      endingBalance: isFinalInstallment ? 0 : roundCurrency(principal),
+      totalPayment: roundCurrency(interestPerInstallment + principalPaid),
+    }
+  })
+}
+
+export function buildSimpleInterestSchedule(
+  principal: number,
+  interestRate: number,
+  dueDates: Date[],
+  simpleInterestMethod: SimpleInterestMethod,
+): LoanSchedulePreviewRow[] {
+  const periodRate = interestRate / 100
+  const gives = dueDates.length
+  const rows: LoanSchedulePreviewRow[] = []
+  let balance = roundCurrency(principal)
+  const equalPrincipalAmount = roundCurrency(principal / gives)
+  const equalPaymentAmount = roundCurrency((principal + (principal * periodRate * gives)) / gives)
+
+  dueDates.forEach((dueDate, index) => {
+    const sequence = index + 1
+    const beginningBalance = balance
+    const interest = roundCurrency(beginningBalance * periodRate)
+    const isFinalInstallment = sequence === gives
+    const principalPaid = isFinalInstallment
+      ? roundCurrency(beginningBalance)
+      : simpleInterestMethod === 'equal_principal'
+        ? Math.min(beginningBalance, equalPrincipalAmount)
+        : roundCurrency(Math.max(0, equalPaymentAmount - interest))
+    const endingBalance = isFinalInstallment
+      ? 0
+      : roundCurrency(Math.max(0, beginningBalance - principalPaid))
+    const totalPayment = simpleInterestMethod === 'equal_principal' || isFinalInstallment
+      ? roundCurrency(principalPaid + interest)
+      : equalPaymentAmount
+
+    rows.push({
+      sequence,
+      dueDate: dueDate.toISOString(),
+      beginningBalance,
+      interest,
+      principalPaid,
+      endingBalance,
+      totalPayment,
+    })
+
+    balance = endingBalance
+  })
+
+  return rows
+}
+
+export function buildScheduleForCalculationMethod(params: {
+  principal: number
+  interestRate: number
+  dueDates: Date[]
+  calculationMethod: LoanCalculationMethod
+  interestOnlyPeriod: number
+  postInterestOnlyMethod: PostInterestOnlyMethod
+  simpleInterestMethod: SimpleInterestMethod
+}): LoanSchedulePreviewRow[] {
+  if (params.calculationMethod === 'flat_rate') {
+    return buildFlatRateSchedule(params.principal, params.interestRate, params.dueDates)
+  }
+
+  if (params.calculationMethod === 'interest_only') {
+    return buildInterestOnlySchedule(
+      params.principal,
+      params.interestRate,
+      params.dueDates,
+      params.interestOnlyPeriod,
+      params.postInterestOnlyMethod,
+    )
+  }
+
+  if (params.calculationMethod === 'simple_interest') {
+    return buildSimpleInterestSchedule(
+      params.principal,
+      params.interestRate,
+      params.dueDates,
+      params.simpleInterestMethod,
+    )
+  }
+
+  return buildLoanSchedule(params.principal, params.interestRate, params.dueDates)
 }

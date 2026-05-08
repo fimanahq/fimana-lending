@@ -23,6 +23,7 @@ export interface SearchableSelectProps {
   onQueryChange?: (query: string) => void
   options: SearchableSelectOption[]
   placeholder?: string
+  searchable?: boolean
   value: string
   actionLabel?: string
 }
@@ -58,10 +59,11 @@ export function SearchableSelect({
   onQueryChange,
   options,
   placeholder = 'Select an option',
+  searchable = true,
   value,
 }: SearchableSelectProps) {
   const [query, setQuery] = useState('')
-  const isAsync = typeof onQueryChange === 'function'
+  const isAsync = searchable && typeof onQueryChange === 'function'
   const selectedOption = useMemo(
     () => options.find((option) => option.value === value) ?? null,
     [options, value],
@@ -71,23 +73,23 @@ export function SearchableSelect({
       return options
     }
 
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = searchable ? query.trim().toLowerCase() : ''
     if (!normalizedQuery) {
       return options
     }
 
     return options.filter((option) => option.label.toLowerCase().includes(normalizedQuery))
-  }, [isAsync, options, query])
+  }, [isAsync, options, query, searchable])
   const shouldShowAction = Boolean(actionLabel && onAction)
   const describedBy = getDescribedBy(id, hint, error)
 
   useEffect(() => {
-    if (!onQueryChange) {
+    if (!searchable || !onQueryChange) {
       return
     }
 
     onQueryChange(query)
-  }, [onQueryChange, query])
+  }, [onQueryChange, query, searchable])
 
   return (
     <div className={classNames('field ui-field', className)}>
@@ -108,7 +110,12 @@ export function SearchableSelect({
             aria-invalid={error ? true : undefined}
             className="ui-searchable-select__input"
             displayValue={(option: SearchableSelectOption | null) => option?.label ?? ''}
-            onChange={(event) => setQuery(event.target.value)}
+            readOnly={!searchable}
+            onChange={(event) => {
+              if (searchable) {
+                setQuery(event.target.value)
+              }
+            }}
             placeholder={placeholder}
           />
           <ComboboxButton className="ui-searchable-select__button" aria-label={`Toggle ${label}`}>
