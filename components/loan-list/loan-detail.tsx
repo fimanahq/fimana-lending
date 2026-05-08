@@ -170,7 +170,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     ? (overallProfitAmountMinor / loan.principalAmountMinor) * 100
     : 0
   const canPostPayment = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
-  const canAdjustInterest = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
+  const canOpenLoanAdjustment = loan.status === 'active' || loan.status === 'completed'
 
   const openEditPaymentDialog = (payment: LoanPaymentHistory) => {
     setSelectedPayment(payment)
@@ -297,7 +297,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     <div className="stack">
       <div className="inline-actions">
         <Button variant="secondary" onClick={() => setPaymentDialogOpen(true)} disabled={!canPostPayment}>Post payment</Button>
-        <Button variant="secondary" onClick={() => setAdjustmentDialogOpen(true)} disabled={!canAdjustInterest}>Loan adjustment</Button>
+        <Button variant="secondary" onClick={() => setAdjustmentDialogOpen(true)} disabled={!canOpenLoanAdjustment}>Loan adjustment</Button>
         <Link href={`/loan-applications/${loan.loanApplicationId}`} className="button-secondary">View application</Link>
         <Link href="/loan-applications" className="button-ghost">Back to applications</Link>
       </div>

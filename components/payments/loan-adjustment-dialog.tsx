@@ -125,6 +125,12 @@ export function LoanAdjustmentDialog({
   const adjustments = detail?.adjustments ?? []
   const currency = loan?.loanProduct.currency || 'PHP'
   const openScheduleRows = (loan?.schedule ?? []).filter((row) => row.outstandingTotalAmountMinor > 0)
+  const canPostAdjustment = Boolean(
+    loan
+    && (loan.status === 'active' || loan.status === 'completed')
+    && loan.balances.totalOutstandingAmountMinor > 0
+    && openScheduleRows.length > 0,
+  )
 
   function AdjustmentHistoryTable({
     adjustments,
@@ -237,7 +243,7 @@ export function LoanAdjustmentDialog({
                   type="date"
                   value={adjustmentDate}
                   onChange={(event) => setAdjustmentDate(event.target.value)}
-                  disabled={submitting}
+                  disabled={submitting || !canPostAdjustment}
                 />
                 <Input
                   id="adjustment-amount"
@@ -248,7 +254,7 @@ export function LoanAdjustmentDialog({
                   step="0.01"
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
-                  disabled={submitting}
+                  disabled={submitting || !canPostAdjustment}
                 />
                 <Input
                   id="adjustment-reason"
@@ -256,14 +262,14 @@ export function LoanAdjustmentDialog({
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
                   placeholder="Loan adjustment reason"
-                  disabled={submitting}
+                  disabled={submitting || !canPostAdjustment}
                   className="grid-span-2"
                 />
               </div>
 
               <div className="ui-card__actions" style={{ justifyContent: 'flex-start' }}>
-                <Button onClick={() => void handleSubmit()} disabled={submitting}>
-                  {submitting ? 'Posting…' : 'Post loan adjustment'}
+                <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostAdjustment}>
+                  {submitting ? 'Posting…' : canPostAdjustment ? 'Post loan adjustment' : 'No outstanding balance'}
                 </Button>
               </div>
             </Card>
