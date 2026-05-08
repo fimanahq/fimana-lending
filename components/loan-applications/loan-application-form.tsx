@@ -8,7 +8,7 @@ import type {
   LoanApplicationDraftInput,
   LoanApplicationPaymentType,
 } from '@/lib/types'
-import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
+import { buildLoanDueDates, buildPaymentDays, getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { formatDate } from '@/lib/format'
 import {
   createLoanApplication,
@@ -23,7 +23,8 @@ import {
   ErrorState,
   Input,
   LoadingState,
-  Select,
+  SearchableSelect,
+  type SearchableSelectOption,
   Textarea,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
@@ -63,10 +64,15 @@ const initialFormValues: LoanApplicationFormValues = {
   borrowerId: '',
   loanAmount: '',
   numberOfInstallments: '2',
-  startDate: '',
+  startDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
   paymentType: 'semi_monthly',
   purpose: '',
 }
+
+const paymentFrequencyOptions: SearchableSelectOption[] = [
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Semi-Monthly', value: 'semi_monthly' },
+]
 
 function getDateParts(value: string) {
   const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -223,13 +229,6 @@ export function LoanApplicationForm({
     if (providedBorrowers !== undefined) {
       setBorrowers(providedBorrowers)
       setLoadingBorrowers(providedLoadingBorrowers)
-      setForm((current) => {
-        if (current.borrowerId || providedBorrowers.length === 0) {
-          return current
-        }
-
-        return { ...current, borrowerId: providedBorrowers[0].id }
-      })
     }
   }, [providedBorrowers, providedLoadingBorrowers])
 
@@ -239,16 +238,11 @@ export function LoanApplicationForm({
     }
 
     const loadBorrowers = async () => {
+      setLoadingBorrowers(true)
+
       try {
         const rows = await listLoanBorrowers()
         setBorrowers(rows)
-        setForm((current) => {
-          if (current.borrowerId === '' && rows.length > 0) {
-            return { ...current, borrowerId: rows[0].id }
-          }
-
-          return current
-        })
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load borrowers')
       } finally {
@@ -306,6 +300,14 @@ export function LoanApplicationForm({
     setForm((current) => ({ ...current, borrowerId: newBorrower.id }))
   }
 
+  const borrowerOptions = useMemo<SearchableSelectOption[]>(
+    () => borrowers.map((borrower) => ({
+      label: `${borrower.fullName} (${borrower.borrowerNumber})`,
+      value: borrower.id,
+    })),
+    [borrowers],
+  )
+
   const formContent = (
     <>
       {error ? <ErrorState title="Loan application not ready" description={error} /> : null}
@@ -317,33 +319,25 @@ export function LoanApplicationForm({
         <LoadingState title="Loading borrowers" description="Fetching borrower records for the loan application." />
       ) : null}
 
-      {!loadingBorrowers && borrowers.length === 0 ? (
+      {!loadingBorrowers && borrowers.length === 0 && mode !== 'create' ? (
         <EmptyState title="No active borrowers found" description="Create a borrower before starting a loan application." />
       ) : null}
 
-      {!loadingBorrowers && borrowers.length > 0 ? (
+      {!loadingBorrowers || borrowers.length > 0 ? (
         <form className="stack" onSubmit={handleSubmit}>
-          <Select
+          <SearchableSelect
             id={`${mode}ApplicationBorrower`}
             label={loanApplicationLabels.borrower}
+            placeholder="Select borrower"
+            options={borrowerOptions}
             value={form.borrowerId}
-            disabled={loadingBorrowers || borrowers.length === 0}
-            onChange={(event) => {
-              if (event.target.value === '__add_new__') {
-                setShowBorrowerModal(true)
-              } else {
-                updateForm({ borrowerId: event.target.value })
-              }
-            }}
-          >
-            <option value="">Select borrower</option>
-            {borrowers.map((borrower) => (
-              <option key={borrower.id} value={borrower.id}>
-                {borrower.fullName} ({borrower.borrowerNumber})
-              </option>
-            ))}
-            {mode === 'create' ? <option value="__add_new__">+ Add new borrower</option> : null}
-          </Select>
+            loading={loadingBorrowers}
+            disabled={loadingBorrowers}
+            emptyMessage="No borrowers match your search"
+            actionLabel={mode === 'create' ? '+ Add new borrower' : undefined}
+            onAction={mode === 'create' ? () => setShowBorrowerModal(true) : undefined}
+            onChange={(nextValue) => updateForm({ borrowerId: nextValue })}
+          />
 
           <div className="grid two">
             <Input
@@ -380,17 +374,15 @@ export function LoanApplicationForm({
               value={form.startDate}
               onChange={(event) => updateForm({ startDate: event.target.value })}
             />
-            <Select
+            <SearchableSelect
               id={`${mode}ApplicationFrequency`}
               label={loanApplicationLabels.paymentFrequency}
+              options={paymentFrequencyOptions}
               value={form.paymentType}
-              onChange={(event) => {
-                updateForm({ paymentType: event.target.value as LoanApplicationPaymentType })
+              onChange={(nextValue) => {
+                updateForm({ paymentType: nextValue as LoanApplicationPaymentType })
               }}
-            >
-              <option value="monthly">Monthly</option>
-              <option value="semi_monthly">Semi-Monthly</option>
-            </Select>
+            />
           </div>
 
           {form.paymentType === 'monthly' ? (
@@ -431,7 +423,7 @@ export function LoanApplicationForm({
           />
 
           <div className="application-form-actions">
-            <Button type="submit" disabled={submitting || borrowers.length === 0}>
+            <Button type="submit" disabled={submitting || !form.borrowerId}>
               {submitting
                 ? mode === 'edit' ? 'Saving...' : 'Creating...'
                 : mode === 'edit' ? 'Save loan application' : 'Create loan application'}

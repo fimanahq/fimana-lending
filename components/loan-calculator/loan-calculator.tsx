@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type WheelEvent } from 'react'
+import { SearchableSelect, type SearchableSelectOption } from '@/components/shared'
 import { defaultLoanInterestRules } from '@/content/rules'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
@@ -24,6 +25,21 @@ function getGivesBucketLabel(gives: number) {
 
   return '3+ gives'
 }
+
+const paymentFrequencyOptions: SearchableSelectOption[] = [
+  { label: 'Monthly', value: 'monthly' },
+  { label: 'Semi-monthly', value: 'semi_monthly' },
+]
+
+const paymentDaySelectOptions = paymentDayOptions.map((option) => ({
+  label: option === 'month_end' ? 'Month end' : option,
+  value: option,
+}))
+
+const interestModeOptions: SearchableSelectOption[] = [
+  { label: 'Use configured rules', value: 'rules' },
+  { label: 'Manual interest rate', value: 'manual' },
+]
 
 export function LoanCalculator() {
   const preventWheelValueChange = (event: WheelEvent<HTMLInputElement>) => {
@@ -177,69 +193,44 @@ export function LoanCalculator() {
             </div>
           </div>
 
-          <div className="field">
-            <label htmlFor="calculatorFrequency">Payment frequency</label>
-            <select
-              id="calculatorFrequency"
-              value={form.paymentFrequency}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  paymentFrequency: event.target.value as PaymentFrequency,
-                }))
-              }
-            >
-              <option value="monthly">Monthly</option>
-              <option value="semi_monthly">Semi-monthly</option>
-            </select>
-          </div>
+          <SearchableSelect
+            id="calculatorFrequency"
+            label="Payment frequency"
+            options={paymentFrequencyOptions}
+            value={form.paymentFrequency}
+            onChange={(nextValue) =>
+              setForm((current) => ({
+                ...current,
+                paymentFrequency: nextValue as PaymentFrequency,
+              }))
+            }
+          />
 
           {form.paymentFrequency === 'semi_monthly' ? (
             <div className="grid two">
-              <div className="field">
-                <label htmlFor="calculatorFirstDay">First payment day</label>
-                <select
-                  id="calculatorFirstDay"
-                  value={form.firstDay}
-                  onChange={(event) => setForm((current) => ({ ...current, firstDay: event.target.value }))}
-                >
-                  {paymentDayOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option === 'month_end' ? 'Month end' : option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="calculatorSecondDay">Second payment day</label>
-                <select
-                  id="calculatorSecondDay"
-                  value={form.secondDay}
-                  onChange={(event) => setForm((current) => ({ ...current, secondDay: event.target.value }))}
-                >
-                  {paymentDayOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option === 'month_end' ? 'Month end' : option}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <SearchableSelect
+                id="calculatorFirstDay"
+                label="First payment day"
+                options={paymentDaySelectOptions}
+                value={form.firstDay}
+                onChange={(nextValue) => setForm((current) => ({ ...current, firstDay: nextValue }))}
+              />
+              <SearchableSelect
+                id="calculatorSecondDay"
+                label="Second payment day"
+                options={paymentDaySelectOptions}
+                value={form.secondDay}
+                onChange={(nextValue) => setForm((current) => ({ ...current, secondDay: nextValue }))}
+              />
             </div>
           ) : (
-            <div className="field">
-              <label htmlFor="calculatorMonthlyDay">Monthly payment day</label>
-              <select
-                id="calculatorMonthlyDay"
-                value={form.firstDay}
-                onChange={(event) => setForm((current) => ({ ...current, firstDay: event.target.value }))}
-              >
-                {paymentDayOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option === 'month_end' ? 'Month end' : option}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              id="calculatorMonthlyDay"
+              label="Monthly payment day"
+              options={paymentDaySelectOptions}
+              value={form.firstDay}
+              onChange={(nextValue) => setForm((current) => ({ ...current, firstDay: nextValue }))}
+            />
           )}
 
           <div className="field">
@@ -256,22 +247,18 @@ export function LoanCalculator() {
             />
           </div>
 
-          <div className="field">
-            <label htmlFor="calculatorInterestMode">Interest mode</label>
-            <select
-              id="calculatorInterestMode"
-              value={form.interestMode}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  interestMode: event.target.value as InterestMode,
-                }))
-              }
-            >
-              <option value="rules">Use configured rules</option>
-              <option value="manual">Manual interest rate</option>
-            </select>
-          </div>
+          <SearchableSelect
+            id="calculatorInterestMode"
+            label="Interest mode"
+            options={interestModeOptions}
+            value={form.interestMode}
+            onChange={(nextValue) =>
+              setForm((current) => ({
+                ...current,
+                interestMode: nextValue as InterestMode,
+              }))
+            }
+          />
 
           {form.interestMode === 'manual' ? (
             <div className="field">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, Select } from '@/components/shared'
+import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect } from '@/components/shared'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types'
 import { getSettings, updateSettings } from '@/services'
 
@@ -64,6 +64,10 @@ export function WorkspaceSettingsForm() {
   const [submitError, setSubmitError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
+  const currencyOptions = settingsCurrencyValues.map((currency) => ({
+    label: currency,
+    value: currency,
+  }))
 
   useEffect(() => {
     let cancelled = false
@@ -178,20 +182,15 @@ export function WorkspaceSettingsForm() {
             ) : null}
             {saveMessage ? <div className="notice">{saveMessage}</div> : null}
 
-            <Select
+            <SearchableSelect
               id="workspace-default-currency"
               label="Default currency"
+              options={currencyOptions}
               value={form.defaultCurrency}
               error={errors.defaultCurrency}
               hint="Used to format dashboard totals and lending amounts by default."
-              onChange={(event) => updateField('defaultCurrency', event.target.value as SettingsCurrency)}
-            >
-              {settingsCurrencyValues.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </Select>
+              onChange={(nextValue) => updateField('defaultCurrency', nextValue as SettingsCurrency)}
+            />
 
             <Input
               id="workspace-starting-capital"

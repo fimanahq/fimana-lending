@@ -8,6 +8,7 @@ export {
   TableWrapper,
 } from './page-patterns'
 export { Button, Checkbox, Input, Select, Textarea } from './forms'
+export { SearchableSelect, type SearchableSelectOption, type SearchableSelectProps } from './searchable-select'
 export { Badge, Card, DataTable, ErrorBanner, Skeleton, TableShell } from './display'
 export { ConfirmationDialog, Dialog } from './dialog'
 export { Pagination } from './pagination/pagination'

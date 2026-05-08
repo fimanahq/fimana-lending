@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Button, Input } from '@/components/shared/forms'
@@ -44,7 +44,6 @@ function validateLoginForm(form: LoginFormState) {
 }
 
 export function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { setUser } = useAuth()
   const [form, setForm] = useState<LoginFormState>(initialFormState)
@@ -78,7 +77,7 @@ export function LoginForm() {
     try {
       const payload = await login(form)
       setUser(payload.user)
-      router.push(destination)
+      window.location.replace(destination)
     } catch (caughtError) {
       if (caughtError instanceof ApiRequestError && caughtError.status === 401) {
         setInvalidCredentials(true)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, Select, TableShell } from '@/components/shared'
+import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, TableShell } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type {
@@ -281,16 +281,13 @@ export function LoanPaymentDialog({
                   value={amount}
                   onChange={(event) => setAmount(event.target.value)}
                 />
-                <Select
+                <SearchableSelect
                   id="payment-method"
                   label="Method"
+                  options={paymentMethodOptions}
                   value={method}
-                  onChange={(event) => setMethod(event.target.value as LoanPaymentMethod)}
-                >
-                  {paymentMethodOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </Select>
+                  onChange={(nextValue) => setMethod(nextValue as LoanPaymentMethod)}
+                />
                 <Input
                   id="payment-reference"
                   label="Reference number"
