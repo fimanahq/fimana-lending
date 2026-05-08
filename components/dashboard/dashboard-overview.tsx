@@ -333,13 +333,13 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </article>
 
           <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
-            <span className="dashboard-overview__statLabel">Remaining projected interest</span>
+            <span className="dashboard-overview__statLabel">Projected total net worth</span>
             <strong className="dashboard-overview__statValue">
-              {formatMinorCurrency(summary.remainingProjectedInterestMinor, dashboardCurrency)}
+              {formatMinorCurrency(summary.currentCapitalBasisMinor + summary.remainingProjectedInterestMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">Expected future interest from active loans</span>
+            <span className="dashboard-overview__statMeta">Current capital basis plus projected unpaid interest</span>
             <span className="dashboard-overview__statSubvalue">
-              Shown in profit outlook only, not part of current capital yet
+              Assumes active-loan interest is fully collected
             </span>
             <div className="dashboard-overview__statArtwork" aria-hidden="true">
               <OverviewGlyph name="note" />
@@ -470,7 +470,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 </p>
               </div>
               <div className="dashboard-overview__progressSummary">
-                <span className="dashboard-overview__progressSummaryLabel">Total projected interest</span>
+                <span className="dashboard-overview__progressSummaryLabel">Total collected + projected interest</span>
                 <strong>{formatMinorCurrency(summary.totalProjectedInterestMinor, dashboardCurrency)}</strong>
                 <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far</span>
               </div>
