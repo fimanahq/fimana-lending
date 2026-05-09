@@ -13,6 +13,7 @@ export type UpdateLoanApplicationInput = Partial<LoanApplicationDraftInput>
 
 type LoanApplicationFilters = {
   status?: string
+  search?: string
   page?: number
   itemsPerPage?: number,
 }

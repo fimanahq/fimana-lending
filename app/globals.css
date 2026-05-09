@@ -1870,6 +1870,7 @@ th {
   align-items: end;
   justify-content: space-between;
   gap: 1rem;
+  padding: 1rem 1.1rem;
 }
 
 .borrower-list__toolbarActions {

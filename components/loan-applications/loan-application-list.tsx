@@ -6,7 +6,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
 import { listLoanApplications } from '@/services'
-import { Button, DataTable, EmptyState, ErrorState, LoadingState, Pagination, TableShell } from '@/components/shared'
+import { Button, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'
 
 type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
@@ -35,11 +35,22 @@ function getApplicationSchedule(application: LoanApplication) {
 export function LoanApplicationList() {
   const [applications, setApplications] = useState<LoanApplication[]>([])
   const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('submitted')
+  const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalApplications, setTotalApplications] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim())
+      setPage(1)
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [query])
 
   const loadApplications = useCallback(async () => {
     setError('')
@@ -48,6 +59,7 @@ export function LoanApplicationList() {
     try {
       const response = await listLoanApplications({
         status: activeStatus === 'all' ? undefined : activeStatus,
+        search: debouncedQuery,
         page,
         itemsPerPage: PAGE_SIZE,
       })
@@ -60,7 +72,7 @@ export function LoanApplicationList() {
     } finally {
       setLoading(false)
     }
-  }, [activeStatus, page])
+  }, [activeStatus, debouncedQuery, page])
 
   useEffect(() => {
     void loadApplications()
@@ -68,8 +80,18 @@ export function LoanApplicationList() {
 
   return (
     <div className="stack">
-      <div className="inline-actions">
-        <Link href="/loan-applications/new" className="button">New application</Link>
+      <div className="card panel borrower-list__toolbar">
+        <Input
+          id="application-borrower-search"
+          label="Search borrowers"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Name, borrower number, mobile, or email"
+        />
+
+        <div className="inline-actions borrower-list__toolbarActions">
+          <Link href="/loan-applications/new" className="button">New application</Link>
+        </div>
       </div>
 
       <div className="application-status-tabs" aria-label="Application status filters">

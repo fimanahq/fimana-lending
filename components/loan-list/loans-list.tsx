@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, LoadingState, Pagination, TableShell } from '@/components/shared'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell } from '@/components/shared'
 
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
@@ -38,6 +38,8 @@ function formatLoanSchedule(loan: LoanRecord) {
 export function LoansList() {
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [activeFilter, setActiveFilter] = useState<LoanListFilter>('active')
+  const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalLoans, setTotalLoans] = useState(0)
@@ -48,6 +50,15 @@ export function LoansList() {
   const [deleteLoanId, setDeleteLoanId] = useState('')
   const [deleting, setDeleting] = useState(false)
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query.trim())
+      setPage(1)
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [query])
+
   const loadLoans = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -55,6 +66,7 @@ export function LoansList() {
     try {
       const response = await listLoanRecords({
         status: activeFilter === 'all' ? undefined : activeFilter,
+        search: debouncedQuery,
         page,
         itemsPerPage: PAGE_SIZE,
       })
@@ -67,7 +79,7 @@ export function LoansList() {
     } finally {
       setLoading(false)
     }
-  }, [activeFilter, page])
+  }, [activeFilter, debouncedQuery, page])
 
   const handleDeleteLoan = async () => {
     if (!deleteLoanId) return
@@ -98,8 +110,14 @@ export function LoansList() {
 
   return (
     <div className="stack">
-      <div className="inline-actions">
-        <Link href="/loan-applications" className="button-secondary">View applications</Link>
+      <div className="card panel borrower-list__toolbar">
+        <Input
+          id="loan-borrower-search"
+          label="Search borrowers"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Name, borrower number, mobile, or email"
+        />
       </div>
 
       <div className="application-status-tabs" aria-label="Loan status filters">

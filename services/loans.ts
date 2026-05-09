@@ -11,6 +11,7 @@ export function getLoan(loanId: string) {
 type LoanRecordFilters = {
   status?: string
   borrowerId?: string
+  search?: string
   page?: number
   itemsPerPage?: number
 }
