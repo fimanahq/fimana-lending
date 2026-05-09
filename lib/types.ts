@@ -222,6 +222,7 @@ export interface LoanRecord {
   firstDueDate: string
   nextDueDate?: string | null
   maturityDate: string
+  totalInterestAmountMinor: number
   balances: LoanRecordBalances
   disbursement: LoanDisbursementRecord
   createdAt: string
