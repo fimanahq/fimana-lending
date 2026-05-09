@@ -109,6 +109,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const frequencyLabel = frequency === 'monthly' ? 'Monthly' : 'Semi-Monthly'
   const firstPaymentDate = application?.startDate || application?.firstPaymentDate || application?.createdAt || ''
   const interestRate = application?.interestRate ?? application?.computedPreviewSnapshot?.interestRate ?? null
+  const applicationPurpose = application?.purpose?.trim() || application?.notes?.trim() || ''
 
   if (loading) {
     return <LoadingState title="Loading application" description="Fetching borrower application details." />
@@ -240,7 +241,12 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           </div>
         </div>
 
-        {application.purpose || application.notes ? <div className="notice">{application.purpose || application.notes}</div> : null}
+        {applicationPurpose ? (
+          <div>
+            <div className="muted">Loan purpose</div>
+            <div className="notice" style={{ whiteSpace: 'pre-wrap' }}>{applicationPurpose}</div>
+          </div>
+        ) : null}
         {application.reviewerRemarks || application.approvalNotes || application.rejectionReason || application.decisionNotes ? (
           <div className="notice">
             {application.reviewerRemarks || application.approvalNotes || application.rejectionReason || application.decisionNotes}
