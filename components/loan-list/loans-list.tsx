@@ -35,6 +35,10 @@ function formatLoanSchedule(loan: LoanRecord) {
   return `${frequencyLabel} on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`
 }
 
+function getTotalInterestAmountMinor(loan: LoanRecord) {
+  return loan.balances.interestPaidAmountMinor + loan.balances.interestOutstandingAmountMinor
+}
+
 export function LoansList() {
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [activeFilter, setActiveFilter] = useState<LoanListFilter>('active')
@@ -151,6 +155,7 @@ export function LoansList() {
                   <th>Borrower</th>
                   <th>Loan</th>
                   <th>Principal</th>
+                  <th>Total interest</th>
                   <th>Outstanding</th>
                   <th>Next due</th>
                   <th>Status</th>
@@ -171,6 +176,7 @@ export function LoansList() {
                       <div className="muted micro-copy">{formatLoanSchedule(loan)}</div>
                     </td>
                     <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
+                    <td>{formatMinorCurrency(getTotalInterestAmountMinor(loan), loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Completed'}</td>
                     <td>
