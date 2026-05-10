@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { hasLoanAppAccess } from '@/lib/access'
-import { clearSessionCookies, getSessionUser, jsonError } from '@/lib/server/backend'
+import { clearSessionCookies, getSessionUserWithRefresh, jsonError } from '@/lib/server/backend'
 
 export async function GET() {
-  const user = await getSessionUser()
+  const user = await getSessionUserWithRefresh()
   if (!user) {
     return jsonError('Unauthorized', 401)
   }

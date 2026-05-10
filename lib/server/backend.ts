@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
+import { getExpiredSessionCookieOptions, getSessionCookieOptions } from '@/lib/session-cookies'
 import type { User } from '@/lib/types'
 
 interface BackendEnvelope<T> {
@@ -57,45 +58,23 @@ async function backendFetch(path: string, init: RequestInit = {}, accessToken?: 
 
 async function setSessionCookies(payload: AuthPayload) {
   const cookieStore = await cookies()
+  const accessCookieOptions = getSessionCookieOptions(payload.accessToken)
+  const refreshCookieOptions = getSessionCookieOptions(payload.refreshToken)
 
-  cookieStore.set(ACCESS_COOKIE_NAME, payload.accessToken, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 15,
-  })
+  if (!accessCookieOptions || !refreshCookieOptions) {
+    throw new Error('Auth tokens are missing valid expiration claims')
+  }
 
-  cookieStore.set(REFRESH_COOKIE_NAME, payload.refreshToken, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7,
-  })
+  cookieStore.set(ACCESS_COOKIE_NAME, payload.accessToken, accessCookieOptions)
+  cookieStore.set(REFRESH_COOKIE_NAME, payload.refreshToken, refreshCookieOptions)
 }
 
 export async function clearSessionCookies() {
   const cookieStore = await cookies()
-  const expiredAt = new Date(0)
+  const expiredCookieOptions = getExpiredSessionCookieOptions()
 
-  cookieStore.set(ACCESS_COOKIE_NAME, '', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    expires: expiredAt,
-    maxAge: 0,
-  })
-
-  cookieStore.set(REFRESH_COOKIE_NAME, '', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    expires: expiredAt,
-    maxAge: 0,
-  })
+  cookieStore.set(ACCESS_COOKIE_NAME, '', expiredCookieOptions)
+  cookieStore.set(REFRESH_COOKIE_NAME, '', expiredCookieOptions)
 }
 
 export async function createSession(payload: AuthPayload) {
@@ -127,6 +106,22 @@ async function refreshAuthSession(): Promise<AuthPayload | null> {
 }
 
 export async function getSessionUser() {
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
+
+  if (!accessToken) {
+    return null
+  }
+
+  const response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
+  if (!response.ok) {
+    return null
+  }
+
+  return parseBackendResponse<User>(response)
+}
+
+export async function getSessionUserWithRefresh() {
   const cookieStore = await cookies()
   let accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
 
