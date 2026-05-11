@@ -99,6 +99,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const borrowerName = getBorrowerName(borrower)
   const activeLoans = borrowerLoans.filter((loan) => loan.status === 'active')
   const activeLoansCount = activeLoans.length
+  const borrowerCurrency = borrowerLoans[0]?.loanProduct.currency || 'PHP'
   const principalTotals = sumByCurrency(borrowerLoans, (loan) => loan.principalAmountMinor)
   const collectedInterestTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.interestPaidAmountMinor)
   const projectedInterestTotals = sumByCurrency(activeLoans, (loan) => loan.totalInterestAmountMinor)
@@ -131,6 +132,10 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
             <div>
               <dt>Phone</dt>
               <dd>{borrower.contactNumber || 'Not set'}</dd>
+            </div>
+            <div>
+              <dt>Monthly Income</dt>
+              <dd>{borrower.income !== null ? formatCurrency(borrower.income, borrowerCurrency) : 'Not set'}</dd>
             </div>
             <div>
               <dt>Notes</dt>
