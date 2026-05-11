@@ -2595,6 +2595,13 @@ th {
   cursor: pointer;
 }
 
+.dashboard-shell__sidebarClose {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 0;
+  background: transparent;
+}
+
 .dashboard-shell__menuButton {
   display: none;
 }
@@ -4898,6 +4905,20 @@ th {
     transition: transform 180ms ease;
     overflow-x: hidden;
     overflow-y: auto;
+  }
+
+  .dashboard-shell__sidebarHeader {
+    position: relative;
+  }
+
+  .dashboard-shell__sidebarBrandGroup {
+    padding-right: 1.75rem;
+  }
+
+  .dashboard-shell__sidebarControls {
+    position: absolute;
+    top: 0;
+    right: 0;
   }
 
   .dashboard-shell--sidebar-open .dashboard-shell__sidebar {
