@@ -18,6 +18,7 @@ interface BorrowerFormState {
   lastName: string
   email: string
   contactNumber: string
+  income: string
   notes: string
 }
 
@@ -26,6 +27,7 @@ type BorrowerFormErrors = Partial<Record<keyof BorrowerFormState, string>>
 const emptyForm: BorrowerFormState = {
   email: '',
   firstName: '',
+  income: '',
   lastName: '',
   notes: '',
   contactNumber: '',
@@ -47,20 +49,33 @@ function getInitialForm(borrower?: Borrower): BorrowerFormState {
   return {
     email: borrower.email || '',
     firstName,
+    income: borrower.income !== null && borrower.income !== undefined ? String(borrower.income) : '',
     lastName,
     notes: borrower.notes || '',
     contactNumber: borrower.contactNumber || '',
   }
 }
 
+function parseIncome(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : Number.NaN
+}
+
 function trimForm(form: BorrowerFormState): CreateBorrowerInput {
   const firstName = form.firstName.trim()
   const lastName = form.lastName.trim()
   const fullName = `${firstName} ${lastName}`.trim()
+  const income = parseIncome(form.income)
 
   return {
     email: form.email.trim(),
     fullName,
+    income: income === null ? null : income,
     notes: form.notes.trim(),
     contactNumber: form.contactNumber.trim(),
   }
@@ -80,6 +95,10 @@ function validateForm(form: BorrowerFormState) {
 
   if (!trimmed.email && !trimmed.contactNumber) {
     nextErrors.contactNumber = 'Provide an email address or phone number.'
+  }
+
+  if (trimmed.income !== undefined && trimmed.income !== null && (!Number.isFinite(trimmed.income) || trimmed.income < 0)) {
+    nextErrors.income = 'Monthly income must be zero or greater.'
   }
 
   return nextErrors
@@ -196,6 +215,18 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
           type="tel"
         />
       </div>
+
+      <Input
+        id={`${mode}-borrower-income`}
+        label="Monthly Income"
+        value={form.income}
+        error={errors.income}
+        inputMode="decimal"
+        min="0"
+        onChange={(event) => updateField('income', event.target.value)}
+        placeholder="0.00"
+        type="number"
+      />
 
       <Textarea
         id={`${mode}-borrower-notes`}

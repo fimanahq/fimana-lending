@@ -6,12 +6,14 @@ import {
   Badge,
   Button,
   Card,
+  Dialog,
   ErrorState,
   LoadingState,
   PageContainer,
   TableShell,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
+import { EditIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Borrower, LoanRecord } from '@/lib/types'
@@ -51,6 +53,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const [borrowerLoans, setBorrowerLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [message, setMessage] = useState('')
 
   const loadProfile = useCallback(async () => {
@@ -116,43 +119,51 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
 
       <div className="borrower-profile-grid">
         <Card
-          title="Profile"
-          description="Borrower contact details used by lending workflows."
-          actions={<Badge tone={borrower.status === 'active' ? 'success' : 'warning'}>{borrower.status}</Badge>}
+          title="Borrower Profile"
+          actions={(
+            <div className="inline-actions">
+              <Badge tone={borrower.status === 'active' ? 'success' : 'warning'}>{borrower.status}</Badge>
+              <button
+                type="button"
+                className="button-ghost table-action-icon"
+                aria-label={`Edit borrower ${borrowerName}`}
+                title="Edit borrower"
+                onClick={() => setEditDialogOpen(true)}
+              >
+                <EditIcon />
+              </button>
+            </div>
+          )}
         >
-          <dl className="borrower-detail-list">
-            <div>
-              <dt>Borrower number</dt>
-              <dd>{borrower.borrowerNumber}</dd>
+          <div className="borrower-profile-card">
+            <div className="borrower-profile-card__hero">
+              <h2 className="borrower-profile-card__name">{borrowerName}</h2>
             </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{borrower.email || 'Not set'}</dd>
-            </div>
-            <div>
-              <dt>Phone</dt>
-              <dd>{borrower.contactNumber || 'Not set'}</dd>
-            </div>
-            <div>
-              <dt>Monthly Income</dt>
-              <dd>{borrower.income !== null ? formatCurrency(borrower.income, borrowerCurrency) : 'Not set'}</dd>
-            </div>
-            <div>
-              <dt>Notes</dt>
-              <dd>{borrower.notes || 'No notes'}</dd>
-            </div>
-          </dl>
-        </Card>
 
-        <Card title="Edit borrower" description="Update borrower details without changing loan contracts.">
-          <BorrowerForm
-            mode="edit"
-            borrower={borrower}
-            onSaved={(updated) => {
-              setBorrower(updated)
-              setMessage('Borrower profile updated.')
-            }}
-          />
+            <div className="borrower-profile-card__facts">
+              <div className="borrower-profile-card__fact">
+                <span>Borrower Number</span>
+                <strong>{borrower.borrowerNumber}</strong>
+              </div>
+              <div className="borrower-profile-card__fact">
+                <span>Email</span>
+                <strong>{borrower.email || 'Not set'}</strong>
+              </div>
+              <div className="borrower-profile-card__fact">
+                <span>Phone</span>
+                <strong>{borrower.contactNumber || 'Not set'}</strong>
+              </div>
+              <div className="borrower-profile-card__fact">
+                <span>Monthly Income</span>
+                <strong>{borrower.income !== null ? formatCurrency(borrower.income, borrowerCurrency) : 'Not set'}</strong>
+              </div>
+            </div>
+
+            <div className="borrower-profile-card__notes">
+              <span>Notes</span>
+              <p>{borrower.notes || 'No notes recorded for this borrower yet.'}</p>
+            </div>
+          </div>
         </Card>
       </div>
 
@@ -220,6 +231,23 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
           </div>
         )}
       </Card>
+
+      <Dialog
+        open={editDialogOpen}
+        title="Edit borrower"
+        description="Update borrower details without changing loan contracts."
+        onClose={() => setEditDialogOpen(false)}
+      >
+        <BorrowerForm
+          mode="edit"
+          borrower={borrower}
+          onSaved={(updated) => {
+            setBorrower(updated)
+            setEditDialogOpen(false)
+            setMessage('Borrower profile updated.')
+          }}
+        />
+      </Dialog>
     </PageContainer>
   )
 }

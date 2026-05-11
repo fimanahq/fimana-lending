@@ -8,6 +8,7 @@
     fullName: string
     email?: string
     contactNumber?: string
+    income?: number | null
     notes?: string
   }
   
