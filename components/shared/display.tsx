@@ -15,8 +15,10 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
 }
 
 export interface TableShellProps extends HTMLAttributes<HTMLDivElement> {
+  actions?: ReactNode
   label: string
   children: ReactNode
+  title?: string
 }
 
 export interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
@@ -62,9 +64,17 @@ export function Card({
   )
 }
 
-export function TableShell({ children, className, label, ...props }: TableShellProps) {
+export function TableShell({ actions, children, className, label, title, ...props }: TableShellProps) {
   return (
     <div className={classNames('card panel ui-table-shell', className)} role="region" aria-label={label} tabIndex={0} {...props}>
+      {title || actions ? (
+        <div className="ui-table-shell__header">
+          <div>
+            {title ? <h2 className="section-title">{title}</h2> : null}
+          </div>
+          {actions ? <div className="ui-table-shell__actions">{actions}</div> : null}
+        </div>
+      ) : null}
       <div className="table-wrap">{children}</div>
     </div>
   )

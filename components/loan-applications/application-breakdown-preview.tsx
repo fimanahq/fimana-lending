@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import type {
   LoanApplicationComputedPreviewSnapshot,
@@ -5,8 +6,10 @@ import type {
   LoanSchedulePreviewRow,
 } from '@/lib/types'
 import { Card, DataTable, TableShell } from '@/components/shared'
+import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 
 interface ApplicationBreakdownPreviewProps {
+  borrowerName?: string
   preview: LoanApplicationComputedPreviewSnapshot | LoanApplicationPreviewSnapshot | null
 }
 
@@ -56,7 +59,21 @@ function getSchedule(preview: LoanApplicationComputedPreviewSnapshot | LoanAppli
   return preview.schedule ?? []
 }
 
-export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPreviewProps) {
+export function ApplicationBreakdownPreview({ borrowerName, preview }: ApplicationBreakdownPreviewProps) {
+  const [scheduleCopyStatus, setScheduleCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+  useEffect(() => {
+    if (scheduleCopyStatus === 'idle') {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setScheduleCopyStatus('idle')
+    }, 2000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [scheduleCopyStatus])
+
   if (!preview) {
     return (
       <Card
@@ -100,6 +117,43 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
   const processingFee = isComputedPreview(preview) ? preview.processingFeeAmountMinor : null
   const netDisbursement = isComputedPreview(preview) ? preview.netDisbursementAmountMinor : null
   const schedule = getSchedule(preview)
+  const scheduleCopyLabel = scheduleCopyStatus === 'success'
+    ? 'Copied'
+    : scheduleCopyStatus === 'error'
+      ? 'Copy failed'
+      : 'Copy payment schedule preview'
+  const scheduleCopyAnnouncement = scheduleCopyStatus === 'success'
+    ? 'Payment schedule preview copied to clipboard.'
+    : scheduleCopyStatus === 'error'
+      ? 'Unable to copy payment schedule preview.'
+      : ''
+
+  const handleCopySchedule = async () => {
+    const scheduleRows = schedule.map((row) => [
+      `#${row.sequence}`,
+      formatDate(row.dueDate),
+      formatCurrency(row.principalPaid, currency),
+      formatCurrency(row.interest, currency),
+      formatCurrency(row.totalPayment, currency),
+      formatCurrency(row.endingBalance, currency),
+    ])
+
+    const clipboardText = [
+      ['Borrower', borrowerName || 'Not provided'],
+      ['Overall Profit %', overallProfitPercentage !== null ? formatPercentage(overallProfitPercentage) : 'Not returned'],
+      ['Interest Rate', interestRate !== null ? formatPercentage(interestRate) : 'Not returned'],
+      ['Overall Profit', totalInterest !== null ? formatCurrency(totalInterest, currency) : 'Not returned'],
+      ['Installment', 'Due date', 'Principal', 'Interest', 'Total', 'Ending Balance'],
+      ...scheduleRows,
+    ].map((row) => row.join('\t')).join('\n')
+
+    try {
+      await navigator.clipboard.writeText(clipboardText)
+      setScheduleCopyStatus('success')
+    } catch {
+      setScheduleCopyStatus('error')
+    }
+  }
 
   return (
     <Card
@@ -172,7 +226,25 @@ export function ApplicationBreakdownPreview({ preview }: ApplicationBreakdownPre
         </div>
       </div>
 
-      <TableShell label="Computed payment schedule preview">
+      <TableShell
+        label="Computed payment schedule preview"
+        title="Payment schedule preview"
+        actions={(
+          <>
+            <button
+              type="button"
+              className={`button-ghost table-action-icon table-copy-button${scheduleCopyStatus === 'success' ? ' is-success' : ''}${scheduleCopyStatus === 'error' ? ' is-error' : ''}`}
+              aria-label={scheduleCopyLabel}
+              title={scheduleCopyLabel}
+              onClick={() => void handleCopySchedule()}
+              disabled={schedule.length === 0}
+            >
+              {scheduleCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
+            </button>
+            <span className="ui-sr-only" aria-live="polite">{scheduleCopyAnnouncement}</span>
+          </>
+        )}
+      >
         <DataTable>
           <thead>
             <tr>

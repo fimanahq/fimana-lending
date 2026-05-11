@@ -414,7 +414,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         </div>
       </Card>
 
-      <TableShell label={`${loan.loanNumber} repayment schedule`}>
+      <TableShell
+        label={`${loan.loanNumber} repayment schedule`}
+        title="Installment schedule"
+      >
         <table>
           <thead>
             <tr>
@@ -447,7 +450,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         </table>
       </TableShell>
 
-      <TableShell label={`${loan.loanNumber} payment history`}>
+      <TableShell label={`${loan.loanNumber} payment history`} title="Payment history">
         <DataTable>
           <thead>
             <tr>
@@ -511,7 +514,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         </DataTable>
       </TableShell>
 
-      <TableShell label={`${loan.loanNumber} adjustment history`}>
+      <TableShell label={`${loan.loanNumber} adjustment history`} title="Loan adjustment history">
         <DataTable>
           <thead>
             <tr>

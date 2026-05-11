@@ -307,7 +307,10 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         />
       </Dialog>
 
-      <ApplicationBreakdownPreview preview={application.computedPreviewSnapshot ?? application.previewSnapshot ?? null} />
+      <ApplicationBreakdownPreview
+        borrowerName={getApplicantName(application)}
+        preview={application.computedPreviewSnapshot ?? application.previewSnapshot ?? null}
+      />
     </div>
   )
 }

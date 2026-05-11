@@ -51,3 +51,20 @@ export function EditIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function CopyIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <rect x="9" y="8" width="11" height="13" rx="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M15 8V6.2c0-1.2-1-2.2-2.2-2.2H6.2C5 4 4 5 4 6.2v10.6C4 18 5 19 6.2 19H9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="m5.5 12.5 4.3 4.3L18.5 8" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
