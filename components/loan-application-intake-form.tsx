@@ -318,14 +318,26 @@ export function LoanApplicationIntakeForm() {
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestSchedule">Schedule</label>
-          <input id="requestSchedule" value="Semi-monthly (15th and month end)" readOnly />
+          <span className="request-loan-form__fieldLabel">Schedule</span>
+          <div
+            className="request-loan-form__readonly"
+            aria-readonly="true"
+            role="status"
+          >
+            Semi-monthly (15th and month end)
+          </div>
         </div>
       </div>
 
       <div className="request-loan-form__field request-loan-form__field--full">
-        <label htmlFor="requestFirstPaymentDate">First due date (computed)</label>
-        <input id="requestFirstPaymentDate" type="date" value={form.firstPaymentDate} readOnly />
+        <span className="request-loan-form__fieldLabel">First due date (computed)</span>
+        <div
+          className="request-loan-form__readonly"
+          aria-readonly="true"
+          role="status"
+        >
+          {form.firstPaymentDate}
+        </div>
       </div>
 
       <div className="request-loan-form__field">

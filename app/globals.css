@@ -3951,6 +3951,14 @@ th {
   line-height: 1.45;
 }
 
+.request-loan-form__fieldLabel {
+  color: #544339;
+  font-family: 'Manrope', var(--font-body), serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .request-loan-form__field input,
 .request-loan-form__field select,
 .request-loan-form__field textarea {
@@ -3966,6 +3974,23 @@ th {
   line-height: 1.5;
   box-shadow: inset 0 0 0 1px rgba(218, 194, 181, 0);
   transition: box-shadow 150ms ease, background 150ms ease;
+}
+
+.request-loan-form__readonly {
+  width: 100%;
+  min-height: 3.625rem;
+  padding: 1rem 1.125rem;
+  border-radius: 1rem;
+  background: #ece4cf;
+  color: #6d6050;
+  font-family: 'Manrope', var(--font-body), serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
 }
 
 .request-loan-form__field input::placeholder,
