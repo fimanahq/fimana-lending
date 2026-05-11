@@ -12,6 +12,7 @@ import {
   TableShell,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
+import { ViewIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Borrower, LoanRecord } from '@/lib/types'
@@ -196,6 +197,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                     <th>Outstanding</th>
                     <th>Next due</th>
                     <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -212,6 +214,16 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                       <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>
                       <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
+                      <td>
+                        <Link
+                          href={`/loans/${loan.id}`}
+                          className="button-ghost table-action-icon"
+                          aria-label={`View loan details for ${loan.loanNumber}`}
+                          title="View loan"
+                        >
+                          <ViewIcon />
+                        </Link>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

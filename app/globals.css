@@ -595,6 +595,15 @@ h4 {
 
 .data-card__titleLink {
   font-family: var(--font-heading), sans-serif;
+  color: #1d4ed8;
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.data-card__titleLink:hover,
+.data-card__titleLink:focus-visible {
+  color: #1e40af;
+  text-decoration: underline;
 }
 
 .data-card__aside {

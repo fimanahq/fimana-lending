@@ -352,6 +352,14 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
         <div className="grid two">
           <div>
+            <div className="muted">Borrower</div>
+            <strong>
+              <Link href={`/borrowers/${loan.borrower.id}`} className="data-card__titleLink">
+                {loan.borrower.displayName}
+              </Link>
+            </strong>
+          </div>
+          <div>
             <div className="muted">Borrower number</div>
             <strong>{loan.borrower.borrowerNumber}</strong>
           </div>
