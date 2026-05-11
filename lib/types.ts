@@ -217,6 +217,7 @@ export interface LoanRecord {
   principalAmountMinor: number
   disbursedAmountMinor: number
   installmentCount: number
+  interestRate: number
   paymentFrequency: LoanApplicationPaymentType
   paymentDays: string[]
   firstDueDate: string

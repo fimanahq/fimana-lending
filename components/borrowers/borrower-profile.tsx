@@ -25,6 +25,27 @@ function getBorrowerName(borrower: Borrower) {
   return borrower.fullName.trim() || 'Unnamed borrower'
 }
 
+function formatMinorCurrency(valueMinor: number, currency = 'PHP') {
+  return formatCurrency(valueMinor / 100, currency)
+}
+
+function sumByCurrency(
+  loans: LoanRecord[],
+  selector: (loan: LoanRecord) => number,
+) {
+  return loans.reduce<Record<string, number>>((totals, loan) => {
+    const currency = loan.loanProduct.currency || 'PHP'
+    totals[currency] = (totals[currency] ?? 0) + selector(loan)
+    return totals
+  }, {})
+}
+
+function renderCurrencyTotals(totals: Record<string, number>) {
+  return Object.entries(totals).map(([currency, amount]) => (
+    <strong key={currency}>{formatMinorCurrency(amount, currency)}</strong>
+  ))
+}
+
 export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const [borrower, setBorrower] = useState<Borrower | null>(null)
   const [borrowerLoans, setBorrowerLoans] = useState<LoanRecord[]>([])
@@ -76,6 +97,12 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   }
 
   const borrowerName = getBorrowerName(borrower)
+  const activeLoans = borrowerLoans.filter((loan) => loan.status === 'active')
+  const activeLoansCount = activeLoans.length
+  const principalTotals = sumByCurrency(borrowerLoans, (loan) => loan.principalAmountMinor)
+  const collectedInterestTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.interestPaidAmountMinor)
+  const projectedInterestTotals = sumByCurrency(activeLoans, (loan) => loan.totalInterestAmountMinor)
+  const outstandingTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.totalOutstandingAmountMinor)
 
   return (
     <PageContainer>
@@ -128,33 +155,64 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         {borrowerLoans.length === 0 ? (
           <p className="muted">No issued loans yet.</p>
         ) : (
-          <TableShell label={`${borrowerName} loan history`}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Loan</th>
-                  <th>Principal</th>
-                  <th>Outstanding</th>
-                  <th>Next due</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {borrowerLoans.map((loan) => (
-                  <tr key={loan.id}>
-                    <td>
-                      <Link href={`/loans/${loan.id}`} className="data-card__titleLink">{loan.loanNumber}</Link>
-                      <div className="muted micro-copy">Issued {formatDate(loan.createdAt)}</div>
-                    </td>
-                    <td>{formatCurrency(loan.principalAmountMinor / 100)}</td>
-                    <td>{formatCurrency(loan.balances.totalOutstandingAmountMinor / 100)}</td>
-                    <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>
-                    <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
+          <div className="stack">
+            <section className="borrower-summary-grid" aria-label={`${borrowerName} loan history summary`}>
+              <Card className="borrower-summary-card" title="Loans">
+                <strong>{borrowerLoans.length}</strong>
+                <span className="muted">{activeLoansCount} active</span>
+              </Card>
+              <Card className="borrower-summary-card" title="Principal issued">
+                {renderCurrencyTotals(principalTotals)}
+                <span className="muted">Across all borrower loans</span>
+              </Card>
+              <Card className="borrower-summary-card" title="Collected interest">
+                {renderCurrencyTotals(collectedInterestTotals)}
+                <span className="muted">Paid interest on all loans</span>
+              </Card>
+              <Card className="borrower-summary-card" title="Projected interest">
+                {renderCurrencyTotals(projectedInterestTotals)}
+                <span className="muted">Expected interest on active loans only</span>
+              </Card>
+              <Card className="borrower-summary-card" title="Outstanding balance">
+                {renderCurrencyTotals(outstandingTotals)}
+                <span className="muted">Remaining borrower exposure</span>
+              </Card>
+            </section>
+
+            <TableShell label={`${borrowerName} loan history`}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Loan</th>
+                    <th>Principal</th>
+                    <th>Projected interest</th>
+                    <th>Interest collected</th>
+                    <th>Total paid</th>
+                    <th>Outstanding</th>
+                    <th>Next due</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableShell>
+                </thead>
+                <tbody>
+                  {borrowerLoans.map((loan, index) => (
+                    <tr key={`${loan.id ?? loan.loanNumber ?? 'loan'}-${loan.createdAt}-${index}`}>
+                      <td>
+                        <Link href={`/loans/${loan.id}`} className="data-card__titleLink">{loan.loanNumber}</Link>
+                        <div className="muted micro-copy">Issued {formatDate(loan.createdAt)}</div>
+                      </td>
+                      <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(loan.balances.interestPaidAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>
+                      <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableShell>
+          </div>
         )}
       </Card>
     </PageContainer>

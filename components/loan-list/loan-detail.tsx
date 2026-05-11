@@ -341,6 +341,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
             <strong>{formatPercentage(overallProfitPercentage)}</strong>
           </div>
           <div className="data-card">
+            <span className="muted">Interest Rate</span>
+            <strong>{formatPercentage(loan.interestRate)}</strong>
+          </div>
+          <div className="data-card">
             <span className="muted">Next due</span>
             <strong>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Completed'}</strong>
           </div>
