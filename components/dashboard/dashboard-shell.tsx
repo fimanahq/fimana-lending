@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AppLogo } from '@/components/shared/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { classNames } from '@/utils/class-names'
@@ -184,6 +184,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isNavCollapsed, setIsNavCollapsed] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -194,6 +196,32 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsSidebarOpen(false)
   }, [pathname])
+
+  useEffect(() => {
+    setIsAccountMenuOpen(false)
+  }, [pathname])
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -297,25 +325,47 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="dashboard-shell__headingCopy">
               <h1 className="dashboard-shell__pageTitle">{pageTitle}</h1>
             </div>
-          </div>
+            <div className="dashboard-shell__actions">
+              <button className="dashboard-shell__notificationButton" type="button" aria-label="Notifications placeholder">
+                <DashboardIcon name="bell" />
+                <span>0</span>
+              </button>
 
-          <div className="dashboard-shell__actions">
-            <button className="dashboard-shell__notificationButton" type="button" aria-label="Notifications placeholder">
-              <DashboardIcon name="bell" />
-              <span>0</span>
-            </button>
+              <div className="dashboard-shell__accountMenu" ref={accountMenuRef}>
+                <button
+                  className="dashboard-shell__accountButton"
+                  type="button"
+                  aria-label={`${fullName} account menu`}
+                  aria-expanded={isAccountMenuOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setIsAccountMenuOpen((current) => !current)}
+                >
+                  <span className="dashboard-shell__accountAvatar">{initials}</span>
+                </button>
 
-            <button className="dashboard-shell__accountButton" type="button" aria-label={`${fullName} menu placeholder`}>
-              <span className="dashboard-shell__accountAvatar">{initials}</span>
-              <span className="dashboard-shell__accountCopy">
-                <span>{fullName}</span>
-                <span>{user?.email || 'User menu'}</span>
-              </span>
-            </button>
+                {isAccountMenuOpen ? (
+                  <div className="dashboard-shell__accountDropdown" role="menu" aria-label="Account menu">
+                    <div className="dashboard-shell__accountDropdownHeader">
+                      <span className="dashboard-shell__accountAvatar">{initials}</span>
+                      <span className="dashboard-shell__accountCopy">
+                        <span>{fullName}</span>
+                        <span>{user?.email || 'User menu'}</span>
+                      </span>
+                    </div>
 
-            <button className="dashboard-shell__logout" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-              {isLoggingOut ? 'Logging out...' : 'Logout'}
-            </button>
+                    <button
+                      className="dashboard-shell__logout dashboard-shell__logout--dropdown"
+                      type="button"
+                      role="menuitem"
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                    >
+                      {isLoggingOut ? 'Logging out...' : 'Logout'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
         </header>
 

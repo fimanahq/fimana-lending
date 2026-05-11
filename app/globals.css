@@ -2522,19 +2522,18 @@ th {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: 1.15rem 2rem 0 0;
+  padding: 0;
 }
 
 .dashboard-shell__topbar {
+  position: relative;
+  z-index: 20;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1.1rem;
-  padding: 1rem 1.1rem 1.1rem;
+  padding: 1.15rem 2rem 1.1rem 1.1rem;
   margin-bottom: 1rem;
-  border: none;
-  border-radius: 0;
-  background: transparent;
   box-shadow: none;
   backdrop-filter: none;
 }
@@ -2548,6 +2547,7 @@ th {
 
 .dashboard-shell__headingCopy {
   display: grid;
+  flex: 1 1 auto;
   min-width: 0;
   gap: 0.42rem;
 }
@@ -2610,7 +2610,13 @@ th {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
+  margin-left: auto;
   gap: 0.75rem;
+}
+
+.dashboard-shell__accountMenu {
+  position: relative;
+  z-index: 21;
 }
 
 .dashboard-shell__notificationButton,
@@ -2642,11 +2648,10 @@ th {
 }
 
 .dashboard-shell__accountButton {
-  gap: 0.6rem;
-  max-width: 16.25rem;
-  padding: 0.35rem 0.75rem 0.35rem 0.35rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0.35rem;
   border-radius: 999px;
-  text-align: left;
 }
 
 .dashboard-shell__accountAvatar {
@@ -2662,6 +2667,28 @@ th {
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+}
+
+.dashboard-shell__accountDropdown {
+  position: absolute;
+  top: calc(100% + 0.65rem);
+  right: 0;
+  display: grid;
+  gap: 0.8rem;
+  min-width: 15.5rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(84, 67, 38, 0.1);
+  border-radius: 1rem;
+  background: rgba(255, 251, 241, 0.96);
+  box-shadow: 0 16px 34px rgba(29, 28, 18, 0.12);
+  backdrop-filter: blur(16px);
+  z-index: 40;
+}
+
+.dashboard-shell__accountDropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
 }
 
 .dashboard-shell__accountCopy {
@@ -2710,6 +2737,11 @@ th {
   color: var(--accent-strong);
 }
 
+.dashboard-shell__logout--dropdown {
+  width: 100%;
+  justify-content: center;
+}
+
 .dashboard-shell__main {
   min-width: 0;
 }
@@ -2717,7 +2749,7 @@ th {
 .dashboard-shell__content {
   width: 100%;
   max-width: none;
-  padding-left: 1rem;
+  padding: 0 2rem 0 1rem;
 }
 
 .dashboard-shell__footer {
@@ -2726,7 +2758,7 @@ th {
   justify-content: space-between;
   gap: 1rem;
   margin-top: auto;
-  padding: 2.5rem 0 1rem 1rem;
+  padding: 2.5rem 2rem 1rem 1rem;
   color: rgba(73, 64, 51, 0.88);
   font-size: 0.94rem;
 }
@@ -4884,7 +4916,7 @@ th {
     opacity: 0;
     pointer-events: none;
     transition: opacity 180ms ease;
-    z-index: 18;
+    z-index: 28;
   }
 
   .dashboard-shell--sidebar-open .dashboard-shell__backdrop {
@@ -4905,6 +4937,7 @@ th {
     transition: transform 180ms ease;
     overflow-x: hidden;
     overflow-y: auto;
+    z-index: 30;
   }
 
   .dashboard-shell__sidebarHeader {
@@ -4997,8 +5030,16 @@ th {
   }
 
   .dashboard-shell__topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     grid-template-columns: 1fr;
     align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.7rem 0.9rem 0.8rem;
+    background: rgba(248, 241, 226, 0.92);
+    box-shadow: 0 8px 20px rgba(29, 28, 18, 0.05);
+    backdrop-filter: blur(10px);
   }
 
   .dashboard-shell__workspace {
@@ -5006,7 +5047,7 @@ th {
   }
 
   .dashboard-shell__pageHeading {
-    align-items: flex-start;
+    align-items: center;
   }
 
   .dashboard-shell__content {
@@ -5016,11 +5057,11 @@ th {
   }
 
   .dashboard-shell__actions {
-    justify-content: flex-start;
-  }
-
-  .dashboard-shell__accountButton {
-    max-width: min(52vw, 16.25rem);
+    margin-left: auto;
+    width: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
   }
 
   .dashboard-shell__footer,
@@ -5035,8 +5076,31 @@ th {
   }
 
   .dashboard-shell__actions {
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+
+  .dashboard-shell__notificationButton {
+    width: 2.4rem;
+    min-height: 2.4rem;
+    padding: 0;
+  }
+
+  .dashboard-shell__accountButton {
+    width: 2.4rem;
+    height: 2.4rem;
+    min-height: 2.4rem;
+    padding: 0.2rem;
+  }
+
+  .dashboard-shell__accountAvatar {
+    width: 1.8rem;
+    height: 1.8rem;
+    font-size: 0.72rem;
+  }
+
+  .dashboard-shell__notificationButton span {
+    display: none;
   }
 
   .dashboard-shell__footerLinks {
@@ -5093,23 +5157,18 @@ th {
 
 @media (max-width: 560px) {
   .dashboard-shell__topbar {
-    gap: 0.9rem;
-    padding: 0.9rem 0.9rem 1rem;
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem 0.7rem;
   }
 
   .dashboard-shell__pageHeading {
     width: 100%;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .dashboard-shell__actions {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .dashboard-shell__accountButton {
-    max-width: none;
-    flex: 1 1 auto;
+    width: auto;
+    flex-wrap: nowrap;
   }
 
   .dashboard-shell__logout {

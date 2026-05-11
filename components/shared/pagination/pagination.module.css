@@ -7,7 +7,7 @@
     padding: 1rem 1.25rem;
     border: 1px solid rgba(97, 84, 62, 0.14);
     border-radius: 1rem;
-    background: #fff;
+    background: var(--surface-strong);
 }
 
 .ui-pagination__summary {
