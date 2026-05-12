@@ -2061,6 +2061,144 @@ th {
   line-height: 1.55;
 }
 
+.borrower-risk-meter {
+  min-width: 0;
+}
+
+.borrower-risk-meter__content {
+  display: grid;
+  gap: 1rem;
+}
+
+.borrower-risk-meter__gaugeWrap {
+  display: grid;
+  gap: 0.8rem;
+  justify-items: center;
+  padding: 0.35rem 0 0;
+}
+
+.borrower-risk-meter__gauge {
+  display: block;
+  width: min(100%, 24rem);
+  aspect-ratio: 240 / 136;
+  overflow: visible;
+}
+
+.borrower-risk-meter__track,
+.borrower-risk-meter__band {
+  fill: none;
+  stroke-linecap: butt;
+  stroke-width: 18;
+}
+
+.borrower-risk-meter__track {
+  stroke: rgba(61, 54, 41, 0.1);
+}
+
+.borrower-risk-meter__band {
+  filter: drop-shadow(0 8px 14px rgba(54, 42, 24, 0.08));
+}
+
+.borrower-risk-meter__needle {
+  stroke: #26352f;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.borrower-risk-meter__hub {
+  fill: #26352f;
+  stroke: rgba(255, 251, 241, 0.92);
+  stroke-width: 4;
+}
+
+.borrower-risk-meter__reading {
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  margin-top: -1.15rem;
+  text-align: center;
+}
+
+.borrower-risk-meter__reading strong {
+  color: #2e3328;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.borrower-risk-meter__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.borrower-risk-meter__label--low {
+  color: #1f5f43;
+  background: rgba(45, 122, 88, 0.12);
+}
+
+.borrower-risk-meter__label--moderate {
+  color: #80590f;
+  background: rgba(192, 138, 36, 0.14);
+}
+
+.borrower-risk-meter__label--high {
+  color: #844015;
+  background: rgba(201, 104, 47, 0.14);
+}
+
+.borrower-risk-meter__label--very_high {
+  color: #7c271f;
+  background: rgba(159, 51, 41, 0.14);
+}
+
+.borrower-risk-meter__label--unknown {
+  color: var(--muted-strong);
+  background: rgba(61, 54, 41, 0.08);
+}
+
+.borrower-risk-meter__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.borrower-risk-meter__stats div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.borrower-risk-meter__stats dt {
+  color: var(--muted);
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.borrower-risk-meter__stats dd {
+  margin: 0;
+  color: #3b2f28;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
 .borrower-summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4863,6 +5001,10 @@ th {
   }
 
   .borrower-profile-card__facts {
+    grid-template-columns: 1fr;
+  }
+
+  .borrower-risk-meter__stats {
     grid-template-columns: 1fr;
   }
 

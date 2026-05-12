@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
+import { LoanApplicationRiskMeter } from '@/components/loan-applications/loan-application-risk-meter'
+import { calculateApplicationPreviewMonthlyPayment } from '@/lib/borrower-risk'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types'
@@ -137,7 +139,9 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
   const normalizedStatus = normalizeLoanApplicationStatus(application.status)
   const terminal = isTerminalStatus(normalizedStatus)
-  const hasPreview = Boolean(application.computedPreviewSnapshot || application.previewSnapshot)
+  const preview = application.computedPreviewSnapshot ?? application.previewSnapshot ?? null
+  const hasPreview = Boolean(preview)
+  const proposedMonthlyPayment = calculateApplicationPreviewMonthlyPayment(preview)
   const canReview = normalizedStatus === 'submitted' || normalizedStatus === 'under_review'
   const canEdit = editableStatuses.includes(normalizedStatus)
   const reviewDisabled = terminal || !hasPreview || !canReview || Boolean(savingStatus) || isEditing
@@ -282,6 +286,12 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         ) : null}
       </Card>
 
+      <LoanApplicationRiskMeter
+        currency={application.loanProduct?.currency}
+        monthlyIncome={application.borrower?.income}
+        proposedMonthlyPayment={proposedMonthlyPayment}
+      />
+
       <Dialog
         id="loan-application-edit-dialog"
         title="Edit loan application"
@@ -309,7 +319,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
       <ApplicationBreakdownPreview
         borrowerName={getApplicantName(application)}
-        preview={application.computedPreviewSnapshot ?? application.previewSnapshot ?? null}
+        preview={preview}
       />
     </div>
   )
