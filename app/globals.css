@@ -595,15 +595,18 @@ h4 {
 
 .data-card__titleLink {
   font-family: var(--font-heading), sans-serif;
-  color: #1d4ed8;
+  color: var(--text);
   text-decoration: none;
-  transition: color 160ms ease;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 160ms ease, color 160ms ease;
 }
 
 .data-card__titleLink:hover,
 .data-card__titleLink:focus-visible {
-  color: #1e40af;
+  color: var(--text);
   text-decoration: underline;
+  text-decoration-color: rgba(146, 75, 16, 0.34);
 }
 
 .data-card__aside {

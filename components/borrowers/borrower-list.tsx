@@ -174,7 +174,7 @@ export function BorrowerList() {
                     onKeyDown={(event) => handleRowKeyDown(event, borrower.id)}
                   >
                     <td>
-                      <span className="data-card__titleLink">{getBorrowerName(borrower)}</span>
+                      <span className="data-card__title">{getBorrowerName(borrower)}</span>
                       <div className="muted micro-copy">{borrower.borrowerNumber}</div>
                     </td>
 
