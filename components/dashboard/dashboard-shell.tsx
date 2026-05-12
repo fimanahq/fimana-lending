@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AppLogo } from '@/components/shared/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { classNames } from '@/utils/class-names'
+import { dashboardClass } from './dashboard-styles'
 import {
   Bell,
   Calculator,
@@ -249,26 +250,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   return (
     <div
       className={classNames(
-        'dashboard-shell',
-        isSidebarOpen && 'dashboard-shell--sidebar-open',
-        isNavCollapsed && 'dashboard-shell--nav-collapsed',
+        dashboardClass('dashboard-shell'),
+        isSidebarOpen && dashboardClass('dashboard-shell--sidebar-open'),
+        isNavCollapsed && dashboardClass('dashboard-shell--nav-collapsed'),
       )}
     >
       <div
-        className="dashboard-shell__backdrop"
+        className={dashboardClass('dashboard-shell__backdrop')}
         role="presentation"
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      <aside className="dashboard-shell__sidebar" aria-label="Application navigation">
-        <div className="dashboard-shell__sidebarHeader">
-          <div className="dashboard-shell__sidebarBrandGroup">
-            <Link href="/dashboard" className="dashboard-shell__sidebarBrand" aria-label="FiMana Lending dashboard home">
+      <aside className={dashboardClass('dashboard-shell__sidebar')} aria-label="Application navigation">
+        <div className={dashboardClass('dashboard-shell__sidebarHeader')}>
+          <div className={dashboardClass('dashboard-shell__sidebarBrandGroup')}>
+            <Link href="/dashboard" className={dashboardClass('dashboard-shell__sidebarBrand')} aria-label="FiMana Lending dashboard home">
               <AppLogo suffix="Lending" />
             </Link>
 
             <button
-              className="dashboard-shell__sidebarToggle"
+              className={dashboardClass('dashboard-shell__sidebarToggle')}
               type="button"
               aria-label={isNavCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               aria-pressed={!isNavCollapsed}
@@ -279,9 +280,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          <div className="dashboard-shell__sidebarControls">
+          <div className={dashboardClass('dashboard-shell__sidebarControls')}>
             <button
-              className="dashboard-shell__sidebarClose"
+              className={dashboardClass('dashboard-shell__sidebarClose')}
               type="button"
               aria-label="Close navigation"
               onClick={() => setIsSidebarOpen(false)}
@@ -291,29 +292,29 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="dashboard-shell__nav" aria-label="Primary">
+        <nav className={dashboardClass('dashboard-shell__nav')} aria-label="Primary">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={classNames('dashboard-shell__navLink', isRouteActive(pathname, item) && 'is-active')}
+              className={dashboardClass('dashboard-shell__navLink', isRouteActive(pathname, item) && 'active')}
               aria-current={isRouteActive(pathname, item) ? 'page' : undefined}
               title={item.label}
             >
-              <span className="dashboard-shell__navIcon">
+              <span className={dashboardClass('dashboard-shell__navIcon')}>
                 <DashboardIcon name={item.icon} />
               </span>
-              <span className="dashboard-shell__navLabel">{item.label}</span>
+              <span className={dashboardClass('dashboard-shell__navLabel')}>{item.label}</span>
             </Link>
           ))}
         </nav>
       </aside>
 
-      <div className="dashboard-shell__workspace">
-        <header className="dashboard-shell__topbar">
-          <div className="dashboard-shell__pageHeading">
+      <div className={dashboardClass('dashboard-shell__workspace')}>
+        <header className={dashboardClass('dashboard-shell__topbar')}>
+          <div className={dashboardClass('dashboard-shell__pageHeading')}>
             <button
-              className="dashboard-shell__menuButton"
+              className={dashboardClass('dashboard-shell__menuButton')}
               type="button"
               aria-label="Open navigation"
               aria-expanded={isSidebarOpen}
@@ -322,39 +323,39 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <DashboardIcon name="menu" />
             </button>
 
-            <div className="dashboard-shell__headingCopy">
-              <h1 className="dashboard-shell__pageTitle">{pageTitle}</h1>
+            <div className={dashboardClass('dashboard-shell__headingCopy')}>
+              <h1 className={dashboardClass('dashboard-shell__pageTitle')}>{pageTitle}</h1>
             </div>
-            <div className="dashboard-shell__actions">
-              <button className="dashboard-shell__notificationButton" type="button" aria-label="Notifications placeholder">
+            <div className={dashboardClass('dashboard-shell__actions')}>
+              <button className={dashboardClass('dashboard-shell__notificationButton')} type="button" aria-label="Notifications placeholder">
                 <DashboardIcon name="bell" />
                 <span>0</span>
               </button>
 
-              <div className="dashboard-shell__accountMenu" ref={accountMenuRef}>
+              <div className={dashboardClass('dashboard-shell__accountMenu')} ref={accountMenuRef}>
                 <button
-                  className="dashboard-shell__accountButton"
+                  className={dashboardClass('dashboard-shell__accountButton')}
                   type="button"
                   aria-label={`${fullName} account menu`}
                   aria-expanded={isAccountMenuOpen}
                   aria-haspopup="menu"
                   onClick={() => setIsAccountMenuOpen((current) => !current)}
                 >
-                  <span className="dashboard-shell__accountAvatar">{initials}</span>
+                  <span className={dashboardClass('dashboard-shell__accountAvatar')}>{initials}</span>
                 </button>
 
                 {isAccountMenuOpen ? (
-                  <div className="dashboard-shell__accountDropdown" role="menu" aria-label="Account menu">
-                    <div className="dashboard-shell__accountDropdownHeader">
-                      <span className="dashboard-shell__accountAvatar">{initials}</span>
-                      <span className="dashboard-shell__accountCopy">
+                  <div className={dashboardClass('dashboard-shell__accountDropdown')} role="menu" aria-label="Account menu">
+                    <div className={dashboardClass('dashboard-shell__accountDropdownHeader')}>
+                      <span className={dashboardClass('dashboard-shell__accountAvatar')}>{initials}</span>
+                      <span className={dashboardClass('dashboard-shell__accountCopy')}>
                         <span>{fullName}</span>
                         <span>{user?.email || 'User menu'}</span>
                       </span>
                     </div>
 
                     <button
-                      className="dashboard-shell__logout dashboard-shell__logout--dropdown"
+                      className={dashboardClass('dashboard-shell__logout', 'dashboard-shell__logout--dropdown')}
                       type="button"
                       role="menuitem"
                       onClick={handleLogout}
@@ -369,13 +370,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="dashboard-shell__main">
-          <div className="dashboard-shell__content">{children}</div>
+        <main className={dashboardClass('dashboard-shell__main')}>
+          <div className={dashboardClass('dashboard-shell__content')}>{children}</div>
         </main>
 
-        <footer className="dashboard-shell__footer">
+        <footer className={dashboardClass('dashboard-shell__footer')}>
           <span>&copy; {new Date().getFullYear()} FiMana Lending. All rights reserved.</span>
-          <div className="dashboard-shell__footerLinks">
+          <div className={dashboardClass('dashboard-shell__footerLinks')}>
             <Link href="/">Internal Privacy Policy</Link>
           </div>
         </footer>

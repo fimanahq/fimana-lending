@@ -1,3 +1,6 @@
+import { classNames } from '@/utils/class-names'
+import { dashboardClass } from '@/components/dashboard/dashboard-styles'
+
 function SkeletonLines({ count = 3 }: { count?: number }) {
   return (
     <div className="ui-skeleton" aria-hidden="true">
@@ -10,43 +13,44 @@ function SkeletonLines({ count = 3 }: { count?: number }) {
 
 export default function DashboardLoading() {
   return (
-    <div className="dashboard-overview dashboard-overview--loading stack" aria-busy="true" aria-live="polite">
-      <section className="dashboard-overview__executive">
-        <section className="dashboard-overview__kpiGrid dashboard-overview__kpiGrid--six">
+    <div className={classNames('stack', dashboardClass('dashboard-overview', 'dashboard-overview--loading'))} aria-busy="true" aria-live="polite">
+      <section className={dashboardClass('dashboard-overview__executive')}>
+        <section className={dashboardClass('dashboard-overview__kpiGrid', 'dashboard-overview__kpiGrid--six')}>
           {Array.from({ length: 6 }).map((_, index) => (
             <article
               key={index}
-              className={`dashboard-overview__statCard ${
+              className={dashboardClass(
+                'dashboard-overview__statCard',
                 index === 1
                   ? 'dashboard-overview__statCard--sage'
                   : index === 2
                     ? 'dashboard-overview__statCard--ink'
-                    : 'dashboard-overview__statCard--plain'
-              }`}
+                    : 'dashboard-overview__statCard--plain',
+              )}
             >
               <SkeletonLines />
             </article>
           ))}
         </section>
 
-        <section className="dashboard-overview__contentGrid">
-          <div className="dashboard-overview__mainColumn">
-            <article className="dashboard-overview__progressCard">
+        <section className={dashboardClass('dashboard-overview__contentGrid')}>
+          <div className={dashboardClass('dashboard-overview__mainColumn')}>
+            <article className={dashboardClass('dashboard-overview__progressCard')}>
               <SkeletonLines count={5} />
             </article>
-            <article className="dashboard-overview__progressCard">
+            <article className={dashboardClass('dashboard-overview__progressCard')}>
               <SkeletonLines count={5} />
             </article>
-            <article className="dashboard-overview__tableCard">
+            <article className={dashboardClass('dashboard-overview__tableCard')}>
               <SkeletonLines count={6} />
             </article>
           </div>
 
-          <aside className="dashboard-overview__sideColumn">
-            <article className="dashboard-overview__progressCard">
+          <aside className={dashboardClass('dashboard-overview__sideColumn')}>
+            <article className={dashboardClass('dashboard-overview__progressCard')}>
               <SkeletonLines count={4} />
             </article>
-            <article className="dashboard-overview__progressCard">
+            <article className={dashboardClass('dashboard-overview__progressCard')}>
               <SkeletonLines count={4} />
             </article>
           </aside>

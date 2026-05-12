@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Button, Dialog } from '@/components/shared'
+import { Dialog } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { DashboardCutoffReceivable } from '@/lib/types'
 import { ViewIcon } from '../shared/table-icons'
+import { dashboardClass } from './dashboard-styles'
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)
@@ -23,19 +24,6 @@ function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
   return 'Upcoming'
 }
 
-function getReceivablePriority(status: DashboardCutoffReceivable['status']) {
-  switch (status) {
-    case 'current':
-      return 0
-    case 'upcoming':
-      return 1
-    case 'overdue':
-      return 2
-    default:
-      return 3
-  }
-}
-
 function MiniMetric({
   label,
   value,
@@ -46,10 +34,10 @@ function MiniMetric({
   meta: string
 }) {
   return (
-    <article className="dashboard-overview__miniCard">
-      <span className="dashboard-overview__statLabel">{label}</span>
-      <strong className="dashboard-overview__miniValue">{value}</strong>
-      <span className="dashboard-overview__miniMeta">{meta}</span>
+    <article className={dashboardClass('dashboard-overview__miniCard')}>
+      <span className={dashboardClass('dashboard-overview__statLabel')}>{label}</span>
+      <strong className={dashboardClass('dashboard-overview__miniValue')}>{value}</strong>
+      <span className={dashboardClass('dashboard-overview__miniMeta')}>{meta}</span>
     </article>
   )
 }
@@ -83,8 +71,8 @@ export function DashboardCutoffReceivables({
     : null
 
   return (
-    <section className="dashboard-overview__operator">
-      <div className="dashboard-overview__operatorHeader">
+    <section className={dashboardClass('dashboard-overview__operator')}>
+      <div className={dashboardClass('dashboard-overview__operatorHeader')}>
         <div>
           <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
           <p className="muted">
@@ -100,7 +88,7 @@ export function DashboardCutoffReceivables({
       </div>
 
       {currentCutoffReceivable ? (
-        <section className="dashboard-overview__miniGrid dashboard-overview__miniGrid--five">
+        <section className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--five')}>
           <MiniMetric
             label="Due this cutoff"
             value={formatMinorCurrency(
@@ -147,8 +135,8 @@ export function DashboardCutoffReceivables({
           />
         </section>
       ) : (
-        <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-          <span className="dashboard-overview__emptyIcon dashboard-overview__emptyIcon--text">
+        <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+          <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>
             +
           </span>
           <div>
@@ -160,57 +148,57 @@ export function DashboardCutoffReceivables({
         </div>
       )}
 
-      <div className="dashboard-overview__tableCard">
+      <div className={dashboardClass('dashboard-overview__tableCard')}>
         {visibleReceivables.length > 0 ? (
-          <div className="dashboard-overview__tableScroll">
-            <table className="dashboard-overview__table">
+          <div className={dashboardClass('dashboard-overview__tableScroll')}>
+            <table className={dashboardClass('dashboard-overview__table')}>
               <thead>
                 <tr>
                   <th>Cutoff date</th>
-                  <th className="dashboard-overview__tableAmount">
+                  <th className={dashboardClass('dashboard-overview__tableAmount')}>
                     Principal due
                   </th>
-                  <th className="dashboard-overview__tableAmount">
+                  <th className={dashboardClass('dashboard-overview__tableAmount')}>
                     Interest due
                   </th>
-                  <th className="dashboard-overview__tableAmount">
+                  <th className={dashboardClass('dashboard-overview__tableAmount')}>
                     Total receivable
                   </th>
-                  <th className="dashboard-overview__tableAmount">Collected</th>
-                  <th className="dashboard-overview__tableAmount">Remaining</th>
+                  <th className={dashboardClass('dashboard-overview__tableAmount')}>Collected</th>
+                  <th className={dashboardClass('dashboard-overview__tableAmount')}>Remaining</th>
                   <th>Borrowers due</th>
                   <th>Loans due</th>
-                  <th className="dashboard-overview__tableStatus">Status</th>
-                  <th className="dashboard-overview__tableActions">Actions</th>
+                  <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
+                  <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleReceivables.map((entry) => (
                   <tr key={entry.cutoffDate}>
                     <td>{formatDate(entry.cutoffDate)}</td>
-                    <td className="dashboard-overview__tableAmount">
+                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
                       {formatMinorCurrency(entry.principalDueMinor, currency)}
                     </td>
-                    <td className="dashboard-overview__tableAmount">
+                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
                       {formatMinorCurrency(entry.interestDueMinor, currency)}
                     </td>
-                    <td className="dashboard-overview__tableAmount">
+                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
                       {formatMinorCurrency(
                         entry.totalReceivableMinor,
                         currency,
                       )}
                     </td>
-                    <td className="dashboard-overview__tableAmount">
+                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
                       {formatMinorCurrency(entry.totalCollectedMinor, currency)}
                     </td>
-                    <td className="dashboard-overview__tableAmount">
+                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
                       {formatMinorCurrency(entry.remainingMinor, currency)}
                     </td>
                     <td>{entry.borrowerCount.toLocaleString("en-PH")}</td>
                     <td>{entry.loanCount.toLocaleString("en-PH")}</td>
-                    <td className="dashboard-overview__tableStatus">
+                    <td className={dashboardClass('dashboard-overview__tableStatus')}>
                       <span
-                        className={`dashboard-overview__statusBadge dashboard-overview__statusBadge--${entry.status}`}
+                        className={dashboardClass('dashboard-overview__statusBadge', `dashboard-overview__statusBadge--${entry.status}`)}
                       >
                         {getReceivableStatusLabel(entry.status)}
                       </span>
@@ -230,8 +218,8 @@ export function DashboardCutoffReceivables({
             </table>
           </div>
         ) : (
-          <div className="dashboard-overview__emptyState">
-            <span className="dashboard-overview__emptyIcon dashboard-overview__emptyIcon--text">
+          <div className={dashboardClass('dashboard-overview__emptyState')}>
+            <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>
               +
             </span>
             <div>
@@ -259,11 +247,11 @@ export function DashboardCutoffReceivables({
             : undefined
         }
         onClose={() => setSelectedCutoffDate(null)}
-        className="dashboard-overview__cutoffDialog"
+        className={dashboardClass('dashboard-overview__cutoffDialog')}
       >
         {selectedCutoff ? (
-          <div className="dashboard-overview__cutoffDialogContent">
-            <div className="dashboard-overview__cutoffDialogSummary">
+          <div className={dashboardClass('dashboard-overview__cutoffDialogContent')}>
+            <div className={dashboardClass('dashboard-overview__cutoffDialogSummary')}>
               <MiniMetric
                 label="Principal due"
                 value={formatMinorCurrency(
@@ -306,25 +294,25 @@ export function DashboardCutoffReceivables({
               />
             </div>
 
-            <div className="dashboard-overview__cutoffDialogTableWrap">
-              <table className="dashboard-overview__table dashboard-overview__table--compact">
+            <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap')}>
+              <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
                 <thead>
                   <tr>
                     <th>Borrower</th>
                     <th>Loan</th>
-                    <th className="dashboard-overview__tableAmount">
+                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Principal due
                     </th>
-                    <th className="dashboard-overview__tableAmount">
+                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Interest due
                     </th>
-                    <th className="dashboard-overview__tableAmount">
+                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Total receivable
                     </th>
-                    <th className="dashboard-overview__tableAmount">
+                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Collected
                     </th>
-                    <th className="dashboard-overview__tableAmount">
+                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Remaining
                     </th>
                   </tr>
@@ -333,7 +321,7 @@ export function DashboardCutoffReceivables({
                   {selectedCutoff.loans.map((loan) => (
                     <tr key={loan.loanId}>
                       <td>
-                        <div className="dashboard-overview__loanCell">
+                        <div className={dashboardClass('dashboard-overview__loanCell')}>
                           <Link
                             href={`/loans/${loan.loanId}`}
                             className="data-card__titleLink"
@@ -355,25 +343,25 @@ export function DashboardCutoffReceivables({
                           {loan.loanNumber}
                         </Link>
                       </td>
-                      <td className="dashboard-overview__tableAmount">
+                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
                         {formatMinorCurrency(loan.principalDueMinor, currency)}
                       </td>
-                      <td className="dashboard-overview__tableAmount">
+                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
                         {formatMinorCurrency(loan.interestDueMinor, currency)}
                       </td>
-                      <td className="dashboard-overview__tableAmount">
+                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
                         {formatMinorCurrency(
                           loan.totalReceivableMinor,
                           currency,
                         )}
                       </td>
-                      <td className="dashboard-overview__tableAmount">
+                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
                         {formatMinorCurrency(
                           loan.totalCollectedMinor,
                           currency,
                         )}
                       </td>
-                      <td className="dashboard-overview__tableAmount">
+                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
                         {formatMinorCurrency(loan.remainingMinor, currency)}
                       </td>
                     </tr>

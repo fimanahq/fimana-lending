@@ -3,6 +3,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { formatCurrency } from '@/lib/format'
 import type { DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
+import { dashboardClass } from './dashboard-styles'
 
 const tooltipContentStyle = {
   border: '1px solid rgba(97, 84, 62, 0.14)',
@@ -59,8 +60,8 @@ export function DashboardPortfolioChart({
     .join('. ')
 
   return (
-    <figure className="dashboard-overview__progressChartPanel" aria-label={ariaLabel}>
-      <div className="dashboard-overview__progressChartCanvas">
+    <figure className={dashboardClass('dashboard-overview__progressChartPanel')} aria-label={ariaLabel}>
+      <div className={dashboardClass('dashboard-overview__progressChartCanvas')}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -93,14 +94,14 @@ export function DashboardPortfolioChart({
           </PieChart>
         </ResponsiveContainer>
 
-        <div className="dashboard-overview__progressChartCenter" aria-hidden="true">
-          <span className="dashboard-overview__progressChartKicker">{centerKicker}</span>
+        <div className={dashboardClass('dashboard-overview__progressChartCenter')} aria-hidden="true">
+          <span className={dashboardClass('dashboard-overview__progressChartKicker')}>{centerKicker}</span>
           <strong>{formatCurrency(centerValueMinor / 100, currency)}</strong>
           <span>{centerSubvalue}</span>
         </div>
       </div>
 
-      <figcaption className="dashboard-overview__progressCaption">
+      <figcaption className={dashboardClass('dashboard-overview__progressCaption')}>
         {caption}
       </figcaption>
     </figure>

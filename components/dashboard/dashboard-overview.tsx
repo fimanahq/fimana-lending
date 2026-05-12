@@ -4,12 +4,14 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
+import { classNames } from '@/utils/class-names'
+import { dashboardClass } from './dashboard-styles'
 
 const DashboardPortfolioChart = dynamic(
   () => import('@/components/dashboard/dashboard-portfolio-chart').then((module) => module.DashboardPortfolioChart),
   {
     loading: () => (
-      <div className="dashboard-overview__progressChartPanel dashboard-overview__deferredBlock">
+      <div className={dashboardClass('dashboard-overview__progressChartPanel', 'dashboard-overview__deferredBlock')}>
         <div className="ui-skeleton" aria-hidden="true">
           <span className="ui-skeleton__line" />
           <span className="ui-skeleton__line" />
@@ -24,8 +26,8 @@ const DashboardCutoffReceivables = dynamic(
   () => import('@/components/dashboard/dashboard-cutoff-receivables').then((module) => module.DashboardCutoffReceivables),
   {
     loading: () => (
-      <section className="dashboard-overview__operator">
-        <div className="dashboard-overview__tableCard dashboard-overview__deferredBlock">
+      <section className={dashboardClass('dashboard-overview__operator')}>
+        <div className={dashboardClass('dashboard-overview__tableCard', 'dashboard-overview__deferredBlock')}>
           <div className="ui-skeleton" aria-hidden="true">
             <span className="ui-skeleton__line" />
             <span className="ui-skeleton__line" />
@@ -80,20 +82,20 @@ function ProgressLegend({
   segments: DashboardProgressSegment[]
 }) {
   return (
-    <div className="dashboard-overview__progressLegend">
+    <div className={dashboardClass('dashboard-overview__progressLegend')}>
       {segments.map((segment) => (
         <article
           key={segment.key}
-          className={`dashboard-overview__progressLegendItem dashboard-overview__progressLegendItem--${segment.tone}`}
+          className={dashboardClass('dashboard-overview__progressLegendItem', `dashboard-overview__progressLegendItem--${segment.tone}`)}
         >
-          <div className="dashboard-overview__progressLegendTop">
-            <span className="dashboard-overview__progressLegendLabel">
-              <span className="dashboard-overview__progressLegendSwatch" />
+          <div className={dashboardClass('dashboard-overview__progressLegendTop')}>
+            <span className={dashboardClass('dashboard-overview__progressLegendLabel')}>
+              <span className={dashboardClass('dashboard-overview__progressLegendSwatch')} />
               {segment.label}
             </span>
             <strong>{formatPercentage(segment.percentage)}</strong>
           </div>
-          <div className="dashboard-overview__progressLegendValue">{formatMinorCurrency(segment.valueMinor, currency)}</div>
+          <div className={dashboardClass('dashboard-overview__progressLegendValue')}>{formatMinorCurrency(segment.valueMinor, currency)}</div>
           <p>{segment.description}</p>
         </article>
       ))}
@@ -232,10 +234,10 @@ function MiniMetric({
   meta: string
 }) {
   return (
-    <article className="dashboard-overview__miniCard">
-      <span className="dashboard-overview__statLabel">{label}</span>
-      <strong className="dashboard-overview__miniValue">{value}</strong>
-      <span className="dashboard-overview__miniMeta">{meta}</span>
+    <article className={dashboardClass('dashboard-overview__miniCard')}>
+      <span className={dashboardClass('dashboard-overview__statLabel')}>{label}</span>
+      <strong className={dashboardClass('dashboard-overview__miniValue')}>{value}</strong>
+      <span className={dashboardClass('dashboard-overview__miniMeta')}>{meta}</span>
     </article>
   )
 }
@@ -253,117 +255,117 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const dashboardCurrency = summary.currency
 
   return (
-    <div className="dashboard-overview stack">
-      <section className="dashboard-overview__executive">
-        {partialFailureNotice ? <div className="notice dashboard-overview__notice">{partialFailureNotice}</div> : null}
+    <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
+      <section className={dashboardClass('dashboard-overview__executive')}>
+        {partialFailureNotice ? <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>{partialFailureNotice}</div> : null}
 
-        <section className="dashboard-overview__kpiGrid dashboard-overview__kpiGrid--six">
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--plain">
-            <span className="dashboard-overview__statLabel">Current capital basis</span>
-            <strong className="dashboard-overview__statValue">
+        <section className={dashboardClass('dashboard-overview__kpiGrid', 'dashboard-overview__kpiGrid--six')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--plain')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Current capital basis</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">Starting capital + collected interest</span>
-            <span className="dashboard-overview__statSubvalue">
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + collected interest</span>
+            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital basis
             </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="money" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--sage">
-            <span className="dashboard-overview__statLabel">Cash on hand</span>
-            <strong className="dashboard-overview__statValue">
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--sage')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Cash on hand</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">Available to lend again</span>
-            <span className="dashboard-overview__statSubvalue">
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Available to lend again</span>
+            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               Current capital basis less principal still deployed
             </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="shield" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--ink">
-            <span className="dashboard-overview__statLabel">Money with borrowers</span>
-            <strong className="dashboard-overview__statValue">
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--ink')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Money with borrowers</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta dashboard-overview__statMeta--contrast">
+            <span className={dashboardClass('dashboard-overview__statMeta', 'dashboard-overview__statMeta--contrast')}>
               Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}
             </span>
-            <span className="dashboard-overview__statSubvalue dashboard-overview__statSubvalue--contrast">
+            <span className={dashboardClass('dashboard-overview__statSubvalue', 'dashboard-overview__statSubvalue--contrast')}>
               {summary.pendingReviewCount > 0
                 ? `${summary.pendingReviewCount} pending review${summary.pendingReviewCount === 1 ? '' : 's'} still in the queue`
                 : 'No pending reviews in the intake queue'}
             </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="applications" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
-            <span className="dashboard-overview__statLabel">Next cutoff receivable</span>
-            <strong className="dashboard-overview__statValue">
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Next cutoff receivable</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.nextCutoffReceivableMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">Expected collection on the nearest cutoff date</span>
-            <span className="dashboard-overview__statSubvalue">
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Expected collection on the nearest cutoff date</span>
+            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.currentCutoffReceivable ? formatDate(summary.currentCutoffReceivable.cutoffDate) : 'No upcoming cutoff'}
             </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="trend" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--plain">
-            <span className="dashboard-overview__statLabel">Overdue receivable</span>
-            <strong className="dashboard-overview__statValue">
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--plain')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Overdue receivable</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">Past due unpaid schedules</span>
-            <span className="dashboard-overview__statSubvalue">
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Past due unpaid schedules</span>
+            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No overdue schedules right now'}
             </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="alert" />
             </div>
           </article>
 
-          <article className="dashboard-overview__statCard dashboard-overview__statCard--tinted">
-            <span className="dashboard-overview__statLabel">Projected total net worth</span>
-            <strong className="dashboard-overview__statValue">
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Projected total net worth</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor + summary.remainingProjectedInterestMinor, dashboardCurrency)}
             </strong>
-            <span className="dashboard-overview__statMeta">Current capital basis plus projected unpaid interest</span>
-            <span className="dashboard-overview__statSubvalue">
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Current capital basis plus projected unpaid interest</span>
+            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               Assumes active-loan interest is fully collected
             </span>
-            <div className="dashboard-overview__statArtwork" aria-hidden="true">
+            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="note" />
             </div>
           </article>
         </section>
 
-        <article className="dashboard-overview__progressCard">
-          <div className="dashboard-overview__progressHeader">
+        <article className={dashboardClass('dashboard-overview__progressCard')}>
+          <div className={dashboardClass('dashboard-overview__progressHeader')}>
             <div>
-              <span className="dashboard-overview__statLabel">Active Loans</span>
+              <span className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</span>
               <h2>Portfolio mix across active loans</h2>
               <p>
                 Track active principal deployment together with realized and incoming interest to see what is already earned and what is still expected.
               </p>
             </div>
-            <div className="dashboard-overview__progressSummary">
-              <span className="dashboard-overview__progressSummaryLabel">Total active receivable</span>
+            <div className={dashboardClass('dashboard-overview__progressSummary')}>
+              <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total active receivable</span>
               <strong>{formatMinorCurrency(summary.moneyWithBorrowersMinor + summary.remainingProjectedInterestMinor, dashboardCurrency)}</strong>
               <span>{summary.activeLoanCount === 1 ? '1 active loan' : `${summary.activeLoanCount.toLocaleString('en-PH')} active loans`}</span>
             </div>
           </div>
 
-          <div className="dashboard-overview__progressBody">
+          <div className={dashboardClass('dashboard-overview__progressBody')}>
             {summary.moneyWithBorrowersMinor > 0
               || summary.activeCollectedInterestMinor > 0
               || summary.remainingProjectedInterestMinor > 0 ? (
@@ -380,8 +382,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 segments={activeLoanBalanceSegments}
               />
             ) : (
-              <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-                <span className="dashboard-overview__emptyIcon">
+              <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+                <span className={dashboardClass('dashboard-overview__emptyIcon')}>
                   <OverviewGlyph name="applications" />
                 </span>
                 <div>
@@ -391,7 +393,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               </div>
             )}
 
-            <div className="dashboard-overview__miniGrid dashboard-overview__miniGrid--three">
+            <div className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--three')}>
               <MiniMetric
                 label="Capital in active loans"
                 value={formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
@@ -412,23 +414,23 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         </article>
 
         <div className="grid two">
-          <article className="dashboard-overview__progressCard">
-            <div className="dashboard-overview__progressHeader">
+          <article className={dashboardClass('dashboard-overview__progressCard')}>
+            <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div>
-                <span className="dashboard-overview__statLabel">Current Capital Position</span>
+                <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
                 <h2>Where the current capital sits now</h2>
                 <p>
                   The capital basis uses starting capital plus collected interest, then splits that basis into cash on hand and money still out with borrowers.
                 </p>
               </div>
-              <div className="dashboard-overview__progressSummary">
-                <span className="dashboard-overview__progressSummaryLabel">Current capital basis</span>
+              <div className={dashboardClass('dashboard-overview__progressSummary')}>
+                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Current capital basis</span>
                 <strong>{formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}</strong>
                 <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected interest already added back</span>
               </div>
             </div>
 
-            <div className="dashboard-overview__progressBody">
+            <div className={dashboardClass('dashboard-overview__progressBody')}>
               {summary.currentCapitalBasisMinor > 0 || summary.moneyWithBorrowersMinor > 0 ? (
                 <DashboardPortfolioChart
                   caption="This view only uses cash on hand and money with borrowers. Remaining projected interest stays in profit outlook until it is actually collected."
@@ -439,8 +441,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                   segments={capitalPositionSegments}
                 />
               ) : (
-                <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-                  <span className="dashboard-overview__emptyIcon">
+                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
                     <OverviewGlyph name="trend" />
                   </span>
                   <div>
@@ -460,23 +462,23 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
           </article>
 
-          <article className="dashboard-overview__progressCard">
-            <div className="dashboard-overview__progressHeader">
+          <article className={dashboardClass('dashboard-overview__progressCard')}>
+            <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div>
-                <span className="dashboard-overview__statLabel">Interest Outlook</span>
+                <span className={dashboardClass('dashboard-overview__statLabel')}>Interest Outlook</span>
                 <h2>Collected versus projected interest</h2>
                 <p>
                   Realized interest is already in the business. Remaining projected interest is expected future profit from active schedules and is not current cash.
                 </p>
               </div>
-              <div className="dashboard-overview__progressSummary">
-                <span className="dashboard-overview__progressSummaryLabel">Total collected + projected interest</span>
+              <div className={dashboardClass('dashboard-overview__progressSummary')}>
+                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total collected + projected interest</span>
                 <strong>{formatMinorCurrency(summary.totalProjectedInterestMinor, dashboardCurrency)}</strong>
                 <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far</span>
               </div>
             </div>
 
-            <div className="dashboard-overview__progressBody">
+            <div className={dashboardClass('dashboard-overview__progressBody')}>
               {summary.totalProjectedInterestMinor > 0 ? (
                 <DashboardPortfolioChart
                   caption="This chart is interest-only. It compares collected interest with remaining projected interest and does not treat projected interest as cash on hand."
@@ -487,8 +489,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                   segments={interestOutlookSegments}
                 />
               ) : (
-                <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-                  <span className="dashboard-overview__emptyIcon">
+                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
                     <OverviewGlyph name="note" />
                   </span>
                   <div>
@@ -510,17 +512,17 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         />
 
         <section className="grid two">
-          <article className="dashboard-overview__progressCard">
-            <div className="dashboard-overview__progressHeader">
+          <article className={dashboardClass('dashboard-overview__progressCard')}>
+            <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div>
-                <span className="dashboard-overview__statLabel">Collection Risk</span>
+                <span className={dashboardClass('dashboard-overview__statLabel')}>Collection Risk</span>
                 <h2>What needs collection attention</h2>
                 <p>
                   Track the overdue receivable, split between overdue principal and overdue interest, then watch how many borrowers and loans are already late.
                 </p>
               </div>
             </div>
-            <div className="dashboard-overview__miniGrid">
+            <div className={dashboardClass('dashboard-overview__miniGrid')}>
               <MiniMetric
                 label="Overdue receivable"
                 value={formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
@@ -549,25 +551,25 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
           </article>
 
-          <article className="dashboard-overview__progressCard">
-            <div className="dashboard-overview__progressHeader">
+          <article className={dashboardClass('dashboard-overview__progressCard')}>
+            <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div>
-                <span className="dashboard-overview__statLabel">Day-to-day actions</span>
+                <span className={dashboardClass('dashboard-overview__statLabel')}>Day-to-day actions</span>
                 <h2>Origination and workspace shortcuts</h2>
                 <p>Keep loan intake moving and jump straight into the core lending workflows.</p>
               </div>
             </div>
-            <section className="dashboard-overview__actionsRow">
-              <Link href="/loan-applications/new" className="dashboard-overview__actionCard">
-                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--amber">
+            <section className={dashboardClass('dashboard-overview__actionsRow')}>
+              <Link href="/loan-applications/new" className={dashboardClass('dashboard-overview__actionCard')}>
+                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--amber')}>
                   <OverviewGlyph name="plus" />
                 </span>
                 <h2>Create a new application</h2>
                 <p>Start the origination flow from application intake through approval and disbursement.</p>
               </Link>
 
-              <Link href="/loan-applications" className="dashboard-overview__actionCard">
-                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
+              <Link href="/loan-applications" className={dashboardClass('dashboard-overview__actionCard')}>
+                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--green')}>
                   <OverviewGlyph name="applications" />
                 </span>
                 <h2>Review applications</h2>
@@ -578,16 +580,16 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 </p>
               </Link>
 
-              <Link href="/rules" className="dashboard-overview__actionCard">
-                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--olive">
+              <Link href="/rules" className={dashboardClass('dashboard-overview__actionCard')}>
+                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--olive')}>
                   <OverviewGlyph name="rules" />
                 </span>
                 <h2>Adjust rules</h2>
                 <p>Refine underwriting parameters and lending guardrails without leaving the operating workspace.</p>
               </Link>
 
-              <Link href="/calculator" className="dashboard-overview__actionCard">
-                <span className="dashboard-overview__actionIcon dashboard-overview__actionIcon--green">
+              <Link href="/calculator" className={dashboardClass('dashboard-overview__actionCard')}>
+                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--green')}>
                   <OverviewGlyph name="calculator" />
                 </span>
                 <h2>Open lending calculator</h2>
@@ -598,8 +600,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         </section>
       </section>
 
-      <section className="dashboard-overview__operator">
-        <div className="dashboard-overview__operatorHeader">
+      <section className={dashboardClass('dashboard-overview__operator')}>
+        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
           <div>
             <h2 className="section-title title-offset">Recent applications and due-soon work</h2>
             <p className="muted">
@@ -608,45 +610,45 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </div>
         </div>
 
-        <section className="dashboard-overview__contentGrid">
-          <div className="dashboard-overview__mainColumn">
-            <div className="dashboard-overview__sectionHead">
+        <section className={dashboardClass('dashboard-overview__contentGrid')}>
+          <div className={dashboardClass('dashboard-overview__mainColumn')}>
+            <div className={dashboardClass('dashboard-overview__sectionHead')}>
               <h2>Recent Applications</h2>
               <Link href="/loan-applications">View all history</Link>
             </div>
 
-            <div className="dashboard-overview__tableCard">
+            <div className={dashboardClass('dashboard-overview__tableCard')}>
               {recentApplications.length > 0 ? (
-                <table className="dashboard-overview__table">
+                <table className={dashboardClass('dashboard-overview__table')}>
                   <thead>
                     <tr>
                       <th>Client Name</th>
                       <th>Schedule</th>
-                      <th className="dashboard-overview__tableAmount">Amount</th>
-                      <th className="dashboard-overview__tableStatus">Status</th>
+                      <th className={dashboardClass('dashboard-overview__tableAmount')}>Amount</th>
+                      <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentApplications.map((application) => (
                       <tr key={application.id}>
                         <td>
-                          <Link href={getApplicationHref(application)} className="dashboard-overview__clientCell">
-                            <span className="dashboard-overview__avatar">
+                          <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__clientCell')}>
+                            <span className={dashboardClass('dashboard-overview__avatar')}>
                               {getNameInitials(getApplicationName(application))}
                             </span>
-                            <span className="dashboard-overview__clientName">
+                            <span className={dashboardClass('dashboard-overview__clientName')}>
                               {getApplicationName(application)}
                             </span>
                           </Link>
                         </td>
                         <td>{getApplicationPlan(application)}</td>
-                        <td className="dashboard-overview__tableAmount">
+                        <td className={dashboardClass('dashboard-overview__tableAmount')}>
                           {formatCurrency(
                             (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
                             application.loanProduct?.currency,
                           ).replace('.00', '')}
                         </td>
-                        <td className="dashboard-overview__tableStatus">
+                        <td className={dashboardClass('dashboard-overview__tableStatus')}>
                           <span className={getStatusClassName(application.status)}>
                             {formatLoanApplicationStatus(application.status)}
                           </span>
@@ -656,8 +658,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                   </tbody>
                 </table>
               ) : (
-                <div className="dashboard-overview__emptyState">
-                  <span className="dashboard-overview__emptyIcon">
+                <div className={dashboardClass('dashboard-overview__emptyState')}>
+                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
                     <OverviewGlyph name="note" />
                   </span>
                   <div>
@@ -669,36 +671,36 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
           </div>
 
-          <aside className="dashboard-overview__sideColumn">
-            <div className="dashboard-overview__sectionHead">
+          <aside className={dashboardClass('dashboard-overview__sideColumn')}>
+            <div className={dashboardClass('dashboard-overview__sectionHead')}>
               <h2>Tasks Due Soon</h2>
             </div>
 
-            <div className="dashboard-overview__taskStack">
+            <div className={dashboardClass('dashboard-overview__taskStack')}>
               {dueSoon.length > 0 ? (
                 dueSoon.map((reminder, index) => (
                   <Link
                     key={`${reminder.loanId}-${reminder.installmentSequence}`}
                     href={`/loans/${reminder.loanId}`}
-                    className={`dashboard-overview__taskCard dashboard-overview__taskCard--${getReminderTone(index)}`}
+                    className={dashboardClass('dashboard-overview__taskCard', `dashboard-overview__taskCard--${getReminderTone(index)}`)}
                   >
-                    <span className="dashboard-overview__taskIcon">
+                    <span className={dashboardClass('dashboard-overview__taskIcon')}>
                       <OverviewGlyph name={index === 0 ? 'shield' : index === 1 ? 'note' : 'alert'} />
                     </span>
-                    <div className="dashboard-overview__taskBody">
+                    <div className={dashboardClass('dashboard-overview__taskBody')}>
                       <h3>
                         {reminder.borrower?.fullName || 'Borrower'} installment #{reminder.installmentSequence}
                       </h3>
                       <p>Due {formatDate(reminder.scheduledAt)} on the active collection schedule.</p>
-                      <span className={`dashboard-overview__taskPill dashboard-overview__taskPill--${getReminderTone(index)}`}>
+                      <span className={dashboardClass('dashboard-overview__taskPill', `dashboard-overview__taskPill--${getReminderTone(index)}`)}>
                         {index === 0 ? 'High priority' : index === 1 ? 'Recurring' : 'Follow up'}
                       </span>
                     </div>
                   </Link>
                 ))
               ) : (
-                <div className="dashboard-overview__emptyState dashboard-overview__emptyState--compact">
-                  <span className="dashboard-overview__emptyIcon">
+                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
                     <OverviewGlyph name="shield" />
                   </span>
                   <div>
