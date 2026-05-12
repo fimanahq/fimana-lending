@@ -15,10 +15,10 @@ type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submit
 const PAGE_SIZE = 20
 
 const STATUS_FILTERS: Array<{ label: string; value: LoanApplicationQueueFilter }> = [
+  { label: 'All', value: 'all' },
   { label: 'Submitted', value: 'submitted' },
   { label: 'Approved', value: 'approved' },
   { label: 'Rejected', value: 'rejected' },
-  { label: 'All', value: 'all' },
 ]
 
 function getApplicantName(application: LoanApplication) {
@@ -36,7 +36,7 @@ function getApplicationSchedule(application: LoanApplication) {
 export function LoanApplicationList() {
   const router = useRouter()
   const [applications, setApplications] = useState<LoanApplication[]>([])
-  const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('submitted')
+  const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('all')
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [page, setPage] = useState(1)
