@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
@@ -33,6 +34,7 @@ function getApplicationSchedule(application: LoanApplication) {
 }
 
 export function LoanApplicationList() {
+  const router = useRouter()
   const [applications, setApplications] = useState<LoanApplication[]>([])
   const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('submitted')
   const [query, setQuery] = useState('')
@@ -77,6 +79,17 @@ export function LoanApplicationList() {
   useEffect(() => {
     void loadApplications()
   }, [loadApplications])
+
+  const openApplication = (applicationId: string) => {
+    router.push(`/loan-applications/${applicationId}`)
+  }
+
+  const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, applicationId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openApplication(applicationId)
+    }
+  }
 
   return (
     <div className="stack">
@@ -151,9 +164,21 @@ export function LoanApplicationList() {
               </thead>
               <tbody>
                 {applications.map((application) => (
-                  <tr key={application.id}>
+                  <tr
+                    key={application.id}
+                    className="table-row-link"
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open application for ${getApplicantName(application)}`}
+                    onClick={() => openApplication(application.id)}
+                    onKeyDown={(event) => handleRowKeyDown(event, application.id)}
+                  >
                     <td>
-                      <Link className="data-card__titleLink" href={`/loan-applications/${application.id}`}>
+                      <Link
+                        className="data-card__titleLink"
+                        href={application.borrower?.id ? `/borrowers/${application.borrower.id}` : `/loan-applications/${application.id}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         {getApplicantName(application)}
                       </Link>
                       <div className="muted micro-copy">
@@ -180,6 +205,7 @@ export function LoanApplicationList() {
                         className="button-ghost table-action-icon"
                         aria-label={`View application details for ${getApplicantName(application)}`}
                         title="View details"
+                        onClick={(event) => event.stopPropagation()}
                       >
                         <ViewIcon />
                       </Link>

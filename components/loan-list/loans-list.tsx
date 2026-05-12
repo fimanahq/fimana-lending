@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell } from '@/components/shared'
 
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
@@ -36,6 +37,7 @@ function formatLoanSchedule(loan: LoanRecord) {
 }
 
 export function LoansList() {
+  const router = useRouter()
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [activeFilter, setActiveFilter] = useState<LoanListFilter>('active')
   const [query, setQuery] = useState('')
@@ -108,6 +110,17 @@ export function LoansList() {
 
   const selectedPaymentLoan = loans.find((loan) => loan.id === paymentLoanId) || null
 
+  const openLoan = (loanId: string) => {
+    router.push(`/loans/${loanId}`)
+  }
+
+  const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, loanId: string) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openLoan(loanId)
+    }
+  }
+
   return (
     <div className="stack">
       <div className="card panel borrower-list__toolbar">
@@ -178,9 +191,21 @@ export function LoansList() {
               </thead>
               <tbody>
                 {loans.map((loan) => (
-                  <tr key={loan.id}>
+                  <tr
+                    key={loan.id}
+                    className="table-row-link"
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open loan ${loan.loanNumber} for ${loan.borrower.displayName}`}
+                    onClick={() => openLoan(loan.id)}
+                    onKeyDown={(event) => handleRowKeyDown(event, loan.id)}
+                  >
                     <td>
-                      <Link className="data-card__titleLink" href={`/loans/${loan.id}`}>
+                      <Link
+                        className="data-card__titleLink"
+                        href={`/borrowers/${loan.borrower.id}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         {loan.borrower.displayName}
                       </Link>
                       <div className="muted micro-copy">{loan.borrower.borrowerNumber}</div>
@@ -205,6 +230,7 @@ export function LoansList() {
                           className="button-ghost table-action-icon loans-list__iconAction"
                           aria-label={`View details for ${loan.loanNumber}`}
                           title="View details"
+                          onClick={(event) => event.stopPropagation()}
                         >
                           <ViewIcon />
                         </Link>
@@ -214,7 +240,10 @@ export function LoansList() {
                           className="button-ghost table-action-icon loans-list__iconAction"
                           aria-label={`Post payment for ${loan.loanNumber}`}
                           title="Post payment"
-                          onClick={() => setPaymentLoanId(loan.id)}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setPaymentLoanId(loan.id)
+                          }}
                         >
                           <PaymentIcon />
                         </button>
@@ -224,7 +253,10 @@ export function LoansList() {
                           className="button-ghost table-action-icon loans-list__iconAction"
                           aria-label={`Delete ${loan.loanNumber}`}
                           title="Delete loan"
-                          onClick={() => setDeleteLoanId(loan.id)}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setDeleteLoanId(loan.id)
+                          }}
                         >
                           <DeleteIcon />
                         </button>
