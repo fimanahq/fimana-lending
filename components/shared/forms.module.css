@@ -1,0 +1,53 @@
+.fieldHint,
+.fieldError {
+  margin: -0.1rem 0 0;
+  font-family: 'Manrope', var(--font-body), serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.fieldHint {
+  color: var(--muted);
+}
+
+.fieldError {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.checkbox {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+}
+
+.checkbox input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.15rem;
+  accent-color: var(--accent-strong);
+}
+
+.checkbox input:focus-visible {
+  outline: 2px solid rgba(146, 75, 16, 0.28);
+  outline-offset: 3px;
+}
+
+.checkbox label {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--text);
+  cursor: pointer;
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 700;
+}
+
+.checkbox small {
+  color: var(--muted);
+  font-family: 'Manrope', var(--font-body), serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+

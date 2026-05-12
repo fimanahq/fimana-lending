@@ -150,6 +150,8 @@ HelperUtil
 - Avoid inline styles unless dynamic.
 - Prefer reusable style classes.
 - Maintain spacing consistency.
+- Keep `app/globals.css` as an import manifest. Add global CSS only for tokens, base element rules, app-wide layout helpers, and shared primitives.
+- Prefer colocated CSS Modules for component-owned styles. See `docs/styling.md`.
 
 ---
 

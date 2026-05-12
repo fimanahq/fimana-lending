@@ -6,6 +6,7 @@ import type {
   TextareaHTMLAttributes,
 } from 'react'
 import { classNames } from '@/utils/class-names'
+import styles from './forms.module.css'
 
 type FieldLabelProps =
   | {
@@ -88,8 +89,8 @@ function getDescribedBy(id: string | undefined, hint?: string, error?: string) {
 function FieldMessages({ error, hint, id }: { error?: string; hint?: string; id?: string }) {
   return (
     <>
-      {hint && id ? <p id={`${id}-hint`} className="ui-field__hint">{hint}</p> : null}
-      {error && id ? <p id={`${id}-error`} className="ui-field__error">{error}</p> : null}
+      {hint && id ? <p id={`${id}-hint`} className={styles.fieldHint}>{hint}</p> : null}
+      {error && id ? <p id={`${id}-error`} className={styles.fieldError}>{error}</p> : null}
     </>
   )
 }
@@ -121,7 +122,7 @@ export function Input({
   ...props
 }: InputProps) {
   return (
-    <div className={classNames('field ui-field', className)}>
+    <div className={classNames('field', className)}>
       {label ? <label htmlFor={id}>{label}</label> : null}
       <input
         id={id}
@@ -146,7 +147,7 @@ export function Select({
   ...props
 }: SelectProps) {
   return (
-    <div className={classNames('field ui-field', className)}>
+    <div className={classNames('field', className)}>
       {label ? <label htmlFor={id}>{label}</label> : null}
       <select
         id={id}
@@ -173,7 +174,7 @@ export function Textarea({
   ...props
 }: TextareaProps) {
   return (
-    <div className={classNames('field ui-field', className)}>
+    <div className={classNames('field', className)}>
       {label ? <label htmlFor={id}>{label}</label> : null}
       <textarea
         id={id}
@@ -198,7 +199,7 @@ export function Checkbox({
   ...props
 }: CheckboxProps) {
   return (
-    <div className={classNames('ui-checkbox', className)}>
+    <div className={classNames(styles.checkbox, className)}>
       <input
         id={id}
         type="checkbox"
@@ -209,8 +210,8 @@ export function Checkbox({
       <label htmlFor={id}>
         <span>{label}</span>
         {description ? <small id={`${id}-details`}>{description}</small> : null}
-        {error && !description ? <small id={`${id}-details`} className="ui-field__error">{error}</small> : null}
-        {error && description ? <small className="ui-field__error">{error}</small> : null}
+        {error && !description ? <small id={`${id}-details`} className={styles.fieldError}>{error}</small> : null}
+        {error && description ? <small className={styles.fieldError}>{error}</small> : null}
       </label>
     </div>
   )

@@ -1,0 +1,32 @@
+:root {
+  --font-heading: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-body: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --page-width: 1180px;
+  --bg: #f8f1e2;
+  --bg-strong: #eadbb6;
+  --bg-deep: #d9c393;
+  --surface: rgba(255, 251, 241, 0.8);
+  --surface-strong: rgba(255, 248, 235, 0.94);
+  --surface-muted: rgba(255, 255, 255, 0.56);
+  --surface-inverse: rgba(30, 49, 48, 0.9);
+  --text: #1f2618;
+  --text-soft: #312d24;
+  --muted: #655f52;
+  --muted-strong: #4e473a;
+  --line: rgba(61, 54, 41, 0.12);
+  --line-strong: rgba(97, 84, 62, 0.2);
+  --accent: #d98345;
+  --accent-strong: #924b10;
+  --accent-soft: rgba(217, 131, 69, 0.14);
+  --accent-contrast: #fffdf8;
+  --accent-gradient: linear-gradient(135deg, #924b10 0%, #d98345 100%);
+  --hero-gradient: linear-gradient(150deg, rgba(33, 75, 69, 0.97) 0%, rgba(21, 47, 49, 0.96) 55%, rgba(217, 131, 69, 0.86) 100%);
+  --success: #24624f;
+  --danger: #8f3326;
+  --shadow-sm: 0 10px 26px rgba(84, 63, 27, 0.08);
+  --shadow: 0 22px 60px rgba(84, 63, 27, 0.12);
+  --shadow-lg: 0 30px 80px rgba(84, 63, 27, 0.18);
+  --radius-card: 1.5rem;
+  --radius-panel: 2rem;
+  --radius-control: 1.125rem;
+}

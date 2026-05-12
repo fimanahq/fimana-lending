@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { classNames } from '@/utils/class-names'
+import styles from './tabs.module.css'
 
 export interface TabItem {
   content: React.ReactNode
@@ -38,8 +39,8 @@ export function Tabs({
   }
 
   return (
-    <div className={classNames('ui-tabs', className)}>
-      <div className="ui-tabs__list" role="tablist" aria-label={label}>
+    <div className={classNames(styles.tabs, className)}>
+      <div className={styles.list} role="tablist" aria-label={label}>
         {items.map((item) => {
           const isSelected = item.value === selectedItem?.value
           const tabId = `tab-${item.value}`
@@ -49,7 +50,7 @@ export function Tabs({
             <button
               key={item.value}
               id={tabId}
-              className={classNames('ui-tabs__tab', isSelected && 'is-active')}
+              className={classNames(styles.tab, isSelected && styles.active)}
               type="button"
               role="tab"
               aria-controls={panelId}
@@ -66,7 +67,7 @@ export function Tabs({
       {selectedItem ? (
         <div
           id={`tab-panel-${selectedItem.value}`}
-          className="ui-tabs__panel"
+          className={styles.panel}
           role="tabpanel"
           aria-labelledby={`tab-${selectedItem.value}`}
         >

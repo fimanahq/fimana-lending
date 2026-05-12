@@ -3,6 +3,8 @@
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/react'
 import { useEffect, useMemo, useState } from 'react'
 import { classNames } from '@/utils/class-names'
+import formStyles from './forms.module.css'
+import styles from './searchable-select.module.css'
 
 export interface SearchableSelectOption {
   label: string
@@ -38,8 +40,8 @@ function getDescribedBy(id: string, hint?: string, error?: string) {
 function FieldMessages({ error, hint, id }: { error?: string; hint?: string; id: string }) {
   return (
     <>
-      {hint ? <p id={`${id}-hint`} className="ui-field__hint">{hint}</p> : null}
-      {error ? <p id={`${id}-error`} className="ui-field__error">{error}</p> : null}
+      {hint ? <p id={`${id}-hint`} className={formStyles.fieldHint}>{hint}</p> : null}
+      {error ? <p id={`${id}-error`} className={formStyles.fieldError}>{error}</p> : null}
     </>
   )
 }
@@ -92,7 +94,7 @@ export function SearchableSelect({
   }, [onQueryChange, query, searchable])
 
   return (
-    <div className={classNames('field ui-field', className)}>
+    <div className={classNames('field', className)}>
       <label htmlFor={id}>{label}</label>
       <Combobox
         value={selectedOption}
@@ -103,12 +105,12 @@ export function SearchableSelect({
           setQuery('')
         }}
       >
-        <div className="ui-searchable-select">
+        <div className={styles.root}>
           <ComboboxInput
             id={id}
             aria-describedby={describedBy}
             aria-invalid={error ? true : undefined}
-            className="ui-searchable-select__input"
+            className={styles.input}
             displayValue={(option: SearchableSelectOption | null) => option?.label ?? ''}
             readOnly={!searchable}
             onChange={(event) => {
@@ -118,34 +120,34 @@ export function SearchableSelect({
             }}
             placeholder={placeholder}
           />
-          <ComboboxButton className="ui-searchable-select__button" aria-label={`Toggle ${label}`}>
+          <ComboboxButton className={styles.button} aria-label={`Toggle ${label}`}>
             <span aria-hidden="true">▾</span>
           </ComboboxButton>
-          <ComboboxOptions className="ui-searchable-select__options">
+          <ComboboxOptions className={styles.options}>
             {loading ? (
-              <li className="ui-searchable-select__empty">Loading options...</li>
+              <li className={styles.empty}>Loading options...</li>
             ) : null}
             {!loading && filteredOptions.length === 0 ? (
-              <li className="ui-searchable-select__empty">{emptyMessage}</li>
+              <li className={styles.empty}>{emptyMessage}</li>
             ) : null}
             {!loading ? filteredOptions.map((option) => (
               <ComboboxOption
                 key={option.value}
                 value={option}
-                className={({ active }) => classNames('ui-searchable-select__option', active && 'is-active')}
+                className={({ active }) => classNames(styles.option, active && styles.active)}
               >
                 {({ selected }) => (
-                  <span className={classNames('ui-searchable-select__optionLabel', selected && 'is-selected')}>
+                  <span className={classNames(styles.optionLabel, selected && styles.selected)}>
                     {option.label}
                   </span>
                 )}
               </ComboboxOption>
             )) : null}
             {!loading && shouldShowAction ? (
-              <li className="ui-searchable-select__actionWrap">
+              <li className={styles.actionWrap}>
                 <button
                   type="button"
-                  className="ui-searchable-select__action"
+                  className={styles.action}
                   onClick={() => {
                     setQuery('')
                     onAction?.()

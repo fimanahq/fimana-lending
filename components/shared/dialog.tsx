@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { Button } from '@/components/shared/forms'
 import { classNames } from '@/utils/class-names'
+import styles from './dialog.module.css'
 
 export interface DialogProps {
   children?: ReactNode
@@ -48,16 +49,16 @@ export function Dialog({
   const descriptionId = `${id}-description`
 
   return (
-    <div className="ui-dialog" role="presentation">
-      <button className="ui-dialog__backdrop" type="button" aria-label={closeLabel} onClick={onClose} />
+    <div className={styles.dialog} role="presentation">
+      <button className={styles.backdrop} type="button" aria-label={closeLabel} onClick={onClose} />
       <section
-        className={classNames('ui-dialog__panel', className)}
+        className={classNames(styles.panel, className)}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
       >
-        <header className="ui-dialog__header">
+        <header className={styles.header}>
           <div>
             <h2 id={titleId} className="section-title">{title}</h2>
             {description ? <p id={descriptionId} className="muted">{description}</p> : null}
@@ -65,7 +66,7 @@ export function Dialog({
           <Button
             variant="ghost"
             size="sm"
-            className="ui-dialog__closeButton"
+            className={styles.closeButton}
             onClick={onClose}
             aria-label={closeLabel}
           >
@@ -73,9 +74,9 @@ export function Dialog({
           </Button>
         </header>
 
-        {children ? <div className="ui-dialog__body">{children}</div> : null}
+        {children ? <div className={styles.body}>{children}</div> : null}
 
-        {actions ? <footer className="ui-dialog__footer">{actions}</footer> : null}
+        {actions ? <footer className={styles.footer}>{actions}</footer> : null}
       </section>
     </div>
   )
