@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/shared/forms'
 import { classNames } from '@/utils/class-names'
 
@@ -61,7 +62,15 @@ export function Dialog({
             <h2 id={titleId} className="section-title">{title}</h2>
             {description ? <p id={descriptionId} className="muted">{description}</p> : null}
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label={closeLabel}>Close</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ui-dialog__closeButton"
+            onClick={onClose}
+            aria-label={closeLabel}
+          >
+            <X aria-hidden="true" />
+          </Button>
         </header>
 
         {children ? <div className="ui-dialog__body">{children}</div> : null}
