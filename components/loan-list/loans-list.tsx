@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell } from '@/components/shared'
-
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
@@ -13,6 +12,7 @@ import type { LoanRecord, LoanStatus } from '@/lib/types'
 import { deleteLoan, listLoanRecords } from '@/services'
 import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'
+import styles from './loan-list.module.css'
 
 type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement'
 
@@ -226,10 +226,10 @@ export function LoansList() {
                       </span>
                     </td>
                     <td>
-                      <div className="loan-schedule__actions">
+                      <div className={styles.actions}>
                         <Link
                           href={`/loans/${loan.id}`}
-                          className="button-ghost table-action-icon loans-list__iconAction"
+                          className={classNames('button-ghost table-action-icon', styles.iconAction)}
                           aria-label={`View details for ${loan.loanNumber}`}
                           title="View details"
                           onClick={(event) => event.stopPropagation()}
@@ -239,7 +239,7 @@ export function LoansList() {
 
                         <button
                           type="button"
-                          className="button-ghost table-action-icon loans-list__iconAction"
+                          className={classNames('button-ghost table-action-icon', styles.iconAction)}
                           aria-label={`Post payment for ${loan.loanNumber}`}
                           title="Post payment"
                           onClick={(event) => {
@@ -252,7 +252,7 @@ export function LoansList() {
 
                         <button
                           type="button"
-                          className="button-ghost table-action-icon loans-list__iconAction"
+                          className={classNames('button-ghost table-action-icon', styles.iconAction, styles.deleteButton)}
                           aria-label={`Delete ${loan.loanNumber}`}
                           title="Delete loan"
                           onClick={(event) => {

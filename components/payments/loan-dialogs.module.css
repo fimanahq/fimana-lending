@@ -1,0 +1,14 @@
+.dialog {
+  width: min(75rem, calc(100vw - 2rem));
+}
+
+.formCard {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.formActions {
+  justify-content: flex-start;
+}

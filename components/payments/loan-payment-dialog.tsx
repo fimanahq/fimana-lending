@@ -11,6 +11,7 @@ import type {
   LoanRecord,
 } from '@/lib/types'
 import { getLoanPaymentDetail, postLoanPayment } from '@/services'
+import styles from './loan-dialogs.module.css'
 
 const paymentMethodOptions: Array<{ value: LoanPaymentMethod; label: string }> = [
   { value: 'cash', label: 'Cash' },
@@ -237,8 +238,8 @@ export function LoanPaymentDialog({
       id="loan-payment-dialog"
       open={open}
       onClose={onClose}
-      title='Post Payment'
-      className="loan-payment-dialog"
+      title={loanLabel ? `Post Payment - ${loanLabel}` : 'Post Payment'}
+      className={styles.dialog}
     >
       <div className="stack">
         {loading ? (
@@ -266,7 +267,7 @@ export function LoanPaymentDialog({
 
             <Card
               variant="flat"
-              className="loan-payment-form-card"
+              className={styles.formCard}
             >
               {submitError ? <ErrorBanner title="Unable to post payment" message={submitError} /> : null}
 
@@ -304,7 +305,7 @@ export function LoanPaymentDialog({
                 />
               </div>
 
-              <div className="ui-card__actions" style={{ justifyContent: 'flex-start' }}>
+              <div className={`ui-card__actions ${styles.formActions}`}>
                 <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostPayment}>
                   {submitting ? 'Posting…' : 'Post payment'}
                 </Button>

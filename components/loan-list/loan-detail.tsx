@@ -30,6 +30,7 @@ import {
   updateLoanAdjustment,
   updateLoanPayment,
 } from '@/services/payments'
+import styles from './loan-list.module.css'
 
 interface LoanDetailProps {
   loanId: string
@@ -485,7 +486,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                     <td>{formatMinorCurrency(payment.amountMinor, currency)}</td>
                     <td><span className={getPaymentStatusClassName(payment.status)}>{payment.status}</span></td>
                     <td>
-                      <div className="loan-schedule__actions">
+                      <div className={styles.actions}>
                         <button
                           type="button"
                           className="button-ghost table-action-icon"
@@ -547,7 +548,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                     <td>{formatMinorCurrency(adjustment.amountMinor, currency)}</td>
                     <td><span className={getAdjustmentStatusClassName(adjustment.status)}>{adjustment.status}</span></td>
                     <td>
-                      <div className="loan-schedule__actions">
+                      <div className={styles.actions}>
                         <button
                           type="button"
                           className="button-ghost table-action-icon"

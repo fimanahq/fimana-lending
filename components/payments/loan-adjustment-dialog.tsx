@@ -5,6 +5,7 @@ import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, Loadin
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { LoanAdjustmentDetail, LoanAdjustmentRecord, LoanRecord } from '@/lib/types'
 import { getLoanAdjustmentDetail, postLoanAdjustment } from '@/services'
+import styles from './loan-dialogs.module.css'
 
 function formatMinorCurrency(value: number, currency: string) {
   return formatCurrency(value / 100, currency)
@@ -184,7 +185,7 @@ export function LoanAdjustmentDialog({
       open={open}
       onClose={onClose}
       title="Loan Adjustment"
-      className="loan-payment-dialog"
+      className={styles.dialog}
     >
       <div className="stack">
         {loading ? (
@@ -229,7 +230,7 @@ export function LoanAdjustmentDialog({
               </div>
             </Card>
 
-            <Card variant="flat" className="loan-payment-form-card">
+            <Card variant="flat" className={styles.formCard}>
               {submitError ? <ErrorBanner title="Unable to post adjustment" message={submitError} /> : null}
 
               <div className="notice">
@@ -267,7 +268,7 @@ export function LoanAdjustmentDialog({
                 />
               </div>
 
-              <div className="ui-card__actions" style={{ justifyContent: 'flex-start' }}>
+              <div className={`ui-card__actions ${styles.formActions}`}>
                 <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostAdjustment}>
                   {submitting ? 'Posting…' : canPostAdjustment ? 'Post loan adjustment' : 'No outstanding balance'}
                 </Button>

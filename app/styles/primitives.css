@@ -20,13 +20,6 @@
   box-shadow: none;
 }
 
-.loan-payment-form-card {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
 .section-title,
 .display-title,
 h1,
@@ -133,6 +126,40 @@ h4 {
 .ui-button--danger:hover {
   background: rgba(143, 51, 38, 0.12);
 }
+
+.table-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.table-action-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.table-copy-button {
+  width: 2rem;
+  min-width: 2rem;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.table-copy-button.is-success {
+  border-color: rgba(36, 98, 79, 0.18);
+  background: rgba(36, 98, 79, 0.12);
+  color: var(--success);
+}
+
+.table-copy-button.is-error {
+  border-color: rgba(143, 51, 38, 0.18);
+  background: rgba(143, 51, 38, 0.1);
+  color: var(--danger);
+}
+
 .field {
   display: grid;
   gap: 0.5rem;
