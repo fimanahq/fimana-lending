@@ -62,8 +62,8 @@ export function createLoanApplication(input: CreateLoanApplicationInput) {
   })
 }
 
-export function createPublicLoanApplication(input: ValidatedLoanApplicationInput) {
-  return apiRequest<LoanApplication>('/api/loan-applications', {
+export function createPublicLoanApplication(slug: string, input: ValidatedLoanApplicationInput) {
+  return apiRequest<LoanApplication>(`/api/request-loan/${encodeURIComponent(slug)}`, {
     method: 'POST',
     body: JSON.stringify(input),
   })

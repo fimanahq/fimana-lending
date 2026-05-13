@@ -66,7 +66,11 @@ function parseOptionalNumber(value: string) {
   return trimmed.length > 0 ? Number(trimmed) : null
 }
 
-export function LoanApplicationIntakeForm() {
+interface LoanApplicationIntakeFormProps {
+  publicLoanRequestSlug: string
+}
+
+export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplicationIntakeFormProps) {
   const [form, setForm] = useState(() => buildInitialForm())
   const [touchedFields, setTouchedFields] = useState({
     firstName: false,
@@ -164,7 +168,7 @@ export function LoanApplicationIntakeForm() {
         secondDay: BORROWER_REQUEST_SECOND_DAY,
       })
 
-      const created = await createPublicLoanApplication(validated)
+      const created = await createPublicLoanApplication(publicLoanRequestSlug, validated)
 
       setSuccess(created)
       setForm(buildInitialForm())

@@ -1,8 +1,6 @@
-import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
+import Link from 'next/link'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
-
-const editorialImageUrl = '/images/request-loan-minimal-office.png'
 
 export default function RequestLoanPage() {
   return (
@@ -19,35 +17,24 @@ export default function RequestLoanPage() {
             <div className="request-homepage__eyebrow">Loan application</div>
 
             <h1 className="request-homepage__title">
-              Complete Your <span>Loan Application.</span>
+              Use Your Lender's <span>Request Link.</span>
             </h1>
 
             <p className="request-homepage__lede">
-              Apply online and complete your loan application in a few simple steps.
+              Public applications now use lender-specific links so your submission reaches the right lending workspace.
             </p>
-
-            <div className="request-homepage__imageCard">
-              <img
-                src={editorialImageUrl}
-                alt="Luxury minimalist office interior with warm wooden accents and soft sunlight."
-                className="request-homepage__image"
-              />
-
-              <div className="request-homepage__statusCard">
-                <div className="request-homepage__statusIcon" aria-hidden="true">
-                  <span />
-                  <span />
-                </div>
-                <div>
-                  <strong>Secure Loan Application</strong>
-                </div>
-              </div>
-            </div>
           </section>
 
           <section className="request-homepage__formColumn">
             <div className="request-homepage__formCard">
-              <LoanApplicationIntakeForm />
+              <div className="stack">
+                <div className="notice">
+                  Ask your lender for their public request link.
+                </div>
+                <Link href="/" className="button-secondary">
+                  Back to home
+                </Link>
+              </div>
             </div>
           </section>
         </div>

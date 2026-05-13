@@ -8,6 +8,7 @@ import { getSettings, updateSettings } from '@/services'
 interface SettingsFormState {
   defaultCurrency: SettingsCurrency
   startingCapital: string
+  publicLoanRequestSlug: string
 }
 
 type SettingsFormErrors = Partial<Record<keyof SettingsFormState, string>>
@@ -16,6 +17,7 @@ function buildFormState(settings: Settings): SettingsFormState {
   return {
     defaultCurrency: settings.defaultCurrency,
     startingCapital: settings.startingCapital.toString(),
+    publicLoanRequestSlug: settings.publicLoanRequestSlug ?? '',
   }
 }
 
@@ -42,6 +44,7 @@ function parseStartingCapital(value: string) {
 function validateForm(form: SettingsFormState): SettingsFormErrors {
   const nextErrors: SettingsFormErrors = {}
   const startingCapitalResult = parseStartingCapital(form.startingCapital)
+  const slug = form.publicLoanRequestSlug.trim()
 
   if (startingCapitalResult.error) {
     nextErrors.startingCapital = startingCapitalResult.error
@@ -49,6 +52,10 @@ function validateForm(form: SettingsFormState): SettingsFormErrors {
 
   if (!settingsCurrencyValues.includes(form.defaultCurrency)) {
     nextErrors.defaultCurrency = 'Choose a supported workspace currency.'
+  }
+
+  if (slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    nextErrors.publicLoanRequestSlug = 'Use lowercase letters, numbers, and single hyphens.'
   }
 
   return nextErrors
@@ -138,9 +145,16 @@ export function WorkspaceSettingsForm() {
 
   const parsedStartingCapital = parseStartingCapital(form.startingCapital)
   const initialForm = buildFormState(settings)
+  const publicRequestPath = form.publicLoanRequestSlug.trim()
+    ? `/request-loan/${form.publicLoanRequestSlug.trim()}`
+    : ''
+  const publicRequestUrl = publicRequestPath && typeof window !== 'undefined'
+    ? `${window.location.origin}${publicRequestPath}`
+    : publicRequestPath
   const hasChanges =
     form.defaultCurrency !== initialForm.defaultCurrency
     || form.startingCapital !== initialForm.startingCapital
+    || form.publicLoanRequestSlug !== initialForm.publicLoanRequestSlug
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -159,6 +173,7 @@ export function WorkspaceSettingsForm() {
       const nextSettings = await updateSettings({
         defaultCurrency: form.defaultCurrency,
         startingCapital: parsedStartingCapital.value ?? settings.startingCapital,
+        publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
       })
 
       setSettings(nextSettings)
@@ -205,6 +220,22 @@ export function WorkspaceSettingsForm() {
               onChange={(event) => updateField('startingCapital', event.target.value)}
               required
             />
+
+            <Input
+              id="workspace-public-request-slug"
+              label="Public request link"
+              value={form.publicLoanRequestSlug}
+              error={errors.publicLoanRequestSlug}
+              hint="Use lowercase letters, numbers, and hyphens. Borrowers apply through this lender-specific link."
+              onChange={(event) => updateField('publicLoanRequestSlug', event.target.value.trim().toLowerCase())}
+            />
+
+            {publicRequestUrl ? (
+              <div className="data-card">
+                <div className="subsection-title">Request URL</div>
+                <div className="muted">{publicRequestUrl}</div>
+              </div>
+            ) : null}
 
             <div className="inline-actions">
               <Button type="submit" disabled={saving || !hasChanges}>

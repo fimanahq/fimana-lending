@@ -4,6 +4,7 @@ import type { Settings, SettingsCurrency } from '@/lib/types'
 export interface UpdateSettingsInput {
   defaultCurrency?: SettingsCurrency
   startingCapital?: number
+  publicLoanRequestSlug?: string | null
 }
 
 export function getSettings() {
