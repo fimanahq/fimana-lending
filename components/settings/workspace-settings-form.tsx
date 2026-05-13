@@ -72,6 +72,7 @@ export function WorkspaceSettingsForm() {
   const [submitError, setSubmitError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
+  const [origin, setOrigin] = useState('')
   const [requestUrlCopyStatus, setRequestUrlCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const currencyOptions = settingsCurrencyValues.map((currency) => ({
     label: currency,
@@ -116,6 +117,10 @@ export function WorkspaceSettingsForm() {
   }, [reloadToken])
 
   useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+
+  useEffect(() => {
     if (requestUrlCopyStatus === 'idle') {
       return
     }
@@ -130,8 +135,8 @@ export function WorkspaceSettingsForm() {
   const publicRequestPath = form?.publicLoanRequestSlug.trim()
     ? `/request-loan/${form.publicLoanRequestSlug.trim()}`
     : ''
-  const publicRequestUrl = publicRequestPath && typeof window !== 'undefined'
-    ? `${window.location.origin}${publicRequestPath}`
+  const publicRequestUrl = publicRequestPath && origin
+    ? `${origin}${publicRequestPath}`
     : publicRequestPath
 
   useEffect(() => {
@@ -231,97 +236,80 @@ export function WorkspaceSettingsForm() {
 
   return (
     <PageContainer className="stack">
-      <div className="grid two">
-        <CardWrapper title="Capital baseline">
-          <form className="stack" onSubmit={handleSubmit} noValidate>
-            {submitError ? (
-              <ErrorBanner title="Settings were not saved" message={submitError} />
-            ) : null}
-            {saveMessage ? <div className="notice">{saveMessage}</div> : null}
+      <form className="stack" onSubmit={handleSubmit} noValidate>
+        {submitError ? (
+          <ErrorBanner title="Settings were not saved" message={submitError} />
+        ) : null}
+        {saveMessage ? <div className="notice">{saveMessage}</div> : null}
 
-            <SearchableSelect
-              id="workspace-default-currency"
-              label="Default currency"
-              options={currencyOptions}
-              value={form.defaultCurrency}
-              error={errors.defaultCurrency}
-              hint="Used to format dashboard totals and lending amounts by default."
-              onChange={(nextValue) => updateField('defaultCurrency', nextValue as SettingsCurrency)}
-            />
+        <div className="grid two">
+          <CardWrapper title="Capital baseline">
+            <div className="stack">
+              <SearchableSelect
+                id="workspace-default-currency"
+                label="Default currency"
+                options={currencyOptions}
+                value={form.defaultCurrency}
+                error={errors.defaultCurrency}
+                hint="Used to format dashboard totals and lending amounts by default."
+                onChange={(nextValue) => updateField('defaultCurrency', nextValue as SettingsCurrency)}
+              />
 
-            <Input
-              id="workspace-starting-capital"
-              label="Starting capital"
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.startingCapital}
-              error={errors.startingCapital}
-              hint="This is the original capital pool before any collected interest is added back."
-              inputClassName="input-no-spinner"
-              onChange={(event) => updateField('startingCapital', event.target.value)}
-              required
-            />
+              <Input
+                id="workspace-starting-capital"
+                label="Starting capital"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.startingCapital}
+                error={errors.startingCapital}
+                hint="This is the original capital pool before any collected interest is added back."
+                inputClassName="input-no-spinner"
+                onChange={(event) => updateField('startingCapital', event.target.value)}
+                required
+              />
+            </div>
+          </CardWrapper>
 
-            <Input
-              id="workspace-public-request-slug"
-              label="Public request link"
-              value={form.publicLoanRequestSlug}
-              error={errors.publicLoanRequestSlug}
-              hint="Use lowercase letters, numbers, and hyphens. Borrowers apply through this lender-specific link."
-              onChange={(event) => updateField('publicLoanRequestSlug', event.target.value.trim().toLowerCase())}
-            />
+          <CardWrapper title="Request link">
+            <div className="stack">
+              <Input
+                id="workspace-public-request-slug"
+                label="Public request link"
+                value={form.publicLoanRequestSlug}
+                error={errors.publicLoanRequestSlug}
+                hint="Use lowercase letters, numbers, and hyphens. Borrowers apply through this lender-specific link."
+                onChange={(event) => updateField('publicLoanRequestSlug', event.target.value.trim().toLowerCase())}
+              />
 
-            {publicRequestUrl ? (
-              <div className="data-card">
-                <div className="request-url-card__header">
-                  <div className="subsection-title">Request URL</div>
-                  <button
-                    type="button"
-                    className={`button-ghost table-action-icon table-copy-button${requestUrlCopyStatus === 'success' ? ' is-success' : ''}${requestUrlCopyStatus === 'error' ? ' is-error' : ''}`}
-                    aria-label={requestUrlCopyLabel}
-                    title={requestUrlCopyLabel}
-                    onClick={() => void handleCopyRequestUrl()}
-                  >
-                    {requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
-                  </button>
+              {publicRequestPath ? (
+                <div className="data-card">
+                  <div className="request-url-card__header">
+                    <div className="subsection-title">Request URL</div>
+                    <button
+                      type="button"
+                      className={`button-ghost table-action-icon table-copy-button${requestUrlCopyStatus === 'success' ? ' is-success' : ''}${requestUrlCopyStatus === 'error' ? ' is-error' : ''}`}
+                      aria-label={requestUrlCopyLabel}
+                      title={requestUrlCopyLabel}
+                      onClick={() => void handleCopyRequestUrl()}
+                    >
+                      {requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
+                    </button>
+                  </div>
+                  <div className="muted request-url-card__value">{publicRequestPath}</div>
+                  <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
                 </div>
-                <div className="muted request-url-card__value">{publicRequestUrl}</div>
-                <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
-              </div>
-            ) : null}
-
-            <div className="inline-actions">
-              <Button type="submit" disabled={saving || !hasChanges}>
-                {saving ? 'Saving settings...' : 'Save settings'}
-              </Button>
+              ) : null}
             </div>
-          </form>
-        </CardWrapper>
+          </CardWrapper>
+        </div>
 
-        <CardWrapper title="How the dashboard computes capital">
-          <div className="stack">
-            <div className="data-card">
-              <div className="subsection-title">Current capital</div>
-              <div className="muted">Starting capital + collected interest</div>
-            </div>
-
-            <div className="data-card">
-              <div className="subsection-title">Cash on hand</div>
-              <div className="muted">Current capital - principal still with borrowers</div>
-            </div>
-
-            <div className="data-card">
-              <div className="subsection-title">Money with borrowers</div>
-              <div className="muted">Outstanding principal only, excluding projected and uncollected interest</div>
-            </div>
-
-            <div className="notice">
-              Collected interest increases your current capital. Projected interest stays out of the cash position until it is actually collected.
-            </div>
-          </div>
-        </CardWrapper>
-      </div>
+        <div className="inline-actions">
+          <Button type="submit" disabled={saving || !hasChanges}>
+            {saving ? 'Saving settings...' : 'Save settings'}
+          </Button>
+        </div>
+      </form>
     </PageContainer>
   )
 }
