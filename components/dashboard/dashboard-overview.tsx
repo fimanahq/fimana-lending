@@ -5,7 +5,10 @@ import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 import { classNames } from '@/utils/class-names'
-import { dashboardClass } from './dashboard-styles'
+import dashboardStyles from './dashboard.module.css'
+import { getDashboardClass } from './dashboard-styles'
+
+const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
 
 const DashboardPortfolioChart = dynamic(
   () => import('@/components/dashboard/dashboard-portfolio-chart').then((module) => module.DashboardPortfolioChart),

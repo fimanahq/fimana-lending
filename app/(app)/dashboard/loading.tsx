@@ -1,5 +1,8 @@
 import { classNames } from '@/utils/class-names'
-import { dashboardClass } from '@/components/dashboard/dashboard-styles'
+import dashboardStyles from '@/components/dashboard/dashboard.module.css'
+import { getDashboardClass } from '@/components/dashboard/dashboard-styles'
+
+const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
 
 function SkeletonLines({ count = 3 }: { count?: number }) {
   return (

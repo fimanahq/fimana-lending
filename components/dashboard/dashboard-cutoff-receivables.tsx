@@ -6,7 +6,10 @@ import { Dialog } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { DashboardCutoffReceivable } from '@/lib/types'
 import { ViewIcon } from '../shared/table-icons'
-import { dashboardClass } from './dashboard-styles'
+import dashboardStyles from './dashboard.module.css'
+import { getDashboardClass } from './dashboard-styles'
+
+const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)

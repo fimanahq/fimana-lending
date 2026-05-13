@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react'
 import { AppLogo } from '@/components/shared/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { classNames } from '@/utils/class-names'
-import { dashboardClass } from './dashboard-styles'
+import dashboardStyles from './dashboard.module.css'
+import { getDashboardClass } from './dashboard-styles'
 import {
   Bell,
   Calculator,
@@ -71,6 +72,8 @@ const pathLabels: Record<string, string> = {
   schedule: 'Schedule',
   settings: 'Settings',
 }
+
+const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
 
 const icons = {
   overview: LayoutDashboard,
