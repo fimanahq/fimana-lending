@@ -283,6 +283,18 @@ h4 {
 .data-card__aside {
   text-align: right;
 }
+
+.request-url-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.request-url-card__value {
+  word-break: break-all;
+}
+
 .state-card {
   display: flex;
   align-items: center;

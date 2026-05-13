@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect } from '@/components/shared'
+import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types'
 import { getSettings, updateSettings } from '@/services'
 
@@ -71,6 +72,7 @@ export function WorkspaceSettingsForm() {
   const [submitError, setSubmitError] = useState('')
   const [saveMessage, setSaveMessage] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
+  const [requestUrlCopyStatus, setRequestUrlCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const currencyOptions = settingsCurrencyValues.map((currency) => ({
     label: currency,
     value: currency,
@@ -113,6 +115,29 @@ export function WorkspaceSettingsForm() {
     }
   }, [reloadToken])
 
+  useEffect(() => {
+    if (requestUrlCopyStatus === 'idle') {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setRequestUrlCopyStatus('idle')
+    }, 2000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [requestUrlCopyStatus])
+
+  const publicRequestPath = form?.publicLoanRequestSlug.trim()
+    ? `/request-loan/${form.publicLoanRequestSlug.trim()}`
+    : ''
+  const publicRequestUrl = publicRequestPath && typeof window !== 'undefined'
+    ? `${window.location.origin}${publicRequestPath}`
+    : publicRequestPath
+
+  useEffect(() => {
+    setRequestUrlCopyStatus('idle')
+  }, [publicRequestUrl])
+
   const updateField = <Field extends keyof SettingsFormState>(field: Field, value: SettingsFormState[Field]) => {
     setForm((current) => (current ? { ...current, [field]: value } : current))
     setErrors((current) => ({ ...current, [field]: undefined }))
@@ -145,12 +170,16 @@ export function WorkspaceSettingsForm() {
 
   const parsedStartingCapital = parseStartingCapital(form.startingCapital)
   const initialForm = buildFormState(settings)
-  const publicRequestPath = form.publicLoanRequestSlug.trim()
-    ? `/request-loan/${form.publicLoanRequestSlug.trim()}`
-    : ''
-  const publicRequestUrl = publicRequestPath && typeof window !== 'undefined'
-    ? `${window.location.origin}${publicRequestPath}`
-    : publicRequestPath
+  const requestUrlCopyLabel = requestUrlCopyStatus === 'success'
+    ? 'Copied'
+    : requestUrlCopyStatus === 'error'
+      ? 'Copy failed'
+      : 'Copy request URL'
+  const requestUrlCopyAnnouncement = requestUrlCopyStatus === 'success'
+    ? 'Request URL copied to clipboard.'
+    : requestUrlCopyStatus === 'error'
+      ? 'Unable to copy request URL.'
+      : ''
   const hasChanges =
     form.defaultCurrency !== initialForm.defaultCurrency
     || form.startingCapital !== initialForm.startingCapital
@@ -184,6 +213,19 @@ export function WorkspaceSettingsForm() {
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to save workspace settings.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleCopyRequestUrl = async () => {
+    if (!publicRequestUrl) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(publicRequestUrl)
+      setRequestUrlCopyStatus('success')
+    } catch {
+      setRequestUrlCopyStatus('error')
     }
   }
 
@@ -232,8 +274,20 @@ export function WorkspaceSettingsForm() {
 
             {publicRequestUrl ? (
               <div className="data-card">
-                <div className="subsection-title">Request URL</div>
-                <div className="muted">{publicRequestUrl}</div>
+                <div className="request-url-card__header">
+                  <div className="subsection-title">Request URL</div>
+                  <button
+                    type="button"
+                    className={`button-ghost table-action-icon table-copy-button${requestUrlCopyStatus === 'success' ? ' is-success' : ''}${requestUrlCopyStatus === 'error' ? ' is-error' : ''}`}
+                    aria-label={requestUrlCopyLabel}
+                    title={requestUrlCopyLabel}
+                    onClick={() => void handleCopyRequestUrl()}
+                  >
+                    {requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
+                  </button>
+                </div>
+                <div className="muted request-url-card__value">{publicRequestUrl}</div>
+                <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
               </div>
             ) : null}
 

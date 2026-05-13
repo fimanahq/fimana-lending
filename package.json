@@ -10,13 +10,15 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
+    "@serwist/next": "^9.5.11",
     "@tailwindcss/postcss": "^4.2.4",
     "lucide-react": "^1.14.0",
     "next": "^15.2.0",
     "postcss": "^8.5.13",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "serwist": "^9.5.11"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
