@@ -17,7 +17,7 @@ export default function RequestLoanPage() {
             <div className="request-homepage__eyebrow">Loan application</div>
 
             <h1 className="request-homepage__title">
-              Use Your Lender's <span>Request Link.</span>
+              Use Your Lender&apos;s <span>Request Link.</span>
             </h1>
 
             <p className="request-homepage__lede">

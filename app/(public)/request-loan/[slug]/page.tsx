@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
@@ -35,10 +36,13 @@ export default async function RequestLoanPage({ params }: RequestLoanPageProps) 
             </p>
 
             <div className="request-homepage__imageCard">
-              <img
+              <Image
                 src={editorialImageUrl}
                 alt="Luxury minimalist office interior with warm wooden accents and soft sunlight."
                 className="request-homepage__image"
+                width={720}
+                height={520}
+                priority
               />
 
               <div className="request-homepage__statusCard">

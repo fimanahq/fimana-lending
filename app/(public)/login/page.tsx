@@ -7,6 +7,7 @@ import { hasLoanAppAccess } from '@/lib/access'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 import { isProtectedPath } from '@/lib/protected-routes'
 import { getSessionUser } from '@/lib/server/backend'
+import Image from 'next/image'
 
 const editorialImageUrl = '/images/login-lending-dashboard-office.png'
 
@@ -46,7 +47,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <main className="signin-page__main">
         <section className="signin-page__editorial">
           <div className="signin-page__editorialShade" />
-          <img
+          <Image
             src={editorialImageUrl}
             alt="Modern home office with lending dashboards open on devices."
             className="signin-page__editorialImage"
