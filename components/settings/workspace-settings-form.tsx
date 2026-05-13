@@ -222,12 +222,12 @@ export function WorkspaceSettingsForm() {
   }
 
   const handleCopyRequestUrl = async () => {
-    if (!publicRequestUrl) {
+    if (!publicRequestPath) {
       return
     }
 
     try {
-      await navigator.clipboard.writeText(publicRequestUrl)
+      await navigator.clipboard.writeText(`${window.location.origin}${publicRequestPath}`)
       setRequestUrlCopyStatus('success')
     } catch {
       setRequestUrlCopyStatus('error')
@@ -296,7 +296,7 @@ export function WorkspaceSettingsForm() {
                       {requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
                     </button>
                   </div>
-                  <div className="muted request-url-card__value">{publicRequestPath}</div>
+                  <div className="muted request-url-card__value">{publicRequestUrl}</div>
                   <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
                 </div>
               ) : null}
