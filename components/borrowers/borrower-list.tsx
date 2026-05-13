@@ -17,7 +17,8 @@ import {
 import { ViewIcon } from '@/components/shared/table-icons'
 import type { Borrower } from '@/lib/types'
 import { listBorrowersPaginated } from '@/services'
-
+import { classNames } from '@/utils/class-names'
+import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 
 const ITEMS_PER_PAGE = 10
 
@@ -92,7 +93,7 @@ export function BorrowerList() {
 
   return (
     <PageContainer>
-      <div className="card panel borrower-list__toolbar">
+      <div className={classNames('card panel', toolbarStyles.toolbar)}>
         <Input
           id="borrower-search"
           label="Search borrowers"
@@ -101,7 +102,7 @@ export function BorrowerList() {
           placeholder="Name, email, phone, or notes"
         />
 
-        <div className="inline-actions borrower-list__toolbarActions">
+        <div className={classNames('inline-actions', toolbarStyles.actions)}>
           <Link href="/borrowers/new" className="button">
             Add borrower
           </Link>

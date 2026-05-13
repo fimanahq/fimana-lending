@@ -18,6 +18,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Borrower, LoanRecord } from '@/lib/types'
 import { getBorrower, listLoansByBorrowerId } from '@/services'
+import borrowerStyles from './borrowers.module.css'
 
 interface BorrowerProfileProps {
   borrowerId: string
@@ -117,7 +118,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
 
       {message ? <div className="notice">{message}</div> : null}
 
-      <div className="borrower-profile-grid">
+      <div className={borrowerStyles.profileGrid}>
         <Card
           title="Borrower Profile"
           actions={(
@@ -135,31 +136,31 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
             </div>
           )}
         >
-          <div className="borrower-profile-card">
-            <div className="borrower-profile-card__hero">
-              <h2 className="borrower-profile-card__name">{borrowerName}</h2>
+          <div className={borrowerStyles.profileCard}>
+            <div className={borrowerStyles.hero}>
+              <h2 className={borrowerStyles.name}>{borrowerName}</h2>
             </div>
 
-            <div className="borrower-profile-card__facts">
-              <div className="borrower-profile-card__fact">
+            <div className={borrowerStyles.facts}>
+              <div className={borrowerStyles.fact}>
                 <span>Borrower Number</span>
                 <strong>{borrower.borrowerNumber}</strong>
               </div>
-              <div className="borrower-profile-card__fact">
+              <div className={borrowerStyles.fact}>
                 <span>Email</span>
                 <strong>{borrower.email || 'Not set'}</strong>
               </div>
-              <div className="borrower-profile-card__fact">
+              <div className={borrowerStyles.fact}>
                 <span>Phone</span>
                 <strong>{borrower.contactNumber || 'Not set'}</strong>
               </div>
-              <div className="borrower-profile-card__fact">
+              <div className={borrowerStyles.fact}>
                 <span>Monthly Income</span>
                 <strong>{borrower.income !== null ? formatCurrency(borrower.income, borrowerCurrency) : 'Not set'}</strong>
               </div>
             </div>
 
-            <div className="borrower-profile-card__notes">
+            <div className={borrowerStyles.notes}>
               <span>Notes</span>
               <p>{borrower.notes || 'No notes recorded for this borrower yet.'}</p>
             </div>
@@ -172,24 +173,24 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
           <p className="muted">No issued loans yet.</p>
         ) : (
           <div className="stack">
-            <section className="borrower-summary-grid" aria-label={`${borrowerName} loan history summary`}>
-              <Card className="borrower-summary-card" title="Loans">
+            <section className={borrowerStyles.summaryGrid} aria-label={`${borrowerName} loan history summary`}>
+              <Card className={borrowerStyles.summaryCard} title="Loans">
                 <strong>{borrowerLoans.length}</strong>
                 <span className="muted">{activeLoansCount} active</span>
               </Card>
-              <Card className="borrower-summary-card" title="Principal issued">
+              <Card className={borrowerStyles.summaryCard} title="Principal issued">
                 {renderCurrencyTotals(principalTotals)}
                 <span className="muted">Across all borrower loans</span>
               </Card>
-              <Card className="borrower-summary-card" title="Collected interest">
+              <Card className={borrowerStyles.summaryCard} title="Collected interest">
                 {renderCurrencyTotals(collectedInterestTotals)}
                 <span className="muted">Paid interest on all loans</span>
               </Card>
-              <Card className="borrower-summary-card" title="Projected interest">
+              <Card className={borrowerStyles.summaryCard} title="Projected interest">
                 {renderCurrencyTotals(projectedInterestTotals)}
                 <span className="muted">Expected interest on active loans only</span>
               </Card>
-              <Card className="borrower-summary-card" title="Outstanding balance">
+              <Card className={borrowerStyles.summaryCard} title="Outstanding balance">
                 {renderCurrencyTotals(outstandingTotals)}
                 <span className="muted">Remaining borrower exposure</span>
               </Card>

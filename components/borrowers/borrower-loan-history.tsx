@@ -6,6 +6,7 @@ import { OpenLoanIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { Loan } from '@/lib/types'
+import borrowerStyles from './borrowers.module.css'
 
 interface BorrowerLoanHistoryProps {
   borrowerName: string
@@ -31,20 +32,20 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
 
   return (
     <div className="stack">
-      <section className="borrower-summary-grid" aria-label={`${borrowerName} loan history summary`}>
-        <Card className="borrower-summary-card" title="Loans">
+      <section className={borrowerStyles.summaryGrid} aria-label={`${borrowerName} loan history summary`}>
+        <Card className={borrowerStyles.summaryCard} title="Loans">
           <strong>{loans.length}</strong>
           <span className="muted">{activeLoans.length} active</span>
         </Card>
-        <Card className="borrower-summary-card" title="Principal">
+        <Card className={borrowerStyles.summaryCard} title="Principal">
           <strong>{formatCurrency(totals.principal, currency)}</strong>
           <span className="muted">Across issued loans</span>
         </Card>
-        <Card className="borrower-summary-card" title="Interest">
+        <Card className={borrowerStyles.summaryCard} title="Interest">
           <strong>{formatCurrency(totals.totalInterest, currency)}</strong>
           <span className="muted">Backend-provided total</span>
         </Card>
-        <Card className="borrower-summary-card" title="Repayment">
+        <Card className={borrowerStyles.summaryCard} title="Repayment">
           <strong>{formatCurrency(totals.totalPayment, currency)}</strong>
           <span className="muted">{completedLoans.length} completed</span>
         </Card>

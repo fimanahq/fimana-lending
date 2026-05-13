@@ -9,6 +9,8 @@ import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
 import { listLoanApplications } from '@/services'
 import { Button, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'
+import { classNames } from '@/utils/class-names'
+import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 
 type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
 
@@ -93,7 +95,7 @@ export function LoanApplicationList() {
 
   return (
     <div className="stack">
-      <div className="card panel borrower-list__toolbar">
+      <div className={classNames('card panel', toolbarStyles.toolbar)}>
         <Input
           id="application-borrower-search"
           label="Search borrowers"
@@ -102,7 +104,7 @@ export function LoanApplicationList() {
           placeholder="Name, borrower number, mobile, or email"
         />
 
-        <div className="inline-actions borrower-list__toolbarActions">
+        <div className={classNames('inline-actions', toolbarStyles.actions)}>
           <Link href="/loan-applications/new" className="button">New application</Link>
         </div>
       </div>

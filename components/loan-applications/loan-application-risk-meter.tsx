@@ -10,6 +10,7 @@ import {
 } from '@/lib/borrower-risk'
 import { formatCurrency } from '@/lib/format'
 import { classNames } from '@/utils/class-names'
+import styles from './loan-application-risk-meter.module.css'
 
 interface LoanApplicationRiskMeterProps {
   className?: string
@@ -28,6 +29,14 @@ const riskToneByLevel: Record<BorrowerRiskLevel, string> = {
   moderate: '#c08a24',
   high: '#c9682f',
   very_high: '#9f3329',
+}
+
+const riskLabelClassByLevel: Record<BorrowerRiskLevel | 'unknown', string> = {
+  low: styles.labelLow,
+  moderate: styles.labelModerate,
+  high: styles.labelHigh,
+  very_high: styles.labelVeryHigh,
+  unknown: styles.labelUnknown,
 }
 
 function formatPercent(value: number | null) {
@@ -90,18 +99,18 @@ export function LoanApplicationRiskMeter({
 
   return (
     <Card
-      className={classNames('borrower-risk-meter', riskBand && `borrower-risk-meter--${riskBand.level}`, className)}
+      className={classNames(styles.meter, className)}
       title="Borrower Risk Meter"
       description="Proposed payment vs borrower income."
     >
-      <div className="borrower-risk-meter__content">
-        <div className="borrower-risk-meter__gaugeWrap">
-          <svg className="borrower-risk-meter__gauge" viewBox="0 0 240 136" role="img" aria-label={`${riskLabel}, DTI ${formatPercent(dti)}`}>
-            <path className="borrower-risk-meter__track" d={GAUGE_PATH} pathLength={100} />
+      <div className={styles.content}>
+        <div className={styles.gaugeWrap}>
+          <svg className={styles.gauge} viewBox="0 0 240 136" role="img" aria-label={`${riskLabel}, DTI ${formatPercent(dti)}`}>
+            <path className={styles.track} d={GAUGE_PATH} pathLength={100} />
             {BORROWER_RISK_BANDS.map((band) => (
               <path
                 key={band.level}
-                className="borrower-risk-meter__band"
+                className={styles.band}
                 d={GAUGE_PATH}
                 pathLength={100}
                 stroke={riskToneByLevel[band.level]}
@@ -110,17 +119,17 @@ export function LoanApplicationRiskMeter({
               />
             ))}
             <line
-              className="borrower-risk-meter__needle"
+              className={styles.needle}
               x1={NEEDLE_CENTER.x}
               y1={NEEDLE_CENTER.y}
               x2={needleEnd.x}
               y2={needleEnd.y}
             />
-            <circle className="borrower-risk-meter__hub" cx={NEEDLE_CENTER.x} cy={NEEDLE_CENTER.y} r="8" />
+            <circle className={styles.hub} cx={NEEDLE_CENTER.x} cy={NEEDLE_CENTER.y} r="8" />
           </svg>
 
-          <div className="borrower-risk-meter__reading">
-            <span className={`borrower-risk-meter__label borrower-risk-meter__label--${riskLevel}`}>
+          <div className={styles.reading}>
+            <span className={classNames(styles.label, riskLabelClassByLevel[riskLevel])}>
               {riskLabel}
             </span>
             <strong>{formatPercent(dti)}</strong>
@@ -128,7 +137,7 @@ export function LoanApplicationRiskMeter({
           </div>
         </div>
 
-        <dl className="borrower-risk-meter__stats">
+        <dl className={styles.stats}>
           <div>
             <dt>Monthly income</dt>
             <dd>{formatMoney(monthlyIncome, currency)}</dd>

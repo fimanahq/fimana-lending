@@ -11,6 +11,8 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { LoanRecord, LoanStatus } from '@/lib/types'
 import { deleteLoan, listLoanRecords } from '@/services'
+import { classNames } from '@/utils/class-names'
+import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 
 type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement'
 
@@ -123,7 +125,7 @@ export function LoansList() {
 
   return (
     <div className="stack">
-      <div className="card panel borrower-list__toolbar">
+      <div className={classNames('card panel', toolbarStyles.toolbar)}>
         <Input
           id="loan-borrower-search"
           label="Search borrowers"

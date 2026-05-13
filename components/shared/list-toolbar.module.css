@@ -1,0 +1,22 @@
+.toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 26.25rem) auto;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}
