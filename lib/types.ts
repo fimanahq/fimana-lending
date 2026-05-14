@@ -373,7 +373,7 @@ export interface UpcomingLoanReminder {
   loanStatus: LoanStatus
 }
 
-export type DashboardReceivableStatus = 'overdue' | 'current' | 'upcoming'
+export type DashboardReceivableStatus = 'overdue' | 'current' | 'upcoming' | 'paid'
 
 export interface DashboardCutoffReceivableLoan {
   loanId: string

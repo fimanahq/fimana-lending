@@ -835,6 +835,7 @@
 
 .dashboard-overview__progressChartPanel {
   display: flex;
+  min-width: 0;
   min-height: 100%;
   flex-direction: column;
   gap: 1rem;
@@ -1016,6 +1017,26 @@
   color: var(--accent-strong);
 }
 
+.dashboard-overview__statusBadge--paid {
+  background: rgba(63, 94, 78, 0.12);
+  color: #2f5b48;
+}
+
+.dashboard-overview__loanStatusBadge--paid {
+  background: rgba(63, 94, 78, 0.12);
+  color: #2f5b48;
+}
+
+.dashboard-overview__loanStatusBadge--partial {
+  background: rgba(180, 120, 32, 0.12);
+  color: #8b5a14;
+}
+
+.dashboard-overview__loanStatusBadge--unpaid {
+  background: rgba(176, 64, 44, 0.12);
+  color: #9f3826;
+}
+
 .dashboard-overview__emptyIcon--text {
   display: inline-flex;
   width: 3rem;
@@ -1184,6 +1205,8 @@
 
 .dashboard-overview__progressChartCanvas {
   position: relative;
+  width: 100%;
+  min-width: 0;
   min-height: 21rem;
   height: 21rem;
 }

@@ -24,7 +24,56 @@ function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
     return 'Current'
   }
 
+  if (status === 'paid') {
+    return 'Paid'
+  }
+
   return 'Upcoming'
+}
+
+function getLoanCollectionStatus(loan: DashboardCutoffReceivable['loans'][number]) {
+  if (loan.remainingMinor <= 0) {
+    return 'paid'
+  }
+
+  if (loan.totalCollectedMinor > 0) {
+    return 'partial'
+  }
+
+  return 'unpaid'
+}
+
+function getLoanCollectionStatusLabel(status: ReturnType<typeof getLoanCollectionStatus>) {
+  if (status === 'paid') {
+    return 'Paid'
+  }
+
+  if (status === 'partial') {
+    return 'Partial'
+  }
+
+  return 'Unpaid'
+}
+
+function getLoanCollectionStatusSortOrder(status: ReturnType<typeof getLoanCollectionStatus>) {
+  if (status === 'unpaid') {
+    return 0
+  }
+
+  if (status === 'partial') {
+    return 1
+  }
+
+  return 2
+}
+
+function getCutoffDialogDescription(cutoff: DashboardCutoffReceivable, currency: string) {
+  const loanLabel = `${cutoff.loanCount.toLocaleString('en-PH')} loan${cutoff.loanCount === 1 ? '' : 's'}`
+  if (cutoff.remainingMinor <= 0) {
+    return `${loanLabel} in this cutoff already fully collected.`
+  }
+
+  return `${loanLabel} with ${formatMinorCurrency(cutoff.remainingMinor, currency)} remaining to collect.`
 }
 
 function MiniMetric({
@@ -56,22 +105,48 @@ export function DashboardCutoffReceivables({
 }) {
   const [selectedCutoffDate, setSelectedCutoffDate] = useState<string | null>(null)
 
-  const currentReceivable = receivableByCutoff.find((entry) => entry.status === 'current') ?? null
+  const currentReceivable = currentCutoffReceivable
+  const currentOpenReceivable = receivableByCutoff.find((entry) => (
+    entry.status === 'current'
+    && entry.cutoffDate !== currentCutoffReceivable?.cutoffDate
+  )) ?? null
   const nextUpcomingReceivable = [...receivableByCutoff]
-    .filter((entry) => entry.status === 'upcoming')
+    .filter((entry) => (
+      entry.status === 'upcoming'
+      && entry.cutoffDate !== currentCutoffReceivable?.cutoffDate
+      && entry.cutoffDate !== currentOpenReceivable?.cutoffDate
+    ))
     .sort((left, right) => left.cutoffDate.localeCompare(right.cutoffDate))[0] ?? null
   const overdueReceivables = [...receivableByCutoff]
     .filter((entry) => entry.status === 'overdue')
     .sort((left, right) => left.cutoffDate.localeCompare(right.cutoffDate))
-  const visibleReceivables = [
-    ...(currentReceivable ? [currentReceivable] : []),
-    ...(nextUpcomingReceivable ? [nextUpcomingReceivable] : []),
-    ...overdueReceivables,
-  ]
+  const visibleReceivables = Array.from(
+    new Map(
+      [
+        ...(currentReceivable ? [currentReceivable] : []),
+        ...(currentOpenReceivable ? [currentOpenReceivable] : []),
+        ...(nextUpcomingReceivable ? [nextUpcomingReceivable] : []),
+        ...overdueReceivables,
+      ].map((entry) => [entry.cutoffDate, entry]),
+    ).values(),
+  )
 
   const selectedCutoff = selectedCutoffDate
     ? visibleReceivables.find((entry) => entry.cutoffDate === selectedCutoffDate) ?? null
     : null
+  const selectedCutoffLoans = selectedCutoff
+    ? [...selectedCutoff.loans].sort((left, right) => {
+      const leftStatus = getLoanCollectionStatus(left)
+      const rightStatus = getLoanCollectionStatus(right)
+      const statusOrder = getLoanCollectionStatusSortOrder(leftStatus) - getLoanCollectionStatusSortOrder(rightStatus)
+
+      if (statusOrder !== 0) {
+        return statusOrder
+      }
+
+      return left.loanNumber.localeCompare(right.loanNumber)
+    })
+    : []
 
   return (
     <section className={dashboardClass('dashboard-overview__operator')}>
@@ -79,13 +154,13 @@ export function DashboardCutoffReceivables({
         <div>
           <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
           <p className="muted">
-            Group unpaid or partially paid schedules by cutoff date so the
-            nearest collection target and the next receivable dates are visible
-            at a glance.
+            Group schedules by cutoff date so the nearest cutoff, upcoming
+            collection target, and overdue receivables stay visible at a glance.
           </p>
           <p className="muted">
             Collected reflects actual applied payments, including advance
-            payments posted before an upcoming cutoff date.
+            payments posted before an upcoming cutoff date and cutoffs already
+            settled in full.
           </p>
         </div>
       </div>
@@ -93,7 +168,7 @@ export function DashboardCutoffReceivables({
       {currentCutoffReceivable ? (
         <section className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--five')}>
           <MiniMetric
-            label="Due this cutoff"
+            label="Cutoff total"
             value={formatMinorCurrency(
               currentCutoffReceivable.totalReceivableMinor,
               currency,
@@ -101,7 +176,7 @@ export function DashboardCutoffReceivables({
             meta={formatDate(currentCutoffReceivable.cutoffDate)}
           />
           <MiniMetric
-            label="Principal due"
+            label="Principal scheduled"
             value={formatMinorCurrency(
               currentCutoffReceivable.principalDueMinor,
               currency,
@@ -109,7 +184,7 @@ export function DashboardCutoffReceivables({
             meta="Scheduled principal on this cutoff"
           />
           <MiniMetric
-            label="Interest due"
+            label="Interest scheduled"
             value={formatMinorCurrency(
               currentCutoffReceivable.interestDueMinor,
               currency,
@@ -123,18 +198,20 @@ export function DashboardCutoffReceivables({
               currency,
             )}
             meta={
-              formatMinorCurrency(
-                currentCutoffReceivable.totalCollectedMinor,
-                currency,
-              ) + " already collected"
+              currentCutoffReceivable.remainingMinor > 0
+                ? `${formatMinorCurrency(
+                  currentCutoffReceivable.totalCollectedMinor,
+                  currency,
+                )} already collected`
+                : 'Fully collected'
             }
           />
           <MiniMetric
-            label="Borrowers due"
+            label="Borrowers in cutoff"
             value={currentCutoffReceivable.borrowerCount.toLocaleString(
               "en-PH",
             )}
-            meta={`${currentCutoffReceivable.loanCount.toLocaleString("en-PH")} loan${currentCutoffReceivable.loanCount === 1 ? "" : "s"} due`}
+            meta={`${currentCutoffReceivable.loanCount.toLocaleString("en-PH")} loan${currentCutoffReceivable.loanCount === 1 ? "" : "s"} in cutoff`}
           />
         </section>
       ) : (
@@ -169,8 +246,8 @@ export function DashboardCutoffReceivables({
                   </th>
                   <th className={dashboardClass('dashboard-overview__tableAmount')}>Collected</th>
                   <th className={dashboardClass('dashboard-overview__tableAmount')}>Remaining</th>
-                  <th>Borrowers due</th>
-                  <th>Loans due</th>
+                  <th>Borrowers in cutoff</th>
+                  <th>Loans in cutoff</th>
                   <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
                   <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
                 </tr>
@@ -241,12 +318,12 @@ export function DashboardCutoffReceivables({
         open={selectedCutoff !== null}
         title={
           selectedCutoff
-            ? `Loans due on ${formatDate(selectedCutoff.cutoffDate)}`
-            : "Loans due on cutoff"
+            ? `Loans in cutoff on ${formatDate(selectedCutoff.cutoffDate)}`
+            : "Loans in cutoff"
         }
         description={
           selectedCutoff
-            ? `${selectedCutoff.loanCount.toLocaleString("en-PH")} loan${selectedCutoff.loanCount === 1 ? "" : "s"} with ${formatMinorCurrency(selectedCutoff.remainingMinor, currency)} remaining to collect.`
+            ? getCutoffDialogDescription(selectedCutoff, currency)
             : undefined
         }
         onClose={() => setSelectedCutoffDate(null)}
@@ -304,71 +381,67 @@ export function DashboardCutoffReceivables({
                     <th>Borrower</th>
                     <th>Loan</th>
                     <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                      Principal due
-                    </th>
-                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                      Interest due
-                    </th>
-                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Total receivable
-                    </th>
-                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                      Collected
                     </th>
                     <th className={dashboardClass('dashboard-overview__tableAmount')}>
                       Remaining
                     </th>
+                    <th className={dashboardClass('dashboard-overview__tableStatus')}>
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedCutoff.loans.map((loan) => (
-                    <tr key={loan.loanId}>
-                      <td>
-                        <div className={dashboardClass('dashboard-overview__loanCell')}>
+                  {selectedCutoffLoans.map((loan) => {
+                    const loanStatus = getLoanCollectionStatus(loan)
+
+                    return (
+                      <tr key={loan.loanId}>
+                        <td>
+                          <div className={dashboardClass('dashboard-overview__loanCell')}>
+                            <Link
+                              href={`/loans/${loan.loanId}`}
+                              className="data-card__titleLink"
+                              onClick={() => setSelectedCutoffDate(null)}
+                            >
+                              {loan.borrowerDisplayName}
+                            </Link>
+                            <span className="muted micro-copy">
+                              {loan.borrowerNumber}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
                           <Link
                             href={`/loans/${loan.loanId}`}
                             className="data-card__titleLink"
                             onClick={() => setSelectedCutoffDate(null)}
                           >
-                            {loan.borrowerDisplayName}
+                            {loan.loanNumber}
                           </Link>
-                          <span className="muted micro-copy">
-                            {loan.borrowerNumber}
+                        </td>
+                        <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                          {formatMinorCurrency(
+                            loan.totalReceivableMinor,
+                            currency,
+                          )}
+                        </td>
+                        <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                          {formatMinorCurrency(loan.remainingMinor, currency)}
+                        </td>
+                        <td className={dashboardClass('dashboard-overview__tableStatus')}>
+                          <span
+                            className={dashboardClass(
+                              'dashboard-overview__statusBadge',
+                              `dashboard-overview__loanStatusBadge--${loanStatus}`,
+                            )}
+                          >
+                            {getLoanCollectionStatusLabel(loanStatus)}
                           </span>
-                        </div>
-                      </td>
-                      <td>
-                        <Link
-                          href={`/loans/${loan.loanId}`}
-                          className="data-card__titleLink"
-                          onClick={() => setSelectedCutoffDate(null)}
-                        >
-                          {loan.loanNumber}
-                        </Link>
-                      </td>
-                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                        {formatMinorCurrency(loan.principalDueMinor, currency)}
-                      </td>
-                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                        {formatMinorCurrency(loan.interestDueMinor, currency)}
-                      </td>
-                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                        {formatMinorCurrency(
-                          loan.totalReceivableMinor,
-                          currency,
-                        )}
-                      </td>
-                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                        {formatMinorCurrency(
-                          loan.totalCollectedMinor,
-                          currency,
-                        )}
-                      </td>
-                      <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                        {formatMinorCurrency(loan.remainingMinor, currency)}
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

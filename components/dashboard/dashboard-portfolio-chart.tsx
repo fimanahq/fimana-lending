@@ -1,6 +1,7 @@
 'use client'
 
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { useEffect, useRef, useState } from 'react'
+import { Cell, Pie, PieChart, Tooltip } from 'recharts'
 import { formatCurrency } from '@/lib/format'
 import type { DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 import dashboardStyles from './dashboard.module.css'
@@ -61,12 +62,41 @@ export function DashboardPortfolioChart({
   const ariaLabel = segments
     .map((segment) => `${segment.label}: ${segment.percentage.toFixed(2)}%, ${formatCurrency(segment.valueMinor / 100, currency)}`)
     .join('. ')
+  const canvasRef = useRef<HTMLDivElement | null>(null)
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      return
+    }
+
+    const updateSize = () => {
+      const { width, height } = canvas.getBoundingClientRect()
+      setChartSize({
+        width: Math.max(0, Math.floor(width)),
+        height: Math.max(0, Math.floor(height)),
+      })
+    }
+
+    updateSize()
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateSize()
+    })
+
+    resizeObserver.observe(canvas)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
 
   return (
     <figure className={dashboardClass('dashboard-overview__progressChartPanel')} aria-label={ariaLabel}>
-      <div className={dashboardClass('dashboard-overview__progressChartCanvas')}>
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
+      <div ref={canvasRef} className={dashboardClass('dashboard-overview__progressChartCanvas')}>
+        {chartSize.width > 0 && chartSize.height > 0 ? (
+          <PieChart width={chartSize.width} height={chartSize.height}>
             <Pie
               data={segments}
               dataKey="valueMinor"
@@ -95,7 +125,7 @@ export function DashboardPortfolioChart({
               wrapperStyle={tooltipWrapperStyle}
             />
           </PieChart>
-        </ResponsiveContainer>
+        ) : null}
 
         <div className={dashboardClass('dashboard-overview__progressChartCenter')} aria-hidden="true">
           <span className={dashboardClass('dashboard-overview__progressChartKicker')}>{centerKicker}</span>
