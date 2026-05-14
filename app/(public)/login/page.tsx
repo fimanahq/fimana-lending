@@ -50,6 +50,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <Image
             src={editorialImageUrl}
             alt="Modern home office with lending dashboards open on devices."
+            width={1536}
+            height={1024}
             className="signin-page__editorialImage"
           />
 
