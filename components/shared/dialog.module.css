@@ -18,7 +18,6 @@
 .panel {
   position: relative;
   display: grid;
-  width: min(38.75rem, calc(100dvw - 2rem));
   max-width: 100%;
   max-height: min(45rem, calc(100vh - 2rem));
   gap: 1rem;
