@@ -427,13 +427,16 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
               <th>Principal</th>
               <th>Interest</th>
               <th>Total</th>
+              <th>Applied</th>
+              <th>Outstanding</th>
+              <th>Balance</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {schedule.length === 0 ? (
               <tr>
-                <td colSpan={6} className="muted">No schedule rows generated.</td>
+                <td colSpan={9} className="muted">No schedule rows generated.</td>
               </tr>
             ) : (
               schedule.map((row) => (
@@ -443,6 +446,9 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                   <td>{formatMinorCurrency(row.scheduledPrincipalAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(row.scheduledInterestAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(row.scheduledTotalAmountMinor, currency)}</td>
+                  <td>{formatMinorCurrency(row.paidTotalAmountMinor, currency)}</td>
+                  <td>{formatMinorCurrency(row.outstandingTotalAmountMinor, currency)}</td>
+                  <td>{formatMinorCurrency(row.closingPrincipalBalanceMinor, currency)}</td>
                   <td><span className={getStatusClassName(row.status)}>{row.status}</span></td>
                 </tr>
               ))
