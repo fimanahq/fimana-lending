@@ -309,6 +309,13 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           onCancel={cancelEditing}
           onSaved={(updated) => {
             setApplication(updated)
+            if (updated.borrower) {
+              setBorrowers((current) => current.map((borrower) => (
+                borrower.id === updated.borrower?.id
+                  ? { ...borrower, income: updated.borrower.income ?? null }
+                  : borrower
+              )))
+            }
             setIsEditing(false)
             setError('')
             setMessage('Loan application updated.')

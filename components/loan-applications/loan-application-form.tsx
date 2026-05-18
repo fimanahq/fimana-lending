@@ -15,7 +15,9 @@ import { buildLoanDueDates, buildPaymentDays, getBorrowerRequestSemiMonthlyFirst
 import { formatDate } from '@/lib/format'
 import {
   createLoanApplication,
+  getLoanApplication,
   listLoanBorrowers,
+  updateBorrower,
   updateLoanApplication,
 } from '@/services'
 import {
@@ -34,6 +36,7 @@ import { BorrowerForm } from '@/components/borrowers/borrower-form'
 
 export const loanApplicationLabels = {
   borrower: 'Borrower',
+  borrowerIncome: 'Monthly Income',
   firstPaymentDay: 'First Payment Day',
   loanAmount: 'Loan Amount',
   loanPurpose: 'Loan Purpose',
@@ -51,6 +54,7 @@ export const loanApplicationLabels = {
 
 export interface LoanApplicationFormValues {
   borrowerId: string
+  borrowerIncome: string
   loanAmount: string
   numberOfInstallments: string
   startDate: string
@@ -76,6 +80,7 @@ interface LoanApplicationFormProps {
 
 const initialFormValues: LoanApplicationFormValues = {
   borrowerId: '',
+  borrowerIncome: '',
   loanAmount: '',
   numberOfInstallments: '2',
   startDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
@@ -170,6 +175,24 @@ function pesosToMinor(value: string) {
   return Math.round(Number(value) * 100)
 }
 
+function parseOptionalIncome(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : Number.NaN
+}
+
+function formatOptionalIncome(value?: number | null) {
+  return value !== null && value !== undefined ? String(value) : ''
+}
+
+function incomeHasChanged(nextIncome: number | null, currentIncome?: number | null) {
+  return nextIncome !== (currentIncome ?? null)
+}
+
 function getDraftPayload(form: LoanApplicationFormValues): LoanApplicationDraftInput {
   const [firstDay = '', secondDay = ''] = derivePaymentDaysFromStartDate(form.startDate, form.paymentType)
 
@@ -225,6 +248,13 @@ function validateForm(form: LoanApplicationFormValues) {
     }
   }
 
+  if (form.borrowerIncome.trim()) {
+    const borrowerIncome = parseOptionalIncome(form.borrowerIncome)
+    if (borrowerIncome === null || !Number.isFinite(borrowerIncome) || borrowerIncome < 0) {
+      return 'Monthly income must be zero or greater'
+    }
+  }
+
   if (form.calculationMethod === 'interest_only') {
     const interestOnlyPeriod = Number(form.interestOnlyPeriod)
     if (!Number.isInteger(interestOnlyPeriod) || interestOnlyPeriod < 0) {
@@ -250,6 +280,7 @@ export function getLoanApplicationFormValues(application: LoanApplication): Loan
 
   return {
     borrowerId: application.borrowerId || application.borrower?.id || '',
+    borrowerIncome: formatOptionalIncome(application.borrower?.income),
     loanAmount: minorToPesos(application.loanAmountMinor ?? (application.principal ? application.principal * 100 : 0)),
     numberOfInstallments: String(application.numberOfCutoffs ?? application.gives ?? 1),
     startDate: application.startDate || application.firstPaymentDate || '',
@@ -311,6 +342,10 @@ export function LoanApplicationForm({
     }
   }, [firstPaymentDay, form.paymentType, form.startDate, secondPaymentDay])
   const shouldLoadBorrowers = providedBorrowers === undefined
+  const selectedBorrower = useMemo(
+    () => borrowers.find((borrower) => borrower.id === form.borrowerId) ?? null,
+    [borrowers, form.borrowerId],
+  )
 
   useEffect(() => {
     if (initialValues) {
@@ -355,6 +390,17 @@ export function LoanApplicationForm({
     setError('')
   }
 
+  const handleBorrowerChange = (nextBorrowerId: string) => {
+    const nextBorrower = borrowers.find((borrower) => borrower.id === nextBorrowerId)
+
+    updateForm({
+      borrowerId: nextBorrowerId,
+      borrowerIncome: mode === 'edit'
+        ? formatOptionalIncome(nextBorrower?.income)
+        : form.borrowerIncome,
+    })
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setShowValidation(true)
@@ -372,7 +418,19 @@ export function LoanApplicationForm({
         ? await updateLoanApplication(applicationId, payload)
         : await createLoanApplication(payload)
 
-      onSaved?.(saved)
+      if (mode === 'edit' && applicationId) {
+        const borrowerIncome = parseOptionalIncome(form.borrowerIncome)
+        if (incomeHasChanged(borrowerIncome, selectedBorrower?.income)) {
+          const updatedBorrower = await updateBorrower(form.borrowerId, { income: borrowerIncome })
+          setBorrowers((current) => current.map((borrower) => (
+            borrower.id === updatedBorrower.id ? updatedBorrower : borrower
+          )))
+        }
+
+        onSaved?.(await getLoanApplication(applicationId))
+      } else {
+        onSaved?.(saved)
+      }
 
       if (mode === 'create') {
         router.push(`/loan-applications/${saved.id}`)
@@ -390,7 +448,11 @@ export function LoanApplicationForm({
   const handleBorrowerCreated = async (newBorrower: Borrower) => {
     setShowBorrowerModal(false)
     setBorrowers((current) => [...current, newBorrower])
-    setForm((current) => ({ ...current, borrowerId: newBorrower.id }))
+    setForm((current) => ({
+      ...current,
+      borrowerId: newBorrower.id,
+      borrowerIncome: formatOptionalIncome(newBorrower.income),
+    }))
   }
 
   const borrowerOptions = useMemo<SearchableSelectOption[]>(
@@ -429,8 +491,23 @@ export function LoanApplicationForm({
             emptyMessage="No borrowers match your search"
             actionLabel={mode === 'create' ? '+ Add new borrower' : undefined}
             onAction={mode === 'create' ? () => setShowBorrowerModal(true) : undefined}
-            onChange={(nextValue) => updateForm({ borrowerId: nextValue })}
+            onChange={handleBorrowerChange}
           />
+
+          {mode === 'edit' ? (
+            <Input
+              id={`${mode}ApplicationBorrowerIncome`}
+              label={loanApplicationLabels.borrowerIncome}
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
+              inputClassName="input-no-spinner"
+              value={form.borrowerIncome}
+              onWheel={preventWheelValueChange}
+              onChange={(event) => updateForm({ borrowerIncome: event.target.value })}
+            />
+          ) : null}
 
           <div className="grid two">
             <Input
