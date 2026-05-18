@@ -7,8 +7,25 @@ import type { LoanAdjustmentDetail, LoanAdjustmentRecord, LoanRecord } from '@/l
 import { getLoanAdjustmentDetail, postLoanAdjustment } from '@/services'
 import styles from './loan-dialogs.module.css'
 
+const adjustmentTypeLabels: Record<LoanAdjustmentRecord['type'], string> = {
+  payment_adjustment: 'Payment adjustment',
+  balance_adjustment: 'Balance adjustment',
+  schedule_adjustment: 'Schedule adjustment',
+  rounding_adjustment: 'Rounding adjustment',
+}
+
+const adjustmentReasonLabels: Record<string, string> = {
+  rounding_shortage_write_off: 'Rounding shortage write-off',
+  rounding_overpayment_income: 'Rounding overpayment income',
+}
+
 function formatMinorCurrency(value: number, currency: string) {
   return formatCurrency(value / 100, currency)
+}
+
+function formatAdjustmentMeta(adjustment: LoanAdjustmentRecord) {
+  const component = adjustment.component[0]?.toUpperCase() + adjustment.component.slice(1)
+  return `${adjustmentTypeLabels[adjustment.type]} · ${component} ${adjustment.direction}${adjustment.isSystemGenerated ? ' · System' : ''}`
 }
 
 function todayDateValue() {
@@ -163,7 +180,8 @@ export function LoanAdjustmentDialog({
                 <tr key={adjustment.id}>
                   <td>{formatDate(adjustment.adjustmentDate)}</td>
                   <td>
-                    <strong>{adjustment.reason}</strong>
+                    <strong>{adjustmentReasonLabels[adjustment.reason] ?? adjustment.reason}</strong>
+                    <div className="muted">{formatAdjustmentMeta(adjustment)}</div>
                     <div className="muted">{adjustment.status}</div>
                   </td>
                   <td>{adjustment.allocations.map((allocation) => `#${allocation.sequence}`).join(', ') || 'None'}</td>

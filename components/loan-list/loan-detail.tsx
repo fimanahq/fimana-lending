@@ -36,6 +36,8 @@ interface LoanDetailProps {
   loanId: string
 }
 
+const PAYMENT_TOLERANCE_MINOR = 500
+
 function formatMinorCurrency(value: number, currency: string) {
   return formatCurrency(value / 100, currency)
 }
@@ -74,6 +76,23 @@ function getAdjustmentStatusClassName(status: LoanAdjustmentRecord['status']) {
   return status === 'posted' ? 'status-active' : 'status-cancelled'
 }
 
+const adjustmentTypeLabels: Record<LoanAdjustmentRecord['type'], string> = {
+  payment_adjustment: 'Payment adjustment',
+  balance_adjustment: 'Balance adjustment',
+  schedule_adjustment: 'Schedule adjustment',
+  rounding_adjustment: 'Rounding adjustment',
+}
+
+const adjustmentReasonLabels: Record<string, string> = {
+  rounding_shortage_write_off: 'Rounding shortage write-off',
+  rounding_overpayment_income: 'Rounding overpayment income',
+}
+
+function formatAdjustmentMeta(adjustment: LoanAdjustmentRecord) {
+  const component = adjustment.component[0]?.toUpperCase() + adjustment.component.slice(1)
+  return `${adjustmentTypeLabels[adjustment.type]} · ${component} ${adjustment.direction}${adjustment.isSystemGenerated ? ' · System' : ''}`
+}
+
 function toAmountMinor(amount: string) {
   const parsed = Number(amount)
   if (!Number.isFinite(parsed)) {
@@ -81,6 +100,10 @@ function toAmountMinor(amount: string) {
   }
 
   return Math.round(parsed * 100)
+}
+
+function getPaymentAllocatedAmountMinor(payment: LoanPaymentHistory) {
+  return payment.allocations.reduce((sum, allocation) => sum + allocation.totalAmountMinor, 0)
 }
 
 const paymentMethodOptions: Array<{ value: LoanPaymentMethod; label: string }> = [
@@ -172,6 +195,60 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     : 0
   const canPostPayment = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
   const canOpenLoanAdjustment = loan.status === 'active' || loan.status === 'completed'
+  const editPaymentAmountMinor = toAmountMinor(paymentAmount)
+  const selectedPaymentAllocatedAmountMinor = selectedPayment ? getPaymentAllocatedAmountMinor(selectedPayment) : 0
+  const selectedPaymentRoundingIncomeMinor = selectedPayment
+    ? adjustments
+      .filter((adjustment) =>
+        adjustment.relatedPaymentId === selectedPayment.id
+        && adjustment.type === 'rounding_adjustment'
+        && adjustment.direction === 'increase'
+        && adjustment.reason === 'rounding_overpayment_income',
+      )
+      .reduce((sum, adjustment) => sum + adjustment.amountMinor, 0)
+    : 0
+  const editPaymentEffectiveRemainingBalanceMinor = selectedPayment
+    ? loan.balances.totalOutstandingAmountMinor
+      + selectedPaymentAllocatedAmountMinor
+      + selectedPayment.unallocatedAmountMinor
+      - selectedPaymentRoundingIncomeMinor
+    : 0
+  const editPaymentOverpaymentMinor = editPaymentAmountMinor && selectedPayment
+    ? editPaymentAmountMinor - editPaymentEffectiveRemainingBalanceMinor
+    : 0
+  const editPaymentOpenRows = schedule.filter((row) => {
+    if (row.outstandingTotalAmountMinor > 0) {
+      return true
+    }
+
+    return selectedPayment?.allocations.some((allocation) => allocation.loanScheduleId === row.id) ?? false
+  })
+  const editPaymentNextRelevantBalanceMinor = selectedPayment
+    ? editPaymentOpenRows[0]?.outstandingTotalAmountMinor
+      ? editPaymentOpenRows[0].outstandingTotalAmountMinor + selectedPayment.allocations
+        .filter((allocation) => allocation.loanScheduleId === editPaymentOpenRows[0]?.id)
+        .reduce((sum, allocation) => sum + allocation.totalAmountMinor, 0)
+      : editPaymentEffectiveRemainingBalanceMinor
+    : 0
+  const editPaymentRowShortageMinor = editPaymentAmountMinor && editPaymentAmountMinor < editPaymentNextRelevantBalanceMinor
+    ? editPaymentNextRelevantBalanceMinor - editPaymentAmountMinor
+    : 0
+  const editPaymentFinalShortageMinor = editPaymentAmountMinor && editPaymentAmountMinor < editPaymentEffectiveRemainingBalanceMinor
+    ? editPaymentEffectiveRemainingBalanceMinor - editPaymentAmountMinor
+    : 0
+  const editPaymentShortagePreviewMinor = editPaymentRowShortageMinor > 0 && editPaymentRowShortageMinor <= PAYMENT_TOLERANCE_MINOR
+    ? editPaymentRowShortageMinor
+    : editPaymentFinalShortageMinor > 0 && editPaymentFinalShortageMinor <= PAYMENT_TOLERANCE_MINOR
+      ? editPaymentFinalShortageMinor
+      : 0
+  const hasLargeEditPaymentOverpayment = editPaymentOverpaymentMinor > PAYMENT_TOLERANCE_MINOR
+  const editPaymentPreviewMessage = hasLargeEditPaymentOverpayment
+    ? `Payment exceeds remaining balance by ${formatMinorCurrency(editPaymentOverpaymentMinor, currency)}. Please enter ${formatMinorCurrency(editPaymentEffectiveRemainingBalanceMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`
+    : editPaymentOverpaymentMinor > 0
+      ? `${formatMinorCurrency(editPaymentOverpaymentMinor, currency)} excess will be recorded as rounding income.`
+      : editPaymentShortagePreviewMinor > 0
+        ? `${formatMinorCurrency(editPaymentShortagePreviewMinor, currency)} shortage will be waived from interest as a rounding adjustment.`
+        : ''
 
   const openEditPaymentDialog = (payment: LoanPaymentHistory) => {
     setSelectedPayment(payment)
@@ -193,6 +270,23 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       return
     }
 
+    const effectiveRemainingBalanceMinor = loan.balances.totalOutstandingAmountMinor
+      + getPaymentAllocatedAmountMinor(selectedPayment)
+      + selectedPayment.unallocatedAmountMinor
+      - adjustments
+        .filter((adjustment) =>
+          adjustment.relatedPaymentId === selectedPayment.id
+          && adjustment.type === 'rounding_adjustment'
+          && adjustment.direction === 'increase'
+          && adjustment.reason === 'rounding_overpayment_income',
+        )
+        .reduce((sum, adjustment) => sum + adjustment.amountMinor, 0)
+    const overpaymentMinor = amountMinor - effectiveRemainingBalanceMinor
+    if (overpaymentMinor > PAYMENT_TOLERANCE_MINOR) {
+      setPaymentActionError(`Payment exceeds remaining balance by ${formatMinorCurrency(overpaymentMinor, currency)}. Please enter ${formatMinorCurrency(effectiveRemainingBalanceMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`)
+      return
+    }
+
     setSubmittingPaymentEdit(true)
     setPaymentActionError('')
     try {
@@ -204,6 +298,8 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       })
       setLoan(response.loan)
       setPayments(response.payments)
+      const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
+      setAdjustments(adjustmentDetail.adjustments)
       setSelectedPayment(null)
     } catch (caughtError) {
       setPaymentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to update payment')
@@ -223,6 +319,8 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       const response = await deleteLoanPayment(loanId, deletePaymentId)
       setLoan(response.loan)
       setPayments(response.payments)
+      const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
+      setAdjustments(adjustmentDetail.adjustments)
       setDeletePaymentId('')
     } catch (caughtError) {
       setPaymentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to delete payment')
@@ -547,33 +645,40 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                 return (
                   <tr key={adjustment.id}>
                     <td>{formatDate(adjustment.adjustmentDate)}</td>
-                    <td><strong>{adjustment.reason}</strong></td>
+                    <td>
+                      <strong>{adjustmentReasonLabels[adjustment.reason] ?? adjustment.reason}</strong>
+                      <div className="muted">{formatAdjustmentMeta(adjustment)}</div>
+                    </td>
                     <td>{adjustment.allocations.map((allocation) => `#${allocation.sequence}`).join(', ') || 'None'}</td>
                     <td>{formatMinorCurrency(principalAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(interestAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(adjustment.amountMinor, currency)}</td>
                     <td><span className={getAdjustmentStatusClassName(adjustment.status)}>{adjustment.status}</span></td>
                     <td>
-                      <div className={styles.actions}>
-                        <button
-                          type="button"
-                          className="button-ghost table-action-icon"
-                          aria-label={`Edit adjustment ${adjustment.reason}`}
-                          title="Edit adjustment"
-                          onClick={() => openEditAdjustmentDialog(adjustment)}
-                        >
-                          <EditIcon />
-                        </button>
-                        <button
-                          type="button"
-                          className="button-ghost table-action-icon"
-                          aria-label={`Delete adjustment ${adjustment.reason}`}
-                          title="Delete adjustment"
-                          onClick={() => setDeleteAdjustmentId(adjustment.id)}
-                        >
-                          <DeleteIcon />
-                        </button>
-                      </div>
+                      {adjustment.isSystemGenerated ? (
+                        <span className="muted">System</span>
+                      ) : (
+                        <div className={styles.actions}>
+                          <button
+                            type="button"
+                            className="button-ghost table-action-icon"
+                            aria-label={`Edit adjustment ${adjustment.reason}`}
+                            title="Edit adjustment"
+                            onClick={() => openEditAdjustmentDialog(adjustment)}
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            type="button"
+                            className="button-ghost table-action-icon"
+                            aria-label={`Delete adjustment ${adjustment.reason}`}
+                            title="Delete adjustment"
+                            onClick={() => setDeleteAdjustmentId(adjustment.id)}
+                          >
+                            <DeleteIcon />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )
@@ -590,8 +695,12 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         onClose={() => setPaymentDialogOpen(false)}
         onPaymentPosted={async (updatedLoan) => {
           setLoan(updatedLoan)
-          const paymentDetail = await getLoanPaymentDetail(loanId)
+          const [paymentDetail, adjustmentDetail] = await Promise.all([
+            getLoanPaymentDetail(loanId),
+            getLoanAdjustmentDetail(loanId),
+          ])
           setPayments(paymentDetail.payments)
+          setAdjustments(adjustmentDetail.adjustments)
         }}
       />
 
@@ -647,8 +756,13 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
               placeholder="Optional"
             />
           </div>
+          {editPaymentPreviewMessage ? (
+            <div className={hasLargeEditPaymentOverpayment ? 'notice danger' : 'notice'}>
+              {editPaymentPreviewMessage}
+            </div>
+          ) : null}
           <div className="inline-actions">
-            <Button onClick={() => void handlePaymentEdit()} disabled={submittingPaymentEdit}>
+            <Button onClick={() => void handlePaymentEdit()} disabled={submittingPaymentEdit || hasLargeEditPaymentOverpayment}>
               {submittingPaymentEdit ? 'Saving…' : 'Save changes'}
             </Button>
             <Button variant="secondary" onClick={() => setSelectedPayment(null)} disabled={submittingPaymentEdit}>

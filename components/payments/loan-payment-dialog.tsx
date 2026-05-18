@@ -13,6 +13,8 @@ import type {
 import { getLoanPaymentDetail, postLoanPayment } from '@/services'
 import styles from './loan-dialogs.module.css'
 
+const PAYMENT_TOLERANCE_MINOR = 500
+
 const paymentMethodOptions: Array<{ value: LoanPaymentMethod; label: string }> = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank transfer' },
@@ -202,6 +204,13 @@ export function LoanPaymentDialog({
       return
     }
 
+    const overpaymentMinor = amountMinor - detail.loan.balances.totalOutstandingAmountMinor
+    if (overpaymentMinor > PAYMENT_TOLERANCE_MINOR) {
+      const currency = detail.loan.loanProduct.currency || 'PHP'
+      setSubmitError(`Payment exceeds remaining balance by ${formatMinorCurrency(overpaymentMinor, currency)}. Please enter ${formatMinorCurrency(detail.loan.balances.totalOutstandingAmountMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`)
+      return
+    }
+
     setSubmitting(true)
     setSubmitError('')
 
@@ -231,6 +240,29 @@ export function LoanPaymentDialog({
   const loan = detail?.loan ?? null
   const currency = loan?.loanProduct.currency || 'PHP'
   const openScheduleRows = (loan?.schedule ?? []).filter((row) => row.outstandingTotalAmountMinor > 0)
+  const amountMinor = toAmountMinor(amount)
+  const remainingBalanceMinor = loan?.balances.totalOutstandingAmountMinor ?? 0
+  const nextOpenRowBalanceMinor = openScheduleRows[0]?.outstandingTotalAmountMinor ?? remainingBalanceMinor
+  const overpaymentMinor = amountMinor && loan ? amountMinor - remainingBalanceMinor : 0
+  const rowShortageMinor = amountMinor && amountMinor < nextOpenRowBalanceMinor
+    ? nextOpenRowBalanceMinor - amountMinor
+    : 0
+  const finalShortageMinor = amountMinor && amountMinor < remainingBalanceMinor
+    ? remainingBalanceMinor - amountMinor
+    : 0
+  const shortagePreviewMinor = rowShortageMinor > 0 && rowShortageMinor <= PAYMENT_TOLERANCE_MINOR
+    ? rowShortageMinor
+    : finalShortageMinor > 0 && finalShortageMinor <= PAYMENT_TOLERANCE_MINOR
+      ? finalShortageMinor
+      : 0
+  const hasLargeOverpayment = overpaymentMinor > PAYMENT_TOLERANCE_MINOR
+  const paymentPreviewMessage = hasLargeOverpayment
+    ? `Payment exceeds remaining balance by ${formatMinorCurrency(overpaymentMinor, currency)}. Please enter ${formatMinorCurrency(remainingBalanceMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`
+    : overpaymentMinor > 0
+      ? `${formatMinorCurrency(overpaymentMinor, currency)} excess will be recorded as rounding income.`
+      : shortagePreviewMinor > 0
+        ? `${formatMinorCurrency(shortagePreviewMinor, currency)} shortage will be waived from interest as a rounding adjustment.`
+        : ''
   const canPostPayment = loan?.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
 
   return (
@@ -305,8 +337,14 @@ export function LoanPaymentDialog({
                 />
               </div>
 
+              {paymentPreviewMessage ? (
+                <div className={hasLargeOverpayment ? 'notice danger' : 'notice'}>
+                  {paymentPreviewMessage}
+                </div>
+              ) : null}
+
               <div className={`ui-card__actions ${styles.formActions}`}>
-                <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostPayment}>
+                <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostPayment || hasLargeOverpayment}>
                   {submitting ? 'Posting…' : 'Post payment'}
                 </Button>
               </div>

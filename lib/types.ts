@@ -16,6 +16,18 @@ export type LoanPaymentMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'internal
 export type LoanPaymentAllocationStatus = 'unallocated' | 'partially_allocated' | 'fully_allocated'
 export type LoanPaymentStatus = 'posted' | 'reversed'
 export type LoanAdjustmentStatus = 'posted'
+export type LoanAdjustmentType =
+  | 'payment_adjustment'
+  | 'balance_adjustment'
+  | 'schedule_adjustment'
+  | 'rounding_adjustment'
+export type LoanAdjustmentComponent =
+  | 'principal'
+  | 'interest'
+  | 'penalty'
+  | 'fees'
+  | 'total'
+export type LoanAdjustmentDirection = 'increase' | 'decrease'
 export type LoanScheduleRowStatus = 'pending' | 'partial' | 'paid' | 'cancelled'
 export type LoanApplicationStatus =
   | 'draft'
@@ -313,6 +325,11 @@ export interface LoanAdjustmentRecord {
   amountMinor: number
   currency: string
   reason: string
+  type: LoanAdjustmentType
+  component: LoanAdjustmentComponent
+  direction: LoanAdjustmentDirection
+  isSystemGenerated: boolean
+  relatedPaymentId?: string | null
   allocations: LoanAdjustmentAllocation[]
   status: LoanAdjustmentStatus
 }
@@ -326,12 +343,18 @@ export interface PostLoanAdjustmentInput {
   adjustmentDate: string
   amountMinor: number
   reason: string
+  type?: LoanAdjustmentType
+  component?: LoanAdjustmentComponent
+  direction?: LoanAdjustmentDirection
 }
 
 export interface UpdateLoanAdjustmentInput {
   adjustmentDate: string
   amountMinor: number
   reason: string
+  type?: LoanAdjustmentType
+  component?: LoanAdjustmentComponent
+  direction?: LoanAdjustmentDirection
 }
 
 export interface LoanAdjustmentPostResponse {
