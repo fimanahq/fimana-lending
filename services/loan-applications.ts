@@ -93,3 +93,9 @@ export function updateLoanApplicationStatus(
     body: JSON.stringify({ status, reviewerRemarks }),
   })
 }
+
+export function undoLoanApplicationApproval(applicationId: string) {
+  return apiRequest<LoanApplication>(`/api/loan-applications/${applicationId}/undo-approval`, {
+    method: 'PATCH',
+  })
+}

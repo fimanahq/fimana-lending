@@ -8,7 +8,7 @@ import { calculateApplicationPreviewMonthlyPayment } from '@/lib/borrower-risk'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types'
-import { getLoanApplication, listLoanBorrowers, updateLoanApplicationStatus } from '@/services'
+import { getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
 import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 import {
@@ -105,6 +105,29 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
     }
   }
 
+  const handleUndoApproval = async () => {
+    if (!application) {
+      return
+    }
+
+    setSavingStatus('submitted')
+    setError('')
+    setMessage('')
+
+    try {
+      const updated = await undoLoanApplicationApproval(application.id)
+      setApplication(updated)
+      setDecisionNotes(
+        updated.reviewerRemarks || updated.decisionNotes || updated.approvalNotes || updated.rejectionReason || decisionNotes,
+      )
+      setMessage('Approval undone. Application returned to Submitted.')
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to undo approval')
+    } finally {
+      setSavingStatus(null)
+    }
+  }
+
   const amount = application ? (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1) : 0
   const cutoffs = application?.numberOfCutoffs ?? application?.gives ?? 0
   const frequency = application?.paymentType || application?.paymentFrequency
@@ -144,6 +167,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const proposedMonthlyPayment = calculateApplicationPreviewMonthlyPayment(preview)
   const canReview = normalizedStatus === 'submitted' || normalizedStatus === 'under_review'
   const canEdit = editableStatuses.includes(normalizedStatus)
+  const canUndoApproval = normalizedStatus === 'approved'
   const reviewDisabled = terminal || !hasPreview || !canReview || Boolean(savingStatus) || isEditing
 
   const cancelEditing = () => {
@@ -168,6 +192,11 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
             <span className={getStatusClassName(application.status)}>
               {formatLoanApplicationStatus(application.status)}
             </span>
+            {canUndoApproval ? (
+              <Button variant="secondary" onClick={() => void handleUndoApproval()} disabled={Boolean(savingStatus) || isEditing}>
+                {savingStatus === 'submitted' ? 'Undoing approval...' : 'Undo approval'}
+              </Button>
+            ) : null}
             {canEdit && !isEditing ? (
               <Button variant="secondary" onClick={() => setIsEditing(true)}>
                 Edit

@@ -111,6 +111,7 @@ export function LoansList() {
   }, [loadLoans])
 
   const selectedPaymentLoan = loans.find((loan) => loan.id === paymentLoanId) || null
+  const selectedDeleteLoan = loans.find((loan) => loan.id === deleteLoanId) || null
 
   const openLoan = (loanId: string) => {
     router.push(`/loans/${loanId}`)
@@ -291,8 +292,12 @@ export function LoansList() {
 
       <ConfirmationDialog
         open={Boolean(deleteLoanId)}
-        title="Delete loan"
-        message="Are you sure you want to delete this loan? This action cannot be undone."
+        title={selectedDeleteLoan ? `Delete ${selectedDeleteLoan.loanNumber}` : 'Delete loan'}
+        message={
+          selectedDeleteLoan
+            ? `Delete ${selectedDeleteLoan.loanNumber} for ${selectedDeleteLoan.borrower.displayName}? This removes the loan and returns its application to Submitted. This action cannot be undone.`
+            : 'Delete this loan? This removes the loan and returns its application to Submitted. This action cannot be undone.'
+        }
         confirmLabel="Delete"
         cancelLabel="Cancel"
         destructive
