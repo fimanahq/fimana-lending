@@ -94,6 +94,116 @@ function MiniMetric({
   )
 }
 
+function CutoffReceivablesTable({
+  currency,
+  description,
+  emptyDescription,
+  emptyTitle,
+  receivables,
+  title,
+  onSelectCutoff,
+}: {
+  currency: string
+  description: string
+  emptyDescription: string
+  emptyTitle: string
+  receivables: DashboardCutoffReceivable[]
+  title: string
+  onSelectCutoff: (cutoffDate: string) => void
+}) {
+  return (
+    <div className={dashboardClass('dashboard-overview__tableCard')}>
+      <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
+        <div>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </div>
+      </div>
+
+      {receivables.length > 0 ? (
+        <div className={dashboardClass('dashboard-overview__tableScroll')}>
+          <table className={dashboardClass('dashboard-overview__table')}>
+            <thead>
+              <tr>
+                <th>Cutoff date</th>
+                <th className={dashboardClass('dashboard-overview__tableAmount')}>
+                  Principal due
+                </th>
+                <th className={dashboardClass('dashboard-overview__tableAmount')}>
+                  Interest due
+                </th>
+                <th className={dashboardClass('dashboard-overview__tableAmount')}>
+                  Total receivable
+                </th>
+                <th className={dashboardClass('dashboard-overview__tableAmount')}>Collected</th>
+                <th className={dashboardClass('dashboard-overview__tableAmount')}>Remaining</th>
+                <th>Borrowers in cutoff</th>
+                <th>Loans in cutoff</th>
+                <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
+                <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receivables.map((entry) => (
+                <tr key={entry.cutoffDate}>
+                  <td>{formatDate(entry.cutoffDate)}</td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(entry.principalDueMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(entry.interestDueMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(
+                      entry.totalReceivableMinor,
+                      currency,
+                    )}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(entry.totalCollectedMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(entry.remainingMinor, currency)}
+                  </td>
+                  <td>{entry.borrowerCount.toLocaleString('en-PH')}</td>
+                  <td>{entry.loanCount.toLocaleString('en-PH')}</td>
+                  <td className={dashboardClass('dashboard-overview__tableStatus')}>
+                    <span
+                      className={dashboardClass('dashboard-overview__statusBadge', `dashboard-overview__statusBadge--${entry.status}`)}
+                    >
+                      {getReceivableStatusLabel(entry.status)}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="button-ghost table-action-icon"
+                      aria-label={`View loans in cutoff on ${formatDate(entry.cutoffDate)}`}
+                      onClick={() => onSelectCutoff(entry.cutoffDate)}
+                    >
+                      <ViewIcon />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className={dashboardClass('dashboard-overview__emptyState')}>
+          <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>
+            +
+          </span>
+          <div>
+            <strong>{emptyTitle}</strong>
+            <p>{emptyDescription}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function DashboardCutoffReceivables({
   currency,
   currentCutoffReceivable,
@@ -110,22 +220,25 @@ export function DashboardCutoffReceivables({
     entry.status === 'current'
     && entry.cutoffDate !== currentCutoffReceivable?.cutoffDate
   )) ?? null
-  const nextUpcomingReceivable = [...receivableByCutoff]
-    .filter((entry) => (
-      entry.status === 'upcoming'
-      && entry.cutoffDate !== currentCutoffReceivable?.cutoffDate
-      && entry.cutoffDate !== currentOpenReceivable?.cutoffDate
-    ))
-    .sort((left, right) => left.cutoffDate.localeCompare(right.cutoffDate))[0] ?? null
+  const upcomingReceivables = [...receivableByCutoff]
+    .filter((entry) => entry.status === 'upcoming')
+    .sort((left, right) => left.cutoffDate.localeCompare(right.cutoffDate))
+  const currentUpcomingReceivables = Array.from(
+    new Map(
+      [
+        ...(currentReceivable ? [currentReceivable] : []),
+        ...(currentOpenReceivable ? [currentOpenReceivable] : []),
+        ...upcomingReceivables,
+      ].map((entry) => [entry.cutoffDate, entry]),
+    ).values(),
+  ).sort((left, right) => left.cutoffDate.localeCompare(right.cutoffDate))
   const overdueReceivables = [...receivableByCutoff]
     .filter((entry) => entry.status === 'overdue')
     .sort((left, right) => left.cutoffDate.localeCompare(right.cutoffDate))
   const visibleReceivables = Array.from(
     new Map(
       [
-        ...(currentReceivable ? [currentReceivable] : []),
-        ...(currentOpenReceivable ? [currentOpenReceivable] : []),
-        ...(nextUpcomingReceivable ? [nextUpcomingReceivable] : []),
+        ...currentUpcomingReceivables,
         ...overdueReceivables,
       ].map((entry) => [entry.cutoffDate, entry]),
     ).values(),
@@ -154,8 +267,8 @@ export function DashboardCutoffReceivables({
         <div>
           <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
           <p className="muted">
-            Group schedules by cutoff date so the nearest cutoff, upcoming
-            collection target, and overdue receivables stay visible at a glance.
+            Current and upcoming cutoff schedules are separated from overdue
+            receivables for cleaner collection tracking.
           </p>
           <p className="muted">
             Collected reflects actual applied payments, including advance
@@ -228,89 +341,25 @@ export function DashboardCutoffReceivables({
         </div>
       )}
 
-      <div className={dashboardClass('dashboard-overview__tableCard')}>
-        {visibleReceivables.length > 0 ? (
-          <div className={dashboardClass('dashboard-overview__tableScroll')}>
-            <table className={dashboardClass('dashboard-overview__table')}>
-              <thead>
-                <tr>
-                  <th>Cutoff date</th>
-                  <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                    Principal due
-                  </th>
-                  <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                    Interest due
-                  </th>
-                  <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                    Total receivable
-                  </th>
-                  <th className={dashboardClass('dashboard-overview__tableAmount')}>Collected</th>
-                  <th className={dashboardClass('dashboard-overview__tableAmount')}>Remaining</th>
-                  <th>Borrowers in cutoff</th>
-                  <th>Loans in cutoff</th>
-                  <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
-                  <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleReceivables.map((entry) => (
-                  <tr key={entry.cutoffDate}>
-                    <td>{formatDate(entry.cutoffDate)}</td>
-                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                      {formatMinorCurrency(entry.principalDueMinor, currency)}
-                    </td>
-                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                      {formatMinorCurrency(entry.interestDueMinor, currency)}
-                    </td>
-                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                      {formatMinorCurrency(
-                        entry.totalReceivableMinor,
-                        currency,
-                      )}
-                    </td>
-                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                      {formatMinorCurrency(entry.totalCollectedMinor, currency)}
-                    </td>
-                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                      {formatMinorCurrency(entry.remainingMinor, currency)}
-                    </td>
-                    <td>{entry.borrowerCount.toLocaleString("en-PH")}</td>
-                    <td>{entry.loanCount.toLocaleString("en-PH")}</td>
-                    <td className={dashboardClass('dashboard-overview__tableStatus')}>
-                      <span
-                        className={dashboardClass('dashboard-overview__statusBadge', `dashboard-overview__statusBadge--${entry.status}`)}
-                      >
-                        {getReceivableStatusLabel(entry.status)}
-                      </span>
-                    </td>
-                    <td>
-                      <div
-                        aria-hidden="true"
-                        className="button-ghost table-action-icon"
-                        onClick={() => setSelectedCutoffDate(entry.cutoffDate)}
-                      >
-                      <ViewIcon/>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className={dashboardClass('dashboard-overview__emptyState')}>
-            <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>
-              +
-            </span>
-            <div>
-              <strong>No receivable cutoffs yet</strong>
-              <p>
-                Open receivable cutoff groups will appear here once active
-                schedules are generated.
-              </p>
-            </div>
-          </div>
-        )}
+      <div className={dashboardClass('dashboard-overview__receivableTables')}>
+        <CutoffReceivablesTable
+          currency={currency}
+          description="Open non-overdue cutoffs sorted by schedule date."
+          emptyDescription="No current or upcoming cutoff groups are scheduled right now."
+          emptyTitle="No current or upcoming cutoffs"
+          receivables={currentUpcomingReceivables}
+          title="Current and upcoming"
+          onSelectCutoff={setSelectedCutoffDate}
+        />
+        <CutoffReceivablesTable
+          currency={currency}
+          description="Past due cutoffs with remaining balances to collect."
+          emptyDescription="No cutoff groups are overdue right now."
+          emptyTitle="No overdue cutoffs"
+          receivables={overdueReceivables}
+          title="Overdues"
+          onSelectCutoff={setSelectedCutoffDate}
+        />
       </div>
 
       <Dialog

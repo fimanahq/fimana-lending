@@ -872,6 +872,34 @@
   padding: 0.75rem 1rem;
 }
 
+.dashboard-overview__receivableTables {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-overview__tableCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.35rem 0.85rem;
+}
+
+.dashboard-overview__tableCardHeader h3 {
+  margin: 0;
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.dashboard-overview__tableCardHeader p {
+  margin: 0.3rem 0 0;
+  color: rgba(84, 67, 57, 0.74);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .dashboard-overview__tableScroll {
   max-height: 31rem;
   overflow: auto;
