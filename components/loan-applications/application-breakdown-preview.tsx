@@ -10,6 +10,7 @@ import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 
 interface ApplicationBreakdownPreviewProps {
   borrowerName?: string
+  calculationMethod?: string | null
   preview: LoanApplicationComputedPreviewSnapshot | LoanApplicationPreviewSnapshot | null
 }
 
@@ -59,7 +60,11 @@ function getSchedule(preview: LoanApplicationComputedPreviewSnapshot | LoanAppli
   return preview.schedule ?? []
 }
 
-export function ApplicationBreakdownPreview({ borrowerName, preview }: ApplicationBreakdownPreviewProps) {
+export function ApplicationBreakdownPreview({
+  borrowerName,
+  calculationMethod: requestedCalculationMethod,
+  preview,
+}: ApplicationBreakdownPreviewProps) {
   const [scheduleCopyStatus, setScheduleCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   useEffect(() => {
@@ -107,9 +112,9 @@ export function ApplicationBreakdownPreview({ borrowerName, preview }: Applicati
   const totalPayment = toFiniteNumber(
     isComputedPreview(preview) ? preview.totalPaymentAmountMinor / 100 : preview.totalPayment,
   )
-  const calculationMethod = isComputedPreview(preview)
+  const calculationMethod = requestedCalculationMethod ?? (isComputedPreview(preview)
     ? preview.interestConfig?.method
-    : preview.calculationMethod
+    : preview.calculationMethod)
   const isFixedTotalInterest = calculationMethod === 'fixed_total_interest'
   const overallProfitPercentage = totalInterest !== null && principal > 0
     ? (totalInterest / principal) * 100

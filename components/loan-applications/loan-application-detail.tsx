@@ -355,6 +355,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
       <ApplicationBreakdownPreview
         borrowerName={getApplicantName(application)}
+        calculationMethod={application.calculationMethod}
         preview={preview}
       />
     </div>
