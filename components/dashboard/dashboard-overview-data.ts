@@ -68,6 +68,8 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     startingCapitalMinor: 0,
     collectedInterestMinor: 0,
     activeCollectedInterestMinor: 0,
+    collectedProfitVsCapitalBps: 0,
+    projectedProfitVsCapitalBps: 0,
     currentCapitalBasisMinor: 0,
     cashOnHandMinor: 0,
     outstandingPrincipalMinor: 0,
@@ -95,7 +97,8 @@ export function buildDashboardOverviewData({
   failedSources = [],
 }: BuildDashboardOverviewDataInput): DashboardOverviewData {
   const mergedSummary: DashboardSummaryMetrics = {
-    ...(summary ?? getDefaultSummary()),
+    ...getDefaultSummary(),
+    ...(summary ?? {}),
     pendingReviewCount: getPendingReviewCount(applications),
   }
 

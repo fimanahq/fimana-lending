@@ -51,6 +51,10 @@ function formatPercentage(value: number) {
   return `${value.toFixed(2)}%`
 }
 
+function formatBasisPointsPercentage(valueBps: number) {
+  return `${(valueBps / 100).toFixed(2)}%`
+}
+
 function getNameInitials(name: string) {
   const parts = name.split(/\s+/).filter(Boolean)
   return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || 'FM'
@@ -270,7 +274,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </strong>
             <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + collected interest</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital basis
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} profit vs capital
             </span>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="money" />
@@ -344,7 +348,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </strong>
             <span className={dashboardClass('dashboard-overview__statMeta')}>Current capital basis plus projected unpaid interest</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              Assumes active-loan interest is fully collected
+              {formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)} projected profit vs starting capital
             </span>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="note" />
@@ -477,16 +481,17 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               <div className={dashboardClass('dashboard-overview__progressSummary')}>
                 <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total collected + projected interest</span>
                 <strong>{formatMinorCurrency(summary.totalProjectedInterestMinor, dashboardCurrency)}</strong>
-                <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far</span>
+                <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} vs capital</span>
               </div>
             </div>
 
             <div className={dashboardClass('dashboard-overview__progressBody')}>
               {summary.totalProjectedInterestMinor > 0 ? (
                 <DashboardPortfolioChart
-                  caption="This chart is interest-only. It compares collected interest with remaining projected interest and does not treat projected interest as cash on hand."
-                  centerKicker="Total projected interest"
-                  centerSubvalue={`${formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far`}
+                  caption="This chart is interest-only. The donut compares collected interest with remaining projected interest, while the center shows projected profit against starting capital."
+                  centerKicker="Projected profit vs capital"
+                  centerSubvalue={`${formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} collected so far`}
+                  centerValue={formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)}
                   centerValueMinor={summary.totalProjectedInterestMinor}
                   currency={dashboardCurrency}
                   segments={interestOutlookSegments}

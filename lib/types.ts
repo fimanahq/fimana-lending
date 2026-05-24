@@ -431,6 +431,8 @@ export interface LoanDashboardSummary {
   startingCapitalMinor: number
   collectedInterestMinor: number
   activeCollectedInterestMinor: number
+  collectedProfitVsCapitalBps: number
+  projectedProfitVsCapitalBps: number
   currentCapitalBasisMinor: number
   cashOnHandMinor: number
   outstandingPrincipalMinor: number

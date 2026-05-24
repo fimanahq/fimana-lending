@@ -48,6 +48,7 @@ export function DashboardPortfolioChart({
   caption,
   centerKicker,
   centerSubvalue,
+  centerValue,
   centerValueMinor,
   currency,
   segments,
@@ -55,6 +56,7 @@ export function DashboardPortfolioChart({
   caption: string
   centerKicker: string
   centerSubvalue: string
+  centerValue?: string
   centerValueMinor: number
   currency: string
   segments: DashboardProgressSegment[]
@@ -129,7 +131,7 @@ export function DashboardPortfolioChart({
 
         <div className={dashboardClass('dashboard-overview__progressChartCenter')} aria-hidden="true">
           <span className={dashboardClass('dashboard-overview__progressChartKicker')}>{centerKicker}</span>
-          <strong>{formatCurrency(centerValueMinor / 100, currency)}</strong>
+          <strong>{centerValue ?? formatCurrency(centerValueMinor / 100, currency)}</strong>
           <span>{centerSubvalue}</span>
         </div>
       </div>
