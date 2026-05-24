@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildPathWithQuery } from '@/lib/request-query'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
 import type {
@@ -83,11 +84,9 @@ function getDraftPayload(body: Record<string, unknown>): LoanApplicationDraftInp
 //   }
 // }
 export async function GET(request: NextRequest) {
-  const query = request.nextUrl.searchParams.toString()
-
   try {
     const applications = await authorizedBackendRequest(
-      `/loan-applications${query ? `?${query}` : ''}`,
+      buildPathWithQuery('/loan-applications', request.nextUrl.searchParams.toString()),
     )
 
     return NextResponse.json(applications)

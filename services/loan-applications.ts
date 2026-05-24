@@ -1,5 +1,7 @@
 import { apiRequest } from '@/lib/client-api'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
+import { getOrCreateCachedRequest } from '@/lib/request-cache'
+import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
 import type { LoanApplicationDraftInput, LoanApplicationStatus, LoanApplication } from '@/lib/types'
 import { PaginatedResponse } from '@/types'
 
@@ -20,35 +22,13 @@ type LoanApplicationFilters = {
 
 const loanApplicationListRequests = new Map<string, Promise<PaginatedResponse<LoanApplication>>>()
 
-function buildQueryParams(filters: LoanApplicationFilters) {
-  const params = new URLSearchParams()
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.set(key, String(value))
-    }
-  })
-
-  return params.toString()
-}
-
 export function listLoanApplications(filters: LoanApplicationFilters = {}) {
-  const query = buildQueryParams(filters)
-  const requestPath = `/api/loan-applications${query ? `?${query}` : ''}`
-  const inflightRequest = loanApplicationListRequests.get(requestPath)
-
-  if (inflightRequest) {
-    return inflightRequest
-  }
-
-  const request = apiRequest<PaginatedResponse<LoanApplication>>(requestPath)
-    .finally(() => {
-      loanApplicationListRequests.delete(requestPath)
-    })
-
-  loanApplicationListRequests.set(requestPath, request)
-
-  return request
+  const requestPath = buildPathWithQuery('/api/loan-applications', buildQueryString(filters))
+  return getOrCreateCachedRequest(
+    loanApplicationListRequests,
+    requestPath,
+    () => apiRequest<PaginatedResponse<LoanApplication>>(requestPath),
+  )
 }
 
 export function getLoanApplication(applicationId: string) {

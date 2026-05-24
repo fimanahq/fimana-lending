@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
 import type { Borrower } from '@/lib/types'
@@ -19,17 +20,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(borrowers)
     }
 
-    const backendSearchParams = new URLSearchParams()
-
-    backendSearchParams.set('page', page ?? '1')
-    backendSearchParams.set('itemsPerPage', itemsPerPage ?? '10')
-
-    if (search) {
-      backendSearchParams.set('search', search)
-    }
-
     const borrowers = await authorizedBackendRequest<PaginatedResponse<Borrower>>(
-      `/borrowers/paginated?${backendSearchParams.toString()}`,
+      buildPathWithQuery('/borrowers/paginated', buildQueryString({
+        page: page ?? '1',
+        itemsPerPage: itemsPerPage ?? '10',
+        search,
+      })),
     )
 
     return NextResponse.json(borrowers)

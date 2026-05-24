@@ -1,4 +1,6 @@
 import { apiRequest } from '@/lib/client-api'
+import { getOrCreateCachedRequest } from '@/lib/request-cache'
+import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
 import type { LoanRecord } from '@/lib/types'
 import { PaginatedResponse } from '@/types'
 
@@ -16,53 +18,22 @@ type LoanRecordFilters = {
   itemsPerPage?: number
 }
 
-function buildQueryParams(filters: LoanRecordFilters) {
-  const params = new URLSearchParams()
-
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      params.set(key, String(value))
-    }
-  })
-
-  return params.toString()
-}
-
 export function listLoanRecords(filters: LoanRecordFilters = {}) {
-  const query = buildQueryParams(filters)
-  const requestPath = `/api/loans${query ? `?${query}` : ''}`
-  const inflightRequest = loanListRequests.get(requestPath)
-
-  if (inflightRequest) {
-    return inflightRequest as Promise<PaginatedResponse<LoanRecord>>
-  }
-
-  const request = apiRequest<PaginatedResponse<LoanRecord>>(requestPath)
-    .finally(() => {
-      loanListRequests.delete(requestPath)
-    })
-
-  loanListRequests.set(requestPath, request)
-
-  return request
+  const requestPath = buildPathWithQuery('/api/loans', buildQueryString(filters))
+  return getOrCreateCachedRequest(
+    loanListRequests,
+    requestPath,
+    () => apiRequest<PaginatedResponse<LoanRecord>>(requestPath),
+  ) as Promise<PaginatedResponse<LoanRecord>>
 }
 
 export function listLoansByBorrowerId(borrowerId: string) {
   const requestPath = `/api/borrowers/${borrowerId}/loans`
-  const inflightRequest = loanListRequests.get(requestPath)
-
-  if (inflightRequest) {
-    return inflightRequest as Promise<LoanRecord[]>
-  }
-
-  const request = apiRequest<LoanRecord[]>(requestPath)
-    .finally(() => {
-      loanListRequests.delete(requestPath)
-    })
-
-  loanListRequests.set(requestPath, request)
-
-  return request
+  return getOrCreateCachedRequest(
+    loanListRequests,
+    requestPath,
+    () => apiRequest<LoanRecord[]>(requestPath),
+  ) as Promise<LoanRecord[]>
 }
 
 export function postLoan(input: Record<string, unknown>) {
