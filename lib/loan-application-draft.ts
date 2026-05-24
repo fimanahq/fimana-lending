@@ -1,9 +1,27 @@
 import type {
   LoanApplicationDraftInput,
   LoanCalculationMethod,
+  LoanApplicationPaymentType,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
 } from '@/lib/types'
+
+interface DraftLoanApplicationInput {
+  borrowerId: string
+  loanProductId?: string
+  loanAmountMinor: number
+  numberOfCutoffs: number
+  startDate: string
+  paymentType: LoanApplicationPaymentType
+  paymentDays: string[]
+  cutoffPatternCode?: LoanApplicationDraftInput['cutoffPatternCode']
+  interestRate: number | null
+  calculationMethod: LoanCalculationMethod
+  interestOnlyPeriod: number | null
+  postInterestOnlyMethod: PostInterestOnlyMethod | null
+  simpleInterestMethod: SimpleInterestMethod | null
+  purpose?: string
+}
 
 export function isDraftLoanApplicationPayload(body: Record<string, unknown>) {
   return 'borrowerId' in body || 'loanProductId' in body || 'loanAmountMinor' in body
@@ -31,7 +49,7 @@ export function getDraftLoanApplicationPayload(body: Record<string, unknown>): L
     ? null
     : Number(body.interestRate)
 
-  return {
+  return buildDraftLoanApplicationInput({
     borrowerId: typeof body.borrowerId === 'string' ? body.borrowerId : '',
     loanProductId:
       typeof body.loanProductId === 'string' && body.loanProductId.trim().length > 0
@@ -53,6 +71,31 @@ export function getDraftLoanApplicationPayload(body: Record<string, unknown>): L
       ? toSimpleInterestMethod(body.simpleInterestMethod)
       : null,
     purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
+  })
+}
+
+export function buildDraftLoanApplicationInput(
+  input: DraftLoanApplicationInput,
+): LoanApplicationDraftInput {
+  return {
+    borrowerId: input.borrowerId,
+    loanProductId: input.loanProductId,
+    loanAmountMinor: input.loanAmountMinor,
+    numberOfCutoffs: input.numberOfCutoffs,
+    startDate: input.startDate,
+    paymentType: input.paymentType,
+    paymentDays: input.paymentDays,
+    cutoffPatternCode: input.cutoffPatternCode ?? null,
+    interestRate: input.interestRate,
+    calculationMethod: input.calculationMethod,
+    interestOnlyPeriod: input.calculationMethod === 'interest_only' ? input.interestOnlyPeriod : null,
+    postInterestOnlyMethod: input.calculationMethod === 'interest_only'
+      ? input.postInterestOnlyMethod
+      : null,
+    simpleInterestMethod: input.calculationMethod === 'simple_interest'
+      ? input.simpleInterestMethod
+      : null,
+    purpose: input.purpose,
   }
 }
 

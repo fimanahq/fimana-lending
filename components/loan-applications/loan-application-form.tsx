@@ -6,11 +6,11 @@ import type {
   Borrower,
   LoanCalculationMethod,
   LoanApplication,
-  LoanApplicationDraftInput,
   LoanApplicationPaymentType,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
 } from '@/lib/types'
+import { buildDraftLoanApplicationInput } from '@/lib/loan-application-draft'
 import { buildLoanDueDates, buildPaymentDays, getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { formatDate } from '@/lib/format'
 import {
@@ -193,10 +193,10 @@ function incomeHasChanged(nextIncome: number | null, currentIncome?: number | nu
   return nextIncome !== (currentIncome ?? null)
 }
 
-function getDraftPayload(form: LoanApplicationFormValues): LoanApplicationDraftInput {
+function getDraftPayload(form: LoanApplicationFormValues) {
   const [firstDay = '', secondDay = ''] = derivePaymentDaysFromStartDate(form.startDate, form.paymentType)
 
-  return {
+  return buildDraftLoanApplicationInput({
     borrowerId: form.borrowerId,
     loanAmountMinor: pesosToMinor(form.loanAmount),
     numberOfCutoffs: Number(form.numberOfInstallments),
@@ -215,7 +215,7 @@ function getDraftPayload(form: LoanApplicationFormValues): LoanApplicationDraftI
       ? form.simpleInterestMethod
       : null,
     purpose: form.purpose.trim() || undefined,
-  }
+  })
 }
 
 function validateForm(form: LoanApplicationFormValues) {
