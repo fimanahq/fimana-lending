@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import type { Borrower } from '@/lib/types'
+import type { Borrower } from '@/lib/types/lending'
 
 export async function GET(
   _request: NextRequest,

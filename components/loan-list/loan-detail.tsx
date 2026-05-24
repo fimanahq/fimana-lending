@@ -20,7 +20,7 @@ import {
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord } from '@/lib/types'
+import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord } from '@/lib/types/lending'
 import { getLoan } from '@/services/loans'
 import {
   deleteLoanAdjustment,

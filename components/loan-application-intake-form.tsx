@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { getLoanApplicationValidationResult, validateLoanApplicationInput } from '@/lib/loan-application-validation'
 import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
-import type { LoanApplication } from '@/lib/types'
+import type { LoanApplication } from '@/lib/types/lending'
 import { createPublicLoanApplication } from '@/services'
 
 const PHONE_PREFIX = '+63 '

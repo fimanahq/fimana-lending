@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/lib/constants'
 import { createSession, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
 import { hasLoanAppAccess } from '@/lib/access'
-import type { User } from '@/lib/types'
+import type { User } from '@/lib/types/shared'
 
 interface AuthPayload {
   accessToken: string

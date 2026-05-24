@@ -15,7 +15,7 @@ import {
   TableShell,
 } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'
-import type { Borrower } from '@/lib/types'
+import type { Borrower } from '@/lib/types/lending'
 import { listBorrowersPaginated } from '@/services'
 import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'

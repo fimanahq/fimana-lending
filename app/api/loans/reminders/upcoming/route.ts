@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
-import type { UpcomingLoanReminder } from '@/lib/types'
+import type { UpcomingLoanReminder } from '@/lib/types/lending'
 
 export async function GET() {
   try {

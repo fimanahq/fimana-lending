@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
-import type { LoanApplicationStatus, LoanApplication } from '@/lib/types'
+import type { LoanApplicationStatus, LoanApplication } from '@/lib/types/lending'
 
 function getActionPath(status: LoanApplicationStatus) {
   return {

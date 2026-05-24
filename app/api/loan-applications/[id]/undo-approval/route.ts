@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
-import type { LoanApplication } from '@/lib/types'
+import type { LoanApplication } from '@/lib/types/lending'
 
 export async function PATCH(
   _request: NextRequest,

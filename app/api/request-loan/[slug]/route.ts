@@ -7,7 +7,7 @@ import { API_BASE_URL } from '@/lib/constants'
 import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import type { LoanApplication } from '@/lib/types'
+import type { LoanApplication } from '@/lib/types/lending'
 
 interface BackendEnvelope<T> {
   message?: string

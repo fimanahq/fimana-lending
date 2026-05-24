@@ -1,6 +1,4 @@
 export type {
-  ApiErrorPayload,
-  Contact,
   InterestMode,
   Loan,
   LoanBorrower,
@@ -13,11 +11,16 @@ export type {
   LoanApplicationRecordStatus,
   LoanSchedulePreviewRow,
   LoanStatus,
-  PaymentFrequency,
   UpcomingLoanReminder,
+} from '@/lib/types/lending'
+
+export type {
+  ApiErrorPayload,
+  Contact,
+  PaymentFrequency,
   User,
   UserAppCode,
-} from '@/lib/types'
+} from '@/lib/types/shared'
 
 export type { PaginatedResponse } from './pagination'
 export type { ListBorrowersParams, CreateBorrowerInput, UpdateBorrowerInput } from './borrowers'

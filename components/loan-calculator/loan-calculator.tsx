@@ -16,10 +16,10 @@ import type {
   InterestMode,
   LoanCalculationMethod,
   LoanInterestRulesConfig,
-  PaymentFrequency,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
-} from '@/lib/types'
+} from '@/lib/types/lending'
+import type { PaymentFrequency } from '@/lib/types/shared'
 
 function getGivesBucketLabel(gives: number) {
   if (gives <= 1) {

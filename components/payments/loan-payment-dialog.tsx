@@ -9,7 +9,7 @@ import type {
   LoanPaymentHistory,
   LoanPaymentMethod,
   LoanRecord,
-} from '@/lib/types'
+} from '@/lib/types/lending'
 import { getLoanPaymentDetail, postLoanPayment } from '@/services'
 import styles from './loan-dialogs.module.css'
 

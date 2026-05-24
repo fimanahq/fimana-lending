@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import type { Contact } from '@/lib/types'
+import type { Contact } from '@/lib/types/shared'
 
 export async function GET() {
   try {

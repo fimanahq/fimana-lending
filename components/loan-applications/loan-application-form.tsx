@@ -9,7 +9,7 @@ import type {
   LoanApplicationPaymentType,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
-} from '@/lib/types'
+} from '@/lib/types/lending'
 import { buildDraftLoanApplicationInput } from '@/lib/loan-application-draft'
 import { buildLoanDueDates, buildPaymentDays, getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { formatDate } from '@/lib/format'

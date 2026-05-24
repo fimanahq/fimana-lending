@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, ErrorBanner, Input, Textarea } from '@/components/shared'
-import type { Borrower } from '@/lib/types'
+import type { Borrower } from '@/lib/types/lending'
 import { createBorrower, updateBorrower } from '@/services'
 import { CreateBorrowerInput } from '@/types'
 

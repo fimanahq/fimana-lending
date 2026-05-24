@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
 import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
-import type { Borrower } from '@/lib/types'
+import type { Borrower } from '@/lib/types/lending'
 import { PaginatedResponse } from '@/types'
 
 export async function GET(request: NextRequest) {

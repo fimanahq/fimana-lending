@@ -16,7 +16,7 @@ import { BorrowerForm } from '@/components/borrowers/borrower-form'
 import { EditIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { Borrower, LoanRecord } from '@/lib/types'
+import type { Borrower, LoanRecord } from '@/lib/types/lending'
 import { getBorrower, listLoansByBorrowerId } from '@/services'
 import borrowerStyles from './borrowers.module.css'
 

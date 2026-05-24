@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, TableShell } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
-import type { LoanAdjustmentDetail, LoanAdjustmentRecord, LoanRecord } from '@/lib/types'
+import type { LoanAdjustmentDetail, LoanAdjustmentRecord, LoanRecord } from '@/lib/types/lending'
 import { getLoanAdjustmentDetail, postLoanAdjustment } from '@/services'
 import styles from './loan-dialogs.module.css'
 

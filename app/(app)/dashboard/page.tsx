@@ -1,6 +1,6 @@
 import { DashboardOverview, buildDashboardOverviewData, type DashboardDataSource } from '@/modules/dashboard'
 import { authorizedBackendRequest } from '@/lib/server/backend'
-import type { LoanApplication, LoanDashboardSummary, UpcomingLoanReminder } from '@/lib/types'
+import type { LoanApplication, LoanDashboardSummary, UpcomingLoanReminder } from '@/lib/types/lending'
 
 export default async function DashboardPage() {
   const [summaryResult, applicationResult, reminderResult] = await Promise.allSettled([

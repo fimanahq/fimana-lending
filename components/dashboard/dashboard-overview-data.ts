@@ -1,9 +1,9 @@
 import type {
   LoanApplication,
   LoanDashboardSummary,
-  SettingsCurrency,
   UpcomingLoanReminder,
-} from '@/lib/types'
+} from '@/lib/types/lending'
+import type { SettingsCurrency } from '@/lib/types/shared'
 
 export type DashboardDataSource = 'summary' | 'applications' | 'reminders'
 

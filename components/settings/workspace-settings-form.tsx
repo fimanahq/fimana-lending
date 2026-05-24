@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
-import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types'
+import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types/shared'
 import { getSettings, updateSettings } from '@/services'
 
 interface SettingsFormState {

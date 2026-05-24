@@ -3,7 +3,7 @@ import { hasLoanAppAccess } from '@/lib/access'
 import { API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
 import { isProtectedPath } from '@/lib/protected-routes'
 import { clearSessionCookies, createSession } from '@/lib/server/backend'
-import type { User } from '@/lib/types'
+import type { User } from '@/lib/types/shared'
 
 interface AuthPayload {
   accessToken: string

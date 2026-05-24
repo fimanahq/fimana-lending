@@ -7,7 +7,7 @@ import { LoanApplicationRiskMeter } from '@/components/loan-applications/loan-ap
 import { calculateApplicationPreviewMonthlyPayment } from '@/lib/borrower-risk'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
-import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types'
+import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
 import { getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
 import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, Textarea } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'

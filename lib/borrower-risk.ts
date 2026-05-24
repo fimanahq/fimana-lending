@@ -3,8 +3,8 @@ import type {
   LoanApplicationPaymentType,
   LoanApplicationPreviewSnapshot,
   LoanRecord,
-  PaymentFrequency,
-} from '@/lib/types'
+} from '@/lib/types/lending'
+import type { PaymentFrequency } from '@/lib/types/shared'
 
 export type BorrowerRiskLevel = 'low' | 'moderate' | 'high' | 'very_high'
 

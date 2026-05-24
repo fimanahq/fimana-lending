@@ -8,7 +8,7 @@ import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-ico
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { LoanRecord, LoanStatus } from '@/lib/types'
+import type { LoanRecord, LoanStatus } from '@/lib/types/lending'
 import { deleteLoan, listLoanRecords } from '@/services'
 import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'

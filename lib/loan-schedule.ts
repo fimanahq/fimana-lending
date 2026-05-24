@@ -3,10 +3,10 @@ import type {
   LoanCalculationMethod,
   LoanInterestRulesConfig,
   LoanSchedulePreviewRow,
-  PaymentFrequency,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
-} from '@/lib/types'
+} from '@/lib/types/lending'
+import type { PaymentFrequency } from '@/lib/types/shared'
 
 export const paymentDayOptions = Array.from({ length: 31 }, (_, index) => String(index + 1)).concat('month_end')
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000

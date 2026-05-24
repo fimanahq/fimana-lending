@@ -1,10 +1,10 @@
 import type {
-  LoanInstallmentStatus,
   LoanApplicationRecordStatus,
+  LoanInstallmentStatus,
+  LoanReminderStatus,
   LoanScheduleRowStatus,
   LoanStatus,
-  LoanReminderStatus,
-} from '@/lib/types'
+} from '@/lib/types/lending'
 
 export function normalizeLoanApplicationStatus(status: LoanApplicationRecordStatus) {
   return status === 'pending' ? 'submitted' : status

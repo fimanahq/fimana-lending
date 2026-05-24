@@ -1,4 +1,4 @@
-import type { LoanInterestRulesConfig } from '@/lib/types'
+import type { LoanInterestRulesConfig } from '@/lib/types/lending'
 
 export const defaultLoanInterestRules: LoanInterestRulesConfig = {
   thresholdAmount: 5000,

@@ -4,7 +4,7 @@ import type {
   LoanApplicationComputedPreviewSnapshot,
   LoanApplicationPreviewSnapshot,
   LoanSchedulePreviewRow,
-} from '@/lib/types'
+} from '@/lib/types/lending'
 import { Card, DataTable, TableShell } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 

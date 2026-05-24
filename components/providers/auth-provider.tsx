@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import type { User } from '@/lib/types'
+import type { User } from '@/lib/types/shared'
 
 interface AuthContextValue {
   user: User | null

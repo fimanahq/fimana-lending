@@ -5,7 +5,7 @@ import { Card, EmptyState, TableShell } from '@/components/shared'
 import { OpenLoanIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { Loan } from '@/lib/types'
+import type { Loan } from '@/lib/types/lending'
 import borrowerStyles from './borrowers.module.css'
 
 interface BorrowerLoanHistoryProps {
