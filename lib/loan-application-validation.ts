@@ -1,5 +1,5 @@
 import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
-import type { PaymentFrequency } from '@/lib/types'
+import type { PaymentFrequency } from '@/lib/types/shared'
 
 export interface LoanApplicationValidationInput {
   firstName: string

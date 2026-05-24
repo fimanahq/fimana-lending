@@ -1,7 +1,7 @@
 import { apiRequest } from '@/lib/client-api'
 import { getOrCreateCachedRequest } from '@/lib/request-cache'
 import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
-import type { LoanRecord } from '@/lib/types'
+import type { LoanRecord } from '@/lib/types/lending'
 import { PaginatedResponse } from '@/types'
 
 const loanListRequests = new Map<string, Promise<PaginatedResponse<LoanRecord> | LoanRecord[]>>()

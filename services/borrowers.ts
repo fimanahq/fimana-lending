@@ -1,7 +1,7 @@
 import { apiRequest } from '@/lib/client-api'
 import { getOrCreateCachedRequest } from '@/lib/request-cache'
 import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
-import type { Borrower } from '@/lib/types'
+import type { Borrower } from '@/lib/types/lending'
 import { PaginatedResponse } from '@/types'
 import { CreateBorrowerInput, ListBorrowersParams, UpdateBorrowerInput } from '@/types'
 

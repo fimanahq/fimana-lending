@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/client-api'
-import type { User, UserAppCode } from '@/lib/types'
+import type { User, UserAppCode } from '@/lib/types/shared'
 
 export interface LoginCredentials {
   identifier: string

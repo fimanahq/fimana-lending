@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/client-api'
-import type { Settings, SettingsCurrency } from '@/lib/types'
+import type { Settings, SettingsCurrency } from '@/lib/types/shared'
 
 export interface UpdateSettingsInput {
   defaultCurrency?: SettingsCurrency

@@ -1,6 +1,6 @@
 'use client'
 
-import type { ApiErrorPayload } from '@/lib/types'
+import type { ApiErrorPayload } from '@/lib/types/shared'
 
 export class ApiRequestError extends Error {
   status: number

@@ -2,7 +2,11 @@ import { apiRequest } from '@/lib/client-api'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { getOrCreateCachedRequest } from '@/lib/request-cache'
 import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
-import type { LoanApplicationDraftInput, LoanApplicationStatus, LoanApplication } from '@/lib/types'
+import type {
+  LoanApplication,
+  LoanApplicationDraftInput,
+  LoanApplicationStatus,
+} from '@/lib/types/lending'
 import { PaginatedResponse } from '@/types'
 
 export type CreateLoanApplicationInput = LoanApplicationDraftInput

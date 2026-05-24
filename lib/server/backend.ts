@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
 import { getExpiredSessionCookieOptions, getSessionCookieOptions } from '@/lib/session-cookies'
-import type { User } from '@/lib/types'
+import type { User } from '@/lib/types/shared'
 
 interface BackendEnvelope<T> {
   message?: string

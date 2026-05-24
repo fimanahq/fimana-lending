@@ -1,10 +1,10 @@
 import type {
   LoanApplicationDraftInput,
-  LoanCalculationMethod,
   LoanApplicationPaymentType,
+  LoanCalculationMethod,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
-} from '@/lib/types'
+} from '@/lib/types/lending'
 
 interface DraftLoanApplicationInput {
   borrowerId: string

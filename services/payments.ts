@@ -9,7 +9,7 @@ import type {
   PostLoanPaymentInput,
   UpdateLoanAdjustmentInput,
   UpdateLoanPaymentInput,
-} from '@/lib/types'
+} from '@/lib/types/lending'
 
 export function listLoanPaymentQueue() {
   return apiRequest<LoanPaymentQueueItem[]>('/api/loan-payments')
