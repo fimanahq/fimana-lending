@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, TableShell } from '@/components/shared'
+import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, TableShell, useToast } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type {
@@ -146,6 +146,7 @@ export function LoanPaymentDialog({
   onPaymentPosted,
   open,
 }: LoanPaymentDialogProps) {
+  const { dismiss, loading: showLoading, update } = useToast()
   const [detail, setDetail] = useState<LoanPaymentDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
@@ -213,6 +214,7 @@ export function LoanPaymentDialog({
 
     setSubmitting(true)
     setSubmitError('')
+    const toastId = showLoading('Posting payment...')
 
     try {
       const response = await postLoanPayment(loanId, {
@@ -230,7 +232,9 @@ export function LoanPaymentDialog({
       setReferenceNo('')
       setSubmitError('')
       await onPaymentPosted?.(response.loan)
+      update(toastId, 'Payment posted.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to post payment')
     } finally {
       setSubmitting(false)

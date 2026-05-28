@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect } from '@/components/shared'
+import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect, useToast } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types/shared'
 import { getSettings, updateSettings } from '@/services'
@@ -63,6 +63,7 @@ function validateForm(form: SettingsFormState): SettingsFormErrors {
 }
 
 export function WorkspaceSettingsForm() {
+  const { dismiss, loading: showLoading, update } = useToast()
   const [settings, setSettings] = useState<Settings | null>(null)
   const [form, setForm] = useState<SettingsFormState | null>(null)
   const [errors, setErrors] = useState<SettingsFormErrors>({})
@@ -70,7 +71,6 @@ export function WorkspaceSettingsForm() {
   const [saving, setSaving] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [submitError, setSubmitError] = useState('')
-  const [saveMessage, setSaveMessage] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
   const [origin, setOrigin] = useState('')
   const [requestUrlCopyStatus, setRequestUrlCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -147,7 +147,6 @@ export function WorkspaceSettingsForm() {
     setForm((current) => (current ? { ...current, [field]: value } : current))
     setErrors((current) => ({ ...current, [field]: undefined }))
     setSubmitError('')
-    setSaveMessage('')
   }
 
   if (loading) {
@@ -201,7 +200,7 @@ export function WorkspaceSettingsForm() {
 
     setSaving(true)
     setSubmitError('')
-    setSaveMessage('')
+    const toastId = showLoading('Saving workspace settings...')
 
     try {
       const nextSettings = await updateSettings({
@@ -213,8 +212,9 @@ export function WorkspaceSettingsForm() {
       setSettings(nextSettings)
       setForm(buildFormState(nextSettings))
       setErrors({})
-      setSaveMessage('Workspace settings saved.')
+      update(toastId, 'Workspace settings saved.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to save workspace settings.')
     } finally {
       setSaving(false)
@@ -240,7 +240,6 @@ export function WorkspaceSettingsForm() {
         {submitError ? (
           <ErrorBanner title="Settings were not saved" message={submitError} />
         ) : null}
-        {saveMessage ? <div className="notice">{saveMessage}</div> : null}
 
         <div className="grid two">
           <CardWrapper title="Capital baseline">

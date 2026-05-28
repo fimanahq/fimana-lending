@@ -17,6 +17,7 @@ import {
   LoadingState,
   SearchableSelect,
   TableShell,
+  useToast,
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
@@ -114,6 +115,7 @@ const paymentMethodOptions: Array<{ value: LoanPaymentMethod; label: string }> =
 ]
 
 export function LoanDetail({ loanId }: LoanDetailProps) {
+  const { dismiss, loading: showLoading, update } = useToast()
   const [loan, setLoan] = useState<LoanRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -289,6 +291,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
     setSubmittingPaymentEdit(true)
     setPaymentActionError('')
+    const toastId = showLoading('Updating payment...')
     try {
       const response = await updateLoanPayment(loanId, selectedPayment.id, {
         paymentDate,
@@ -301,7 +304,9 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
       setAdjustments(adjustmentDetail.adjustments)
       setSelectedPayment(null)
+      update(toastId, 'Payment updated.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setPaymentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to update payment')
     } finally {
       setSubmittingPaymentEdit(false)
@@ -315,6 +320,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
     setDeletingPayment(true)
     setPaymentActionError('')
+    const toastId = showLoading('Deleting payment...')
     try {
       const response = await deleteLoanPayment(loanId, deletePaymentId)
       setLoan(response.loan)
@@ -322,7 +328,9 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
       setAdjustments(adjustmentDetail.adjustments)
       setDeletePaymentId('')
+      update(toastId, 'Payment deleted.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setPaymentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to delete payment')
     } finally {
       setDeletingPayment(false)
@@ -355,6 +363,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
     setSubmittingAdjustmentEdit(true)
     setAdjustmentActionError('')
+    const toastId = showLoading('Updating adjustment...')
     try {
       const response = await updateLoanAdjustment(loanId, selectedAdjustment.id, {
         adjustmentDate,
@@ -365,7 +374,9 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
       setAdjustments(adjustmentDetail.adjustments)
       setSelectedAdjustment(null)
+      update(toastId, 'Adjustment updated.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setAdjustmentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to update adjustment')
     } finally {
       setSubmittingAdjustmentEdit(false)
@@ -379,13 +390,16 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
     setDeletingAdjustment(true)
     setAdjustmentActionError('')
+    const toastId = showLoading('Deleting adjustment...')
     try {
       const response = await deleteLoanAdjustment(loanId, deleteAdjustmentId)
       setLoan(response.loan)
       const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
       setAdjustments(adjustmentDetail.adjustments)
       setDeleteAdjustmentId('')
+      update(toastId, 'Adjustment deleted.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setAdjustmentActionError(caughtError instanceof Error ? caughtError.message : 'Unable to delete adjustment')
     } finally {
       setDeletingAdjustment(false)

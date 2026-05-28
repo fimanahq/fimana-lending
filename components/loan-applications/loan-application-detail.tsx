@@ -9,7 +9,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
 import { getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
-import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, Textarea } from '@/components/shared'
+import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, Textarea, useToast } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 import {
   getLoanApplicationFormValues,
@@ -39,6 +39,7 @@ const editableStatuses: LoanApplicationStatus[] = ['submitted', 'under_review']
 
 export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailProps) {
   const router = useRouter()
+  const { dismiss, loading: showLoading, update } = useToast()
   const [application, setApplication] = useState<LoanApplication | null>(null)
   const [borrowers, setBorrowers] = useState<Borrower[]>([])
   const [decisionNotes, setDecisionNotes] = useState('')
@@ -46,7 +47,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingBorrowers, setLoadingBorrowers] = useState(true)
-  const [message, setMessage] = useState('')
   const [savingStatus, setSavingStatus] = useState<LoanApplicationStatus | null>(null)
 
   const loadApplication = useCallback(async () => {
@@ -84,7 +84,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
     setSavingStatus(status)
     setError('')
-    setMessage('')
+    const toastId = showLoading(status === 'approved' ? 'Approving application...' : 'Rejecting application...')
 
     try {
       const updated = await updateLoanApplicationStatus(application.id, status, decisionNotes.trim() || undefined)
@@ -93,12 +93,14 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         updated.reviewerRemarks || updated.decisionNotes || updated.approvalNotes || updated.rejectionReason || decisionNotes,
       )
       if (status === 'approved' && updated.loanId) {
+        update(toastId, 'Application approved.', { tone: 'success', title: 'Success' })
         router.push(`/loans/${updated.loanId}`)
         return
       }
 
-      setMessage(`Application marked ${formatLoanApplicationStatus(updated.status)}.`)
+      update(toastId, `Application marked ${formatLoanApplicationStatus(updated.status)}.`, { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to update application')
     } finally {
       setSavingStatus(null)
@@ -112,7 +114,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
     setSavingStatus('submitted')
     setError('')
-    setMessage('')
+    const toastId = showLoading('Undoing approval...')
 
     try {
       const updated = await undoLoanApplicationApproval(application.id)
@@ -120,8 +122,9 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
       setDecisionNotes(
         updated.reviewerRemarks || updated.decisionNotes || updated.approvalNotes || updated.rejectionReason || decisionNotes,
       )
-      setMessage('Approval undone. Application returned to Submitted.')
+      update(toastId, 'Approval undone. Application returned to Submitted.', { tone: 'success', title: 'Success' })
     } catch (caughtError) {
+      dismiss(toastId)
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to undo approval')
     } finally {
       setSavingStatus(null)
@@ -181,8 +184,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         {application.loanId ? <Link href={`/loans/${application.loanId}`} className="button">Open loan</Link> : null}
         <Link href="/loan-applications" className="button-secondary">Back</Link>
       </div>
-
-      {message ? <div className="notice">{message}</div> : null}
       {error ? <ErrorState title="Unable to update application" description={error} /> : null}
 
       <Card
@@ -347,7 +348,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
             }
             setIsEditing(false)
             setError('')
-            setMessage('Loan application updated.')
           }}
           showCard={false}
         />

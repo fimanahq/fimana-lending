@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, ErrorBanner, Input, Textarea } from '@/components/shared'
+import { Button, ErrorBanner, Input, Textarea, useToast } from '@/components/shared'
 import type { Borrower } from '@/lib/types/lending'
 import { createBorrower, updateBorrower } from '@/services'
 import { CreateBorrowerInput } from '@/types'
@@ -106,6 +106,7 @@ function validateForm(form: BorrowerFormState) {
 
 export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
   const router = useRouter()
+  const { dismiss, loading, update } = useToast()
   const [form, setForm] = useState<BorrowerFormState>(() => getInitialForm(borrower))
   const [errors, setErrors] = useState<BorrowerFormErrors>({})
   const [submitError, setSubmitError] = useState('')
@@ -139,6 +140,7 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
 
     setSaving(true)
     setSubmitError('')
+    const toastId = loading(mode === 'create' ? 'Adding borrower...' : 'Saving borrower...')
 
     try {
       const payload = trimForm(form)
@@ -155,11 +157,13 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
       }
 
       onSaved?.(saved)
+      update(toastId, mode === 'create' ? 'Borrower added.' : 'Borrower updated.', { tone: 'success', title: 'Success' })
 
       if (mode === 'create') {
         router.push(`/borrowers/${saved.id}`)
       }
     } catch (caughtError) {
+      dismiss(toastId)
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to save borrower')
     } finally {
       setSaving(false)

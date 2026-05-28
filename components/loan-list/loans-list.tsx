@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
-import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell } from '@/components/shared'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell, useToast } from '@/components/shared'
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
@@ -40,6 +40,7 @@ function formatLoanSchedule(loan: LoanRecord) {
 
 export function LoansList() {
   const router = useRouter()
+  const { dismiss, loading: showLoading, update } = useToast()
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [activeFilter, setActiveFilter] = useState<LoanListFilter>('active')
   const [query, setQuery] = useState('')
@@ -89,10 +90,12 @@ export function LoansList() {
     if (!deleteLoanId) return
 
     setDeleting(true)
+    const toastId = showLoading('Deleting loan...')
 
     try {
       await deleteLoan(deleteLoanId)
       setDeleteLoanId('')
+      update(toastId, 'Loan deleted.', { tone: 'success', title: 'Success' })
 
       if (loans.length === 1 && page > 1) {
         setPage((current) => Math.max(current - 1, 1))
@@ -100,6 +103,7 @@ export function LoansList() {
         await loadLoans()
       }
     } catch (caughtError) {
+      dismiss(toastId)
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to delete loan')
     } finally {
       setDeleting(false)

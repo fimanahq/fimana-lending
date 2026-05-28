@@ -55,7 +55,6 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [message, setMessage] = useState('')
 
   const loadProfile = useCallback(async () => {
     setLoading(true)
@@ -115,9 +114,6 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         <Link href="/borrowers" className="button-secondary">Back to borrowers</Link>
         <Link href="/loan-applications/new" className="button">New application</Link>
       </div>
-
-      {message ? <div className="notice">{message}</div> : null}
-
       <div className={borrowerStyles.profileGrid}>
         <Card
           title="Borrower Profile"
@@ -245,7 +241,6 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
           onSaved={(updated) => {
             setBorrower(updated)
             setEditDialogOpen(false)
-            setMessage('Borrower profile updated.')
           }}
         />
       </Dialog>

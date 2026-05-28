@@ -31,6 +31,7 @@ import {
   SearchableSelect,
   type SearchableSelectOption,
   Textarea,
+  useToast,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
 
@@ -305,6 +306,7 @@ export function LoanApplicationForm({
   showCard = true,
 }: LoanApplicationFormProps) {
   const router = useRouter()
+  const { dismiss, loading, update } = useToast()
   const [borrowers, setBorrowers] = useState<Borrower[]>(providedBorrowers ?? [])
   const [error, setError] = useState('')
   const [form, setForm] = useState<LoanApplicationFormValues>(initialValues ?? initialFormValues)
@@ -411,6 +413,7 @@ export function LoanApplicationForm({
     }
 
     setSubmitting(true)
+    const toastId = loading(mode === 'edit' ? 'Updating loan application...' : 'Creating loan application...')
 
     try {
       const payload = getDraftPayload(form)
@@ -432,10 +435,13 @@ export function LoanApplicationForm({
         onSaved?.(saved)
       }
 
+      update(toastId, mode === 'edit' ? 'Loan application updated.' : 'Loan application created.', { tone: 'success', title: 'Success' })
+
       if (mode === 'create') {
         router.push(`/loan-applications/${saved.id}`)
       }
     } catch (caughtError) {
+      dismiss(toastId)
       const fallbackMessage = mode === 'edit'
         ? 'Unable to update loan application'
         : 'Unable to create loan application'

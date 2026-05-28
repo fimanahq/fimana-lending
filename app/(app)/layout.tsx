@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import { ToastProvider } from '@/components/shared'
 import { hasLoanAppAccess } from '@/lib/access'
 import { getSessionUser } from '@/lib/server/backend'
 
@@ -17,7 +18,9 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
 
   return (
     <AuthProvider initialUser={user} shouldRefreshOnMount={false}>
-      <DashboardShell>{children}</DashboardShell>
+      <ToastProvider>
+        <DashboardShell>{children}</DashboardShell>
+      </ToastProvider>
     </AuthProvider>
   )
 }

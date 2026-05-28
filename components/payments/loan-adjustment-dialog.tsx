@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, TableShell } from '@/components/shared'
+import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, TableShell, useToast } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { LoanAdjustmentDetail, LoanAdjustmentRecord, LoanRecord } from '@/lib/types/lending'
 import { getLoanAdjustmentDetail, postLoanAdjustment } from '@/services'
@@ -58,6 +58,7 @@ export function LoanAdjustmentDialog({
   onClose,
   open,
 }: LoanAdjustmentDialogProps) {
+  const { dismiss, loading: showLoading, update } = useToast()
   const [detail, setDetail] = useState<LoanAdjustmentDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const [detailError, setDetailError] = useState('')
@@ -116,6 +117,7 @@ export function LoanAdjustmentDialog({
 
     setSubmitting(true)
     setSubmitError('')
+    const toastId = showLoading('Posting adjustment...')
 
     try {
       const response = await postLoanAdjustment(loanId, {
@@ -131,8 +133,10 @@ export function LoanAdjustmentDialog({
       setAmount('')
       setReason('')
       await onAdjustmentPosted?.(response.loan)
+      update(toastId, 'Adjustment posted.', { tone: 'success', title: 'Success' })
       onClose()
     } catch (caughtError) {
+      dismiss(toastId)
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to post adjustment')
     } finally {
       setSubmitting(false)
