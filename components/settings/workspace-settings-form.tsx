@@ -9,6 +9,7 @@ import { getSettings, updateSettings } from '@/services'
 interface SettingsFormState {
   defaultCurrency: SettingsCurrency
   startingCapital: string
+  defaultPenaltyRate: string
   publicLoanRequestSlug: string
 }
 
@@ -18,6 +19,7 @@ function buildFormState(settings: Settings): SettingsFormState {
   return {
     defaultCurrency: settings.defaultCurrency,
     startingCapital: settings.startingCapital.toString(),
+    defaultPenaltyRate: ((settings.defaultPenaltyRateBps ?? 0) / 100).toString(),
     publicLoanRequestSlug: settings.publicLoanRequestSlug ?? '',
   }
 }
@@ -42,13 +44,38 @@ function parseStartingCapital(value: string) {
   return { value: parsed }
 }
 
+function parseDefaultPenaltyRate(value: string) {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return { value: 0 }
+  }
+
+  const parsed = Number(trimmed)
+
+  if (!Number.isFinite(parsed)) {
+    return { error: 'Enter a valid default penalty percentage.' }
+  }
+
+  if (parsed < 0) {
+    return { error: 'Default penalty percentage cannot be negative.' }
+  }
+
+  return { value: Math.round(parsed * 100) }
+}
+
 function validateForm(form: SettingsFormState): SettingsFormErrors {
   const nextErrors: SettingsFormErrors = {}
   const startingCapitalResult = parseStartingCapital(form.startingCapital)
+  const defaultPenaltyRateResult = parseDefaultPenaltyRate(form.defaultPenaltyRate)
   const slug = form.publicLoanRequestSlug.trim()
 
   if (startingCapitalResult.error) {
     nextErrors.startingCapital = startingCapitalResult.error
+  }
+
+  if (defaultPenaltyRateResult.error) {
+    nextErrors.defaultPenaltyRate = defaultPenaltyRateResult.error
   }
 
   if (!settingsCurrencyValues.includes(form.defaultCurrency)) {
@@ -173,6 +200,7 @@ export function WorkspaceSettingsForm() {
   }
 
   const parsedStartingCapital = parseStartingCapital(form.startingCapital)
+  const parsedDefaultPenaltyRate = parseDefaultPenaltyRate(form.defaultPenaltyRate)
   const initialForm = buildFormState(settings)
   const requestUrlCopyLabel = requestUrlCopyStatus === 'success'
     ? 'Copied'
@@ -187,6 +215,7 @@ export function WorkspaceSettingsForm() {
   const hasChanges =
     form.defaultCurrency !== initialForm.defaultCurrency
     || form.startingCapital !== initialForm.startingCapital
+    || form.defaultPenaltyRate !== initialForm.defaultPenaltyRate
     || form.publicLoanRequestSlug !== initialForm.publicLoanRequestSlug
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -206,6 +235,7 @@ export function WorkspaceSettingsForm() {
       const nextSettings = await updateSettings({
         defaultCurrency: form.defaultCurrency,
         startingCapital: parsedStartingCapital.value ?? settings.startingCapital,
+        defaultPenaltyRateBps: parsedDefaultPenaltyRate.value ?? settings.defaultPenaltyRateBps,
         publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
       })
 
@@ -266,6 +296,19 @@ export function WorkspaceSettingsForm() {
                 inputClassName="input-no-spinner"
                 onChange={(event) => updateField('startingCapital', event.target.value)}
                 required
+              />
+
+              <Input
+                id="workspace-default-penalty-rate"
+                label="Default penalty percentage"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.defaultPenaltyRate}
+                error={errors.defaultPenaltyRate}
+                hint="Used only to prefill manual schedule-row penalties. It never creates penalties automatically."
+                inputClassName="input-no-spinner"
+                onChange={(event) => updateField('defaultPenaltyRate', event.target.value)}
               />
             </div>
           </CardWrapper>

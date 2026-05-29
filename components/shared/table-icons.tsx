@@ -21,6 +21,17 @@ export function PaymentIcon({ className }: IconProps) {
   )
 }
 
+export function PenaltyIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M12 3.8 20.2 18a1.5 1.5 0 0 1-1.3 2.2H5.1A1.5 1.5 0 0 1 3.8 18L12 3.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M12 8.4v5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M12 17h.01" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <path d="M15.7 7.9h3.1M17.25 6.35v3.1" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function OpenLoanIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>

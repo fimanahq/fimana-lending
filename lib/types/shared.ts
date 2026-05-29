@@ -15,6 +15,7 @@ export interface Settings {
   accountsCellMode: boolean
   transactionsCellMode: boolean
   startingCapital: number
+  defaultPenaltyRateBps: number
   publicLoanRequestSlug: string | null
   createdAt: string | Date
   updatedAt?: string | Date

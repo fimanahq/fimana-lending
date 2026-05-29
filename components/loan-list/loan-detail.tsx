@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { EditIcon, DeleteIcon } from '@/components/shared/table-icons'
+import { EditIcon, DeleteIcon, PenaltyIcon } from '@/components/shared/table-icons'
 import { LoanAdjustmentDialog, LoanPaymentDialog } from '@/components/payments'
 import {
   Button,
@@ -21,13 +21,15 @@ import {
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord } from '@/lib/types/lending'
+import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
+import { getSettings } from '@/services'
 import { getLoan } from '@/services/loans'
 import {
   deleteLoanAdjustment,
   deleteLoanPayment,
   getLoanAdjustmentDetail,
   getLoanPaymentDetail,
+  postLoanAdjustment,
   updateLoanAdjustment,
   updateLoanPayment,
 } from '@/services/payments'
@@ -38,6 +40,7 @@ interface LoanDetailProps {
 }
 
 const PAYMENT_TOLERANCE_MINOR = 500
+const DEFAULT_PENALTY_REASON = 'Manual penalty'
 
 function formatMinorCurrency(value: number, currency: string) {
   return formatCurrency(value / 100, currency)
@@ -103,6 +106,19 @@ function toAmountMinor(amount: string) {
   return Math.round(parsed * 100)
 }
 
+function toPercentageRateBps(rateBps: number) {
+  return `${(rateBps / 100).toFixed(2)}%`
+}
+
+function toPenaltyRateBps(rate: string) {
+  const parsed = Number(rate)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null
+  }
+
+  return Math.round(parsed * 100)
+}
+
 function getPaymentAllocatedAmountMinor(payment: LoanPaymentHistory) {
   return payment.allocations.reduce((sum, allocation) => sum + allocation.totalAmountMinor, 0)
 }
@@ -123,8 +139,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [adjustmentDialogOpen, setAdjustmentDialogOpen] = useState(false)
   const [payments, setPayments] = useState<LoanPaymentHistory[]>([])
   const [adjustments, setAdjustments] = useState<LoanAdjustmentRecord[]>([])
+  const [defaultPenaltyRateBps, setDefaultPenaltyRateBps] = useState(0)
   const [selectedPayment, setSelectedPayment] = useState<LoanPaymentHistory | null>(null)
   const [selectedAdjustment, setSelectedAdjustment] = useState<LoanAdjustmentRecord | null>(null)
+  const [selectedPenaltyRow, setSelectedPenaltyRow] = useState<LoanScheduleRow | null>(null)
   const [deletePaymentId, setDeletePaymentId] = useState('')
   const [deleteAdjustmentId, setDeleteAdjustmentId] = useState('')
   const [deletingPayment, setDeletingPayment] = useState(false)
@@ -136,10 +154,16 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [adjustmentDate, setAdjustmentDate] = useState('')
   const [adjustmentAmount, setAdjustmentAmount] = useState('')
   const [adjustmentReason, setAdjustmentReason] = useState('')
+  const [penaltyRate, setPenaltyRate] = useState('')
+  const [penaltyAmount, setPenaltyAmount] = useState('')
+  const [penaltyReason, setPenaltyReason] = useState('')
+  const [penaltyNotes, setPenaltyNotes] = useState('')
   const [submittingPaymentEdit, setSubmittingPaymentEdit] = useState(false)
   const [submittingAdjustmentEdit, setSubmittingAdjustmentEdit] = useState(false)
+  const [submittingPenalty, setSubmittingPenalty] = useState(false)
   const [paymentActionError, setPaymentActionError] = useState('')
   const [adjustmentActionError, setAdjustmentActionError] = useState('')
+  const [penaltyActionError, setPenaltyActionError] = useState('')
 
   useEffect(() => {
     const loadLoan = async () => {
@@ -147,14 +171,16 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       setError('')
 
       try {
-        const [loanRecord, paymentDetail, adjustmentDetail] = await Promise.all([
+        const [loanRecord, paymentDetail, adjustmentDetail, settings] = await Promise.all([
           getLoan(loanId),
           getLoanPaymentDetail(loanId),
           getLoanAdjustmentDetail(loanId),
+          getSettings(),
         ])
         setLoan(loanRecord)
         setPayments(paymentDetail.payments)
         setAdjustments(adjustmentDetail.adjustments)
+        setDefaultPenaltyRateBps(settings.defaultPenaltyRateBps ?? 0)
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan')
       } finally {
@@ -191,7 +217,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
   const currency = loan.loanProduct.currency || 'PHP'
   const schedule = loan.schedule ?? []
-  const overallProfitAmountMinor = loan.totalInterestAmountMinor
+  const overallProfitAmountMinor = loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor
   const overallProfitPercentage = loan.principalAmountMinor > 0
     ? (overallProfitAmountMinor / loan.principalAmountMinor) * 100
     : 0
@@ -345,6 +371,88 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     setAdjustmentActionError('')
   }
 
+  const openPenaltyDialog = (row: LoanScheduleRow) => {
+    const penaltyBaseMinor = row.outstandingPrincipalAmountMinor + row.outstandingInterestAmountMinor
+    const suggestedPenaltyMinor = Math.round((penaltyBaseMinor * defaultPenaltyRateBps) / 10_000)
+    setSelectedPenaltyRow(row)
+    setPenaltyRate(defaultPenaltyRateBps > 0 ? (defaultPenaltyRateBps / 100).toFixed(2) : '')
+    setPenaltyAmount(suggestedPenaltyMinor > 0 ? (suggestedPenaltyMinor / 100).toFixed(2) : '')
+    setPenaltyReason(DEFAULT_PENALTY_REASON)
+    setPenaltyNotes('')
+    setPenaltyActionError('')
+  }
+
+  const handlePenaltyRateChange = (value: string) => {
+    setPenaltyRate(value)
+    if (!selectedPenaltyRow) {
+      return
+    }
+
+    const rateBps = toPenaltyRateBps(value)
+    if (rateBps === null) {
+      setPenaltyAmount('')
+      return
+    }
+
+    const penaltyBaseMinor = selectedPenaltyRow.outstandingPrincipalAmountMinor + selectedPenaltyRow.outstandingInterestAmountMinor
+    const suggestedPenaltyMinor = Math.round((penaltyBaseMinor * rateBps) / 10_000)
+    setPenaltyAmount(suggestedPenaltyMinor > 0 ? (suggestedPenaltyMinor / 100).toFixed(2) : '')
+  }
+
+  const handlePenaltySubmit = async () => {
+    if (!selectedPenaltyRow) {
+      return
+    }
+
+    const penaltyRateBps = penaltyRate.trim() ? toPenaltyRateBps(penaltyRate) : 0
+    if (penaltyRateBps === null) {
+      setPenaltyActionError('Enter a valid penalty percentage')
+      return
+    }
+
+    const amountMinor = toAmountMinor(penaltyAmount)
+    if (!amountMinor || amountMinor <= 0) {
+      setPenaltyActionError('Enter a penalty amount greater than 0')
+      return
+    }
+
+    if (!penaltyReason.trim()) {
+      setPenaltyActionError('Enter a reason for the penalty')
+      return
+    }
+
+    setSubmittingPenalty(true)
+    setPenaltyActionError('')
+    const toastId = showLoading('Adding penalty...')
+    try {
+      const response = await postLoanAdjustment(loanId, {
+        adjustmentDate: new Date().toISOString().slice(0, 10),
+        amountMinor,
+        reason: penaltyReason.trim(),
+        notes: penaltyNotes.trim() || undefined,
+        scheduleRowId: selectedPenaltyRow.id,
+        penaltyRateBps,
+        type: 'schedule_adjustment',
+        component: 'penalty',
+        direction: 'increase',
+      })
+      setLoan(response.loan)
+      const [paymentDetail, adjustmentDetail] = await Promise.all([
+        getLoanPaymentDetail(loanId),
+        getLoanAdjustmentDetail(loanId),
+      ])
+      setPayments(paymentDetail.payments)
+      setAdjustments(adjustmentDetail.adjustments)
+      setSelectedPenaltyRow(null)
+      update(toastId, 'Penalty added.', { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setPenaltyActionError(caughtError instanceof Error ? caughtError.message : 'Unable to add penalty')
+    } finally {
+      setSubmittingPenalty(false)
+    }
+  }
+
   const handleAdjustmentEdit = async () => {
     if (!selectedAdjustment) {
       return
@@ -446,8 +554,16 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
             <strong>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, currency)}</strong>
           </div>
           <div className="data-card">
-            <span className="muted">Overall Profit</span>
+            <span className="muted">Outstanding penalty</span>
+            <strong>{formatMinorCurrency(loan.balances.penaltyOutstandingAmountMinor ?? 0, currency)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">Total profit</span>
             <strong>{formatMinorCurrency(overallProfitAmountMinor, currency)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">Penalty profit</span>
+            <strong>{formatMinorCurrency(loan.totalPenaltyAmountMinor ?? 0, currency)}</strong>
           </div>
           <div className="data-card">
             <span className="muted">Overall Profit %</span>
@@ -538,17 +654,19 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
               <th>Due date</th>
               <th>Principal</th>
               <th>Interest</th>
+              <th>Penalty</th>
               <th>Total</th>
               <th>Applied</th>
               <th>Outstanding</th>
               <th>Balance</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {schedule.length === 0 ? (
               <tr>
-                <td colSpan={9} className="muted">No schedule rows generated.</td>
+                <td colSpan={11} className="muted">No schedule rows generated.</td>
               </tr>
             ) : (
               schedule.map((row) => (
@@ -557,11 +675,24 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                   <td>{formatDate(row.dueDate)}</td>
                   <td>{formatMinorCurrency(row.scheduledPrincipalAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(row.scheduledInterestAmountMinor, currency)}</td>
+                  <td>{formatMinorCurrency(row.scheduledPenaltyAmountMinor ?? 0, currency)}</td>
                   <td>{formatMinorCurrency(row.scheduledTotalAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(row.paidTotalAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(row.outstandingTotalAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(row.closingPrincipalBalanceMinor, currency)}</td>
                   <td><span className={getStatusClassName(row.status)}>{row.status}</span></td>
+                  <td>
+                    <button
+                      type="button"
+                      className="button-ghost table-action-icon"
+                      aria-label={`Add penalty to installment ${row.sequence}`}
+                      title="Add penalty"
+                      onClick={() => openPenaltyDialog(row)}
+                      disabled={loan.status !== 'active' || row.outstandingTotalAmountMinor <= 0 || !['pending', 'partial'].includes(row.status)}
+                    >
+                      <PenaltyIcon />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -642,6 +773,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
               <th>Applied rows</th>
               <th>Principal</th>
               <th>Interest</th>
+              <th>Penalty</th>
               <th>Total</th>
               <th>Status</th>
               <th>Actions</th>
@@ -650,12 +782,13 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           <tbody>
             {adjustments.length === 0 ? (
               <tr>
-                <td colSpan={8} className="muted">No adjustments have been posted yet.</td>
+                <td colSpan={9} className="muted">No adjustments have been posted yet.</td>
               </tr>
             ) : (
               adjustments.map((adjustment) => {
                 const principalAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + allocation.principalAmountMinor, 0)
                 const interestAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + allocation.interestAmountMinor, 0)
+                const penaltyAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + (allocation.penaltyAmountMinor ?? 0), 0)
                 return (
                   <tr key={adjustment.id}>
                     <td>{formatDate(adjustment.adjustmentDate)}</td>
@@ -666,6 +799,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                     <td>{adjustment.allocations.map((allocation) => `#${allocation.sequence}`).join(', ') || 'None'}</td>
                     <td>{formatMinorCurrency(principalAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(interestAmountMinor, currency)}</td>
+                    <td>{formatMinorCurrency(penaltyAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(adjustment.amountMinor, currency)}</td>
                     <td><span className={getAdjustmentStatusClassName(adjustment.status)}>{adjustment.status}</span></td>
                     <td>
@@ -728,6 +862,74 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           setAdjustments(adjustmentDetail.adjustments)
         }}
       />
+
+      <Dialog
+        id="loan-add-penalty-dialog"
+        open={Boolean(selectedPenaltyRow)}
+        onClose={() => setSelectedPenaltyRow(null)}
+        title="Add penalty"
+        className={styles.penaltyDialog}
+      >
+        <div className="stack">
+          {penaltyActionError ? <ErrorBanner title="Unable to add penalty" message={penaltyActionError} /> : null}
+          {selectedPenaltyRow ? (
+            <div className="notice">
+              Penalty for installment #{selectedPenaltyRow.sequence}. Default rate: {toPercentageRateBps(defaultPenaltyRateBps)}.
+            </div>
+          ) : null}
+          <div className="grid two">
+            <Input
+              id="penalty-rate"
+              label="Penalty percentage"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={penaltyRate}
+              onChange={(event) => handlePenaltyRateChange(event.target.value)}
+              placeholder="0.00"
+              disabled={submittingPenalty}
+            />
+            <Input
+              id="penalty-amount"
+              label="Amount"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={penaltyAmount}
+              onChange={(event) => setPenaltyAmount(event.target.value)}
+              disabled={submittingPenalty}
+            />
+            <Input
+              id="penalty-reason"
+              label="Reason"
+              value={penaltyReason}
+              onChange={(event) => setPenaltyReason(event.target.value)}
+              placeholder={DEFAULT_PENALTY_REASON}
+              disabled={submittingPenalty}
+              className="grid-span-2"
+            />
+            <Input
+              id="penalty-notes"
+              label="Notes"
+              value={penaltyNotes}
+              onChange={(event) => setPenaltyNotes(event.target.value)}
+              placeholder="Optional"
+              disabled={submittingPenalty}
+              className="grid-span-2"
+            />
+          </div>
+          <div className="inline-actions">
+            <Button onClick={() => void handlePenaltySubmit()} disabled={submittingPenalty}>
+              {submittingPenalty ? 'Adding…' : 'Add penalty'}
+            </Button>
+            <Button variant="secondary" onClick={() => setSelectedPenaltyRow(null)} disabled={submittingPenalty}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       <Dialog
         id="loan-edit-payment-dialog"

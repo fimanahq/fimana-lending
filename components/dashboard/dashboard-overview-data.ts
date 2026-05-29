@@ -67,7 +67,11 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     currency: 'PHP' as SettingsCurrency,
     startingCapitalMinor: 0,
     collectedInterestMinor: 0,
+    collectedPenaltyMinor: 0,
+    collectedProfitMinor: 0,
     activeCollectedInterestMinor: 0,
+    activeCollectedPenaltyMinor: 0,
+    activeCollectedProfitMinor: 0,
     collectedProfitVsCapitalBps: 0,
     projectedProfitVsCapitalBps: 0,
     currentCapitalBasisMinor: 0,
@@ -78,11 +82,16 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     overdueReceivableMinor: 0,
     overduePrincipalMinor: 0,
     overdueInterestMinor: 0,
+    overduePenaltyMinor: 0,
     overdueLoanCount: 0,
     overdueBorrowerCount: 0,
     oldestUnpaidDueDate: null,
     remainingProjectedInterestMinor: 0,
+    outstandingPenaltyMinor: 0,
+    remainingProjectedProfitMinor: 0,
     totalProjectedInterestMinor: 0,
+    totalPenaltyMinor: 0,
+    totalProjectedProfitMinor: 0,
     activeLoanCount: 0,
     currentCutoffReceivable: null,
     receivableByCutoff: [],
@@ -105,7 +114,7 @@ export function buildDashboardOverviewData({
   const capitalPositionBaseMinor = Math.max(0, mergedSummary.currentCapitalBasisMinor)
   const activeLoanBalanceBaseMinor = Math.max(
     0,
-    mergedSummary.moneyWithBorrowersMinor + mergedSummary.activeCollectedInterestMinor + mergedSummary.remainingProjectedInterestMinor,
+    mergedSummary.moneyWithBorrowersMinor + mergedSummary.activeCollectedProfitMinor + mergedSummary.remainingProjectedProfitMinor,
   )
   const activeLoanBalanceSegments: DashboardProgressSegment[] = [
     {
@@ -118,18 +127,18 @@ export function buildDashboardOverviewData({
     },
     {
       key: 'collected_interest',
-      label: 'Collected interest',
-      description: 'Interest already collected and realized.',
-      valueMinor: mergedSummary.activeCollectedInterestMinor,
-      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.activeCollectedInterestMinor / activeLoanBalanceBaseMinor) * 100 : 0,
+      label: 'Collected profit',
+      description: 'Interest and penalties already collected and realized.',
+      valueMinor: mergedSummary.activeCollectedProfitMinor,
+      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.activeCollectedProfitMinor / activeLoanBalanceBaseMinor) * 100 : 0,
       tone: 'green',
     },
     {
       key: 'incoming_interest',
-      label: 'Incoming interest',
-      description: 'Projected interest remaining from active schedules.',
-      valueMinor: mergedSummary.remainingProjectedInterestMinor,
-      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.remainingProjectedInterestMinor / activeLoanBalanceBaseMinor) * 100 : 0,
+      label: 'Incoming profit',
+      description: 'Projected interest and penalties remaining from active schedules.',
+      valueMinor: mergedSummary.remainingProjectedProfitMinor,
+      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.remainingProjectedProfitMinor / activeLoanBalanceBaseMinor) * 100 : 0,
       tone: 'olive',
     },
   ]
@@ -153,22 +162,22 @@ export function buildDashboardOverviewData({
     },
   ]
 
-  const interestOutlookBaseMinor = Math.max(0, mergedSummary.totalProjectedInterestMinor)
+  const interestOutlookBaseMinor = Math.max(0, mergedSummary.totalProjectedProfitMinor || mergedSummary.totalProjectedInterestMinor)
   const interestOutlookSegments: DashboardProgressSegment[] = [
     {
       key: 'collected_interest',
-      label: 'Collected interest',
-      description: 'Interest already collected and realized.',
-      valueMinor: mergedSummary.collectedInterestMinor,
-      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.collectedInterestMinor / interestOutlookBaseMinor) * 100 : 0,
+      label: 'Collected profit',
+      description: 'Interest and penalties already collected and realized.',
+      valueMinor: mergedSummary.collectedProfitMinor,
+      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.collectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'green',
     },
     {
       key: 'remaining_projected_interest',
-      label: 'Remaining projected interest',
-      description: 'Expected future interest from active schedules that is still unpaid.',
-      valueMinor: mergedSummary.remainingProjectedInterestMinor,
-      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.remainingProjectedInterestMinor / interestOutlookBaseMinor) * 100 : 0,
+      label: 'Remaining projected profit',
+      description: 'Expected future interest and penalties from active schedules that are still unpaid.',
+      valueMinor: mergedSummary.remainingProjectedProfitMinor,
+      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.remainingProjectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'olive',
     },
   ]

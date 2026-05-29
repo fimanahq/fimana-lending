@@ -4,6 +4,7 @@ import type { Settings, SettingsCurrency } from '@/lib/types/shared'
 export interface UpdateSettingsInput {
   defaultCurrency?: SettingsCurrency
   startingCapital?: number
+  defaultPenaltyRateBps?: number
   publicLoanRequestSlug?: string | null
 }
 

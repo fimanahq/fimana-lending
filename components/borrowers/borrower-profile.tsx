@@ -104,8 +104,10 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const activeLoansCount = activeLoans.length
   const borrowerCurrency = borrowerLoans[0]?.loanProduct.currency || 'PHP'
   const principalTotals = sumByCurrency(borrowerLoans, (loan) => loan.principalAmountMinor)
-  const collectedInterestTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.interestPaidAmountMinor)
-  const projectedInterestTotals = sumByCurrency(activeLoans, (loan) => loan.totalInterestAmountMinor)
+  const collectedProfitTotals = sumByCurrency(borrowerLoans, (loan) =>
+    loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0),
+  )
+  const projectedProfitTotals = sumByCurrency(activeLoans, (loan) => loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor)
   const outstandingTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.totalOutstandingAmountMinor)
 
   return (
@@ -178,13 +180,13 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                 {renderCurrencyTotals(principalTotals)}
                 <span className="muted">Across all borrower loans</span>
               </Card>
-              <Card className={borrowerStyles.summaryCard} title="Collected interest">
-                {renderCurrencyTotals(collectedInterestTotals)}
-                <span className="muted">Paid interest on all loans</span>
+              <Card className={borrowerStyles.summaryCard} title="Collected profit">
+                {renderCurrencyTotals(collectedProfitTotals)}
+                <span className="muted">Paid interest and penalties on all loans</span>
               </Card>
-              <Card className={borrowerStyles.summaryCard} title="Projected interest">
-                {renderCurrencyTotals(projectedInterestTotals)}
-                <span className="muted">Expected interest on active loans only</span>
+              <Card className={borrowerStyles.summaryCard} title="Projected profit">
+                {renderCurrencyTotals(projectedProfitTotals)}
+                <span className="muted">Expected interest and penalties on active loans only</span>
               </Card>
               <Card className={borrowerStyles.summaryCard} title="Outstanding balance">
                 {renderCurrencyTotals(outstandingTotals)}
@@ -198,8 +200,8 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                   <tr>
                     <th>Loan</th>
                     <th>Principal</th>
-                    <th>Projected interest</th>
-                    <th>Interest collected</th>
+                    <th>Projected profit</th>
+                    <th>Profit collected</th>
                     <th>Total paid</th>
                     <th>Outstanding</th>
                     <th>Next due</th>
@@ -214,8 +216,8 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                         <div className="muted micro-copy">Issued {formatDate(loan.createdAt)}</div>
                       </td>
                       <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
-                      <td>{formatMinorCurrency(loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
-                      <td>{formatMinorCurrency(loan.balances.interestPaidAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0), loan.loanProduct.currency)}</td>
                       <td>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>

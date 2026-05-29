@@ -133,6 +133,9 @@ function CutoffReceivablesTable({
                   Interest due
                 </th>
                 <th className={dashboardClass('dashboard-overview__tableAmount')}>
+                  Penalty due
+                </th>
+                <th className={dashboardClass('dashboard-overview__tableAmount')}>
                   Total receivable
                 </th>
                 <th className={dashboardClass('dashboard-overview__tableAmount')}>Collected</th>
@@ -152,6 +155,9 @@ function CutoffReceivablesTable({
                   </td>
                   <td className={dashboardClass('dashboard-overview__tableAmount')}>
                     {formatMinorCurrency(entry.interestDueMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(entry.penaltyDueMinor, currency)}
                   </td>
                   <td className={dashboardClass('dashboard-overview__tableAmount')}>
                     {formatMinorCurrency(
@@ -305,6 +311,14 @@ export function DashboardCutoffReceivables({
             meta="Scheduled interest on this cutoff"
           />
           <MiniMetric
+            label="Penalty scheduled"
+            value={formatMinorCurrency(
+              currentCutoffReceivable.penaltyDueMinor,
+              currency,
+            )}
+            meta="Manual penalties on this cutoff"
+          />
+          <MiniMetric
             label="Remaining to collect"
             value={formatMinorCurrency(
               currentCutoffReceivable.remainingMinor,
@@ -396,6 +410,14 @@ export function DashboardCutoffReceivables({
                   currency,
                 )}
                 meta="Scheduled interest across loans in this cutoff"
+              />
+              <MiniMetric
+                label="Penalty due"
+                value={formatMinorCurrency(
+                  selectedCutoff.penaltyDueMinor,
+                  currency,
+                )}
+                meta="Manual penalties across loans in this cutoff"
               />
               <MiniMetric
                 label="Total receivable"

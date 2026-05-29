@@ -344,9 +344,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Projected total net worth</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.currentCapitalBasisMinor + summary.remainingProjectedInterestMinor, dashboardCurrency)}
+              {formatMinorCurrency(summary.currentCapitalBasisMinor + summary.remainingProjectedProfitMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Current capital basis plus projected unpaid interest</span>
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Current capital basis plus projected unpaid profit</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)} projected profit vs starting capital
             </span>
@@ -362,28 +362,28 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               <span className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</span>
               <h2>Portfolio mix across active loans</h2>
               <p>
-                Track active principal deployment together with realized and incoming interest to see what is already earned and what is still expected.
+                Track active principal deployment together with realized and incoming profit to see what is already earned and what is still expected.
               </p>
             </div>
             <div className={dashboardClass('dashboard-overview__progressSummary')}>
               <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total active receivable</span>
-              <strong>{formatMinorCurrency(summary.moneyWithBorrowersMinor + summary.remainingProjectedInterestMinor, dashboardCurrency)}</strong>
+              <strong>{formatMinorCurrency(summary.moneyWithBorrowersMinor + summary.remainingProjectedProfitMinor, dashboardCurrency)}</strong>
               <span>{summary.activeLoanCount === 1 ? '1 active loan' : `${summary.activeLoanCount.toLocaleString('en-PH')} active loans`}</span>
             </div>
           </div>
 
           <div className={dashboardClass('dashboard-overview__progressBody')}>
             {summary.moneyWithBorrowersMinor > 0
-              || summary.activeCollectedInterestMinor > 0
-              || summary.remainingProjectedInterestMinor > 0 ? (
+              || summary.activeCollectedProfitMinor > 0
+              || summary.remainingProjectedProfitMinor > 0 ? (
               <DashboardPortfolioChart
-                caption="This view combines deployed principal, collected interest, and incoming interest for active loans."
+                caption="This view combines deployed principal, collected profit, and incoming profit for active loans."
                 centerKicker="Active loan balance mix"
                 centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
                 centerValueMinor={
                   summary.moneyWithBorrowersMinor
-                  + summary.activeCollectedInterestMinor
-                  + summary.remainingProjectedInterestMinor
+                  + summary.activeCollectedProfitMinor
+                  + summary.remainingProjectedProfitMinor
                 }
                 currency={dashboardCurrency}
                 segments={activeLoanBalanceSegments}
@@ -407,14 +407,14 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 meta="Outstanding principal still deployed"
               />
               <MiniMetric
-                label="Collected interest"
-                value={formatMinorCurrency(summary.activeCollectedInterestMinor, dashboardCurrency)}
-                meta="Already realized interest"
+                label="Collected profit"
+                value={formatMinorCurrency(summary.activeCollectedProfitMinor, dashboardCurrency)}
+                meta="Already realized interest and penalties"
               />
               <MiniMetric
-                label="Incoming interest"
-                value={formatMinorCurrency(summary.remainingProjectedInterestMinor, dashboardCurrency)}
-                meta="Projected interest still to be collected"
+                label="Incoming profit"
+                value={formatMinorCurrency(summary.remainingProjectedProfitMinor, dashboardCurrency)}
+                meta="Projected interest and penalties still to be collected"
               />
             </div>
           </div>
@@ -427,13 +427,13 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
                 <h2>Where the current capital sits now</h2>
                 <p>
-                  The capital basis uses starting capital plus collected interest, then splits that basis into cash on hand and money still out with borrowers.
+                  The capital basis uses starting capital plus collected profit, then splits that basis into cash on hand and money still out with borrowers.
                 </p>
               </div>
               <div className={dashboardClass('dashboard-overview__progressSummary')}>
                 <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Current capital basis</span>
                 <strong>{formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}</strong>
-                <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected interest already added back</span>
+                <span>{formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} collected profit already added back</span>
               </div>
             </div>
 
@@ -472,27 +472,27 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           <article className={dashboardClass('dashboard-overview__progressCard')}>
             <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div>
-                <span className={dashboardClass('dashboard-overview__statLabel')}>Interest Outlook</span>
-                <h2>Collected versus projected interest</h2>
+                <span className={dashboardClass('dashboard-overview__statLabel')}>Profit Outlook</span>
+                <h2>Collected versus projected profit</h2>
                 <p>
-                  Realized interest is already in the business. Remaining projected interest is expected future profit from active schedules and is not current cash.
+                  Realized interest and penalties are already in the business. Remaining projected profit is expected future profit from active schedules and is not current cash.
                 </p>
               </div>
               <div className={dashboardClass('dashboard-overview__progressSummary')}>
-                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total collected + projected interest</span>
-                <strong>{formatMinorCurrency(summary.totalProjectedInterestMinor, dashboardCurrency)}</strong>
-                <span>{formatMinorCurrency(summary.collectedInterestMinor, dashboardCurrency)} collected so far · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} vs capital</span>
+                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total collected + projected profit</span>
+                <strong>{formatMinorCurrency(summary.totalProjectedProfitMinor, dashboardCurrency)}</strong>
+                <span>{formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} collected so far · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} vs capital</span>
               </div>
             </div>
 
             <div className={dashboardClass('dashboard-overview__progressBody')}>
-              {summary.totalProjectedInterestMinor > 0 ? (
+              {summary.totalProjectedProfitMinor > 0 ? (
                 <DashboardPortfolioChart
-                  caption="This chart is interest-only. The donut compares collected interest with remaining projected interest, while the center shows projected profit against starting capital."
+                  caption="This chart compares collected profit with remaining projected profit, while the center shows projected profit against starting capital."
                   centerKicker="Projected profit vs capital"
                   centerSubvalue={`${formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} collected so far`}
                   centerValue={formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)}
-                  centerValueMinor={summary.totalProjectedInterestMinor}
+                  centerValueMinor={summary.totalProjectedProfitMinor}
                   currency={dashboardCurrency}
                   segments={interestOutlookSegments}
                 />
@@ -502,8 +502,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                     <OverviewGlyph name="note" />
                   </span>
                   <div>
-                    <strong>No interest outlook yet</strong>
-                    <p>Projected and collected interest will appear here once active schedules begin generating interest.</p>
+                    <strong>No profit outlook yet</strong>
+                    <p>Projected and collected profit will appear here once active schedules begin generating interest or penalties.</p>
                   </div>
                 </div>
               )}
@@ -526,7 +526,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 <span className={dashboardClass('dashboard-overview__statLabel')}>Collection Risk</span>
                 <h2>What needs collection attention</h2>
                 <p>
-                  Track the overdue receivable, split between overdue principal and overdue interest, then watch how many borrowers and loans are already late.
+                  Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
                 </p>
               </div>
             </div>
@@ -545,6 +545,11 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 label="Overdue interest"
                 value={formatMinorCurrency(summary.overdueInterestMinor, dashboardCurrency)}
                 meta="Interest already past due"
+              />
+              <MiniMetric
+                label="Overdue penalty"
+                value={formatMinorCurrency(summary.overduePenaltyMinor, dashboardCurrency)}
+                meta="Manual penalties already past due"
               />
               <MiniMetric
                 label="Overdue loans"

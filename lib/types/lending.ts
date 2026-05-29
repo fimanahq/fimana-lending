@@ -138,9 +138,11 @@ export interface LoanRecordProduct {
 export interface LoanRecordBalances {
   principalOutstandingAmountMinor: number
   interestOutstandingAmountMinor: number
+  penaltyOutstandingAmountMinor: number
   totalOutstandingAmountMinor: number
   principalPaidAmountMinor: number
   interestPaidAmountMinor: number
+  penaltyPaidAmountMinor: number
   totalPaidAmountMinor: number
 }
 
@@ -168,12 +170,15 @@ export interface LoanScheduleRow {
   openingPrincipalBalanceMinor: number
   scheduledPrincipalAmountMinor: number
   scheduledInterestAmountMinor: number
+  scheduledPenaltyAmountMinor: number
   scheduledTotalAmountMinor: number
   paidPrincipalAmountMinor: number
   paidInterestAmountMinor: number
+  paidPenaltyAmountMinor: number
   paidTotalAmountMinor: number
   outstandingPrincipalAmountMinor: number
   outstandingInterestAmountMinor: number
+  outstandingPenaltyAmountMinor: number
   outstandingTotalAmountMinor: number
   closingPrincipalBalanceMinor: number
   status: LoanScheduleRowStatus
@@ -200,6 +205,8 @@ export interface LoanRecord {
   nextDueDate?: string | null
   maturityDate: string
   totalInterestAmountMinor: number
+  totalPenaltyAmountMinor: number
+  totalProfitAmountMinor: number
   balances: LoanRecordBalances
   disbursement: LoanDisbursementRecord
   createdAt: string
@@ -225,6 +232,7 @@ export interface LoanPaymentAllocation {
   sequence: number
   principalAmountMinor: number
   interestAmountMinor: number
+  penaltyAmountMinor: number
   totalAmountMinor: number
 }
 
@@ -276,6 +284,7 @@ export interface LoanAdjustmentAllocation {
   sequence: number
   principalAmountMinor: number
   interestAmountMinor: number
+  penaltyAmountMinor: number
   totalAmountMinor: number
 }
 
@@ -288,11 +297,14 @@ export interface LoanAdjustmentRecord {
   amountMinor: number
   currency: string
   reason: string
+  notes: string
   type: LoanAdjustmentType
   component: LoanAdjustmentComponent
   direction: LoanAdjustmentDirection
   isSystemGenerated: boolean
   relatedPaymentId?: string | null
+  scheduleRowId?: string | null
+  penaltyRateBps?: number | null
   allocations: LoanAdjustmentAllocation[]
   status: LoanAdjustmentStatus
 }
@@ -306,6 +318,9 @@ export interface PostLoanAdjustmentInput {
   adjustmentDate: string
   amountMinor: number
   reason: string
+  notes?: string
+  scheduleRowId?: string
+  penaltyRateBps?: number
   type?: LoanAdjustmentType
   component?: LoanAdjustmentComponent
   direction?: LoanAdjustmentDirection
@@ -315,6 +330,9 @@ export interface UpdateLoanAdjustmentInput {
   adjustmentDate: string
   amountMinor: number
   reason: string
+  notes?: string
+  scheduleRowId?: string
+  penaltyRateBps?: number
   type?: LoanAdjustmentType
   component?: LoanAdjustmentComponent
   direction?: LoanAdjustmentDirection
@@ -367,6 +385,7 @@ export interface DashboardCutoffReceivableLoan {
   borrowerNumber: string
   principalDueMinor: number
   interestDueMinor: number
+  penaltyDueMinor: number
   totalReceivableMinor: number
   totalCollectedMinor: number
   remainingMinor: number
@@ -376,9 +395,11 @@ export interface DashboardCutoffReceivable {
   cutoffDate: string
   principalDueMinor: number
   interestDueMinor: number
+  penaltyDueMinor: number
   totalReceivableMinor: number
   principalCollectedMinor: number
   interestCollectedMinor: number
+  penaltyCollectedMinor: number
   totalCollectedMinor: number
   remainingMinor: number
   borrowerCount: number
@@ -391,7 +412,11 @@ export interface LoanDashboardSummary {
   currency: SettingsCurrency
   startingCapitalMinor: number
   collectedInterestMinor: number
+  collectedPenaltyMinor: number
+  collectedProfitMinor: number
   activeCollectedInterestMinor: number
+  activeCollectedPenaltyMinor: number
+  activeCollectedProfitMinor: number
   collectedProfitVsCapitalBps: number
   projectedProfitVsCapitalBps: number
   currentCapitalBasisMinor: number
@@ -402,11 +427,16 @@ export interface LoanDashboardSummary {
   overdueReceivableMinor: number
   overduePrincipalMinor: number
   overdueInterestMinor: number
+  overduePenaltyMinor: number
   overdueLoanCount: number
   overdueBorrowerCount: number
   oldestUnpaidDueDate: string | null
   remainingProjectedInterestMinor: number
+  outstandingPenaltyMinor: number
+  remainingProjectedProfitMinor: number
   totalProjectedInterestMinor: number
+  totalPenaltyMinor: number
+  totalProjectedProfitMinor: number
   activeLoanCount: number
   currentCutoffReceivable: DashboardCutoffReceivable | null
   receivableByCutoff: DashboardCutoffReceivable[]
