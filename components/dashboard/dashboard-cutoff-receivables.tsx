@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useTransition } from 'react'
+import { LoanPaymentDialog } from '@/components/payments'
 import { Dialog } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { DashboardCutoffReceivable } from '@/lib/types/lending'
-import { ViewIcon } from '../shared/table-icons'
+import { PaymentIcon, ViewIcon } from '../shared/table-icons'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 
@@ -219,7 +221,13 @@ export function DashboardCutoffReceivables({
   currentCutoffReceivable: DashboardCutoffReceivable | null
   receivableByCutoff: DashboardCutoffReceivable[]
 }) {
+  const router = useRouter()
+  const [isRefreshingCutoff, startCutoffRefresh] = useTransition()
   const [selectedCutoffDate, setSelectedCutoffDate] = useState<string | null>(null)
+  const [selectedLoanForPayment, setSelectedLoanForPayment] = useState<{
+    loanId: string
+    label: string
+  } | null>(null)
 
   const currentReceivable = currentCutoffReceivable
   const currentOpenReceivable = receivableByCutoff.find((entry) => (
@@ -266,6 +274,11 @@ export function DashboardCutoffReceivables({
       return left.loanNumber.localeCompare(right.loanNumber)
     })
     : []
+
+  const closeCutoffDialog = () => {
+    setSelectedCutoffDate(null)
+    setSelectedLoanForPayment(null)
+  }
 
   return (
     <section className={dashboardClass('dashboard-overview__operator')}>
@@ -378,10 +391,12 @@ export function DashboardCutoffReceivables({
 
       <Dialog
         id="dashboard-cutoff-receivable-dialog"
-        open={selectedCutoff !== null}
+        open={selectedCutoffDate !== null}
         title={
           selectedCutoff
             ? `Loans in cutoff on ${formatDate(selectedCutoff.cutoffDate)}`
+            : selectedCutoffDate
+              ? `Loans in cutoff on ${formatDate(selectedCutoffDate)}`
             : "Loans in cutoff"
         }
         description={
@@ -389,11 +404,17 @@ export function DashboardCutoffReceivables({
             ? getCutoffDialogDescription(selectedCutoff, currency)
             : undefined
         }
-        onClose={() => setSelectedCutoffDate(null)}
+        onClose={closeCutoffDialog}
         className={dashboardClass('dashboard-overview__cutoffDialog')}
       >
         {selectedCutoff ? (
           <div className={dashboardClass('dashboard-overview__cutoffDialogContent')}>
+            {isRefreshingCutoff ? (
+              <div className="notice" role="status" aria-live="polite">
+                Refreshing cutoff data...
+              </div>
+            ) : null}
+
             <div className={dashboardClass('dashboard-overview__cutoffDialogSummary')}>
               <MiniMetric
                 label="Principal due"
@@ -460,6 +481,9 @@ export function DashboardCutoffReceivables({
                     <th className={dashboardClass('dashboard-overview__tableStatus')}>
                       Status
                     </th>
+                    <th className={dashboardClass('dashboard-overview__tableActions')}>
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -473,7 +497,7 @@ export function DashboardCutoffReceivables({
                             <Link
                               href={`/loans/${loan.loanId}`}
                               className="data-card__titleLink"
-                              onClick={() => setSelectedCutoffDate(null)}
+                              onClick={closeCutoffDialog}
                             >
                               {loan.borrowerDisplayName}
                             </Link>
@@ -486,7 +510,7 @@ export function DashboardCutoffReceivables({
                           <Link
                             href={`/loans/${loan.loanId}`}
                             className="data-card__titleLink"
-                            onClick={() => setSelectedCutoffDate(null)}
+                            onClick={closeCutoffDialog}
                           >
                             {loan.loanNumber}
                           </Link>
@@ -510,6 +534,23 @@ export function DashboardCutoffReceivables({
                             {getLoanCollectionStatusLabel(loanStatus)}
                           </span>
                         </td>
+                        <td className={dashboardClass('dashboard-overview__tableActions')}>
+                          <button
+                            type="button"
+                            className="button-ghost table-action-icon"
+                            aria-label={`Post payment for ${loan.borrowerDisplayName} ${loan.loanNumber}`}
+                            title="Post payment"
+                            disabled={isRefreshingCutoff || loan.remainingMinor <= 0}
+                            onClick={() => {
+                              setSelectedLoanForPayment({
+                                loanId: loan.loanId,
+                                label: `${loan.borrowerDisplayName} · ${loan.loanNumber}`,
+                              })
+                            }}
+                          >
+                            <PaymentIcon />
+                          </button>
+                        </td>
                       </tr>
                     )
                   })}
@@ -517,8 +558,34 @@ export function DashboardCutoffReceivables({
               </table>
             </div>
           </div>
+        ) : selectedCutoffDate ? (
+          <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+            <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>
+              +
+            </span>
+            <div>
+              <strong>Cutoff refreshed</strong>
+              <p>
+                This cutoff no longer has visible receivables after the latest
+                refresh.
+              </p>
+            </div>
+          </div>
         ) : null}
       </Dialog>
+
+      <LoanPaymentDialog
+        open={Boolean(selectedLoanForPayment)}
+        loanId={selectedLoanForPayment?.loanId ?? ''}
+        loanLabel={selectedLoanForPayment?.label ?? ''}
+        onClose={() => setSelectedLoanForPayment(null)}
+        onPaymentPosted={() => {
+          setSelectedLoanForPayment(null)
+          startCutoffRefresh(() => {
+            router.refresh()
+          })
+        }}
+      />
     </section>
   );
 }
