@@ -277,7 +277,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + collected interest</span>
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + collected profit</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} profit vs capital
             </span>
