@@ -437,6 +437,19 @@ export interface LoanDashboardSummary {
   totalProjectedInterestMinor: number
   totalPenaltyMinor: number
   totalProjectedProfitMinor: number
+  ownerLoanInterestExcluded: boolean
+  ownerLoanInterestExcludedAmountMinor: number
+  profitOutlookCollectedInterestMinor: number
+  profitOutlookCollectedPenaltyMinor: number
+  profitOutlookCollectedProfitMinor: number
+  profitOutlookRemainingProjectedInterestMinor: number
+  profitOutlookOutstandingPenaltyMinor: number
+  profitOutlookRemainingProjectedProfitMinor: number
+  profitOutlookTotalProjectedInterestMinor: number
+  profitOutlookTotalPenaltyMinor: number
+  profitOutlookTotalProjectedProfitMinor: number
+  profitOutlookCollectedProfitVsCapitalBps: number
+  profitOutlookProjectedProfitVsCapitalBps: number
   activeLoanCount: number
   currentCutoffReceivable: DashboardCutoffReceivable | null
   receivableByCutoff: DashboardCutoffReceivable[]

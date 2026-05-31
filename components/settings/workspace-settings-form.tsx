@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Button, CardWrapper, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect, useToast } from '@/components/shared'
+import { Button, CardWrapper, Checkbox, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect, useToast } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types/shared'
 import { getSettings, updateSettings } from '@/services'
@@ -11,6 +11,8 @@ interface SettingsFormState {
   startingCapital: string
   defaultPenaltyRate: string
   publicLoanRequestSlug: string
+  ownerLoanMobileNumber: string
+  excludeOwnerLoanInterestFromProfit: boolean
 }
 
 type SettingsFormErrors = Partial<Record<keyof SettingsFormState, string>>
@@ -21,6 +23,8 @@ function buildFormState(settings: Settings): SettingsFormState {
     startingCapital: settings.startingCapital.toString(),
     defaultPenaltyRate: ((settings.defaultPenaltyRateBps ?? 0) / 100).toString(),
     publicLoanRequestSlug: settings.publicLoanRequestSlug ?? '',
+    ownerLoanMobileNumber: settings.ownerLoanMobileNumber ?? '+63',
+    excludeOwnerLoanInterestFromProfit: settings.excludeOwnerLoanInterestFromProfit ?? false,
   }
 }
 
@@ -217,6 +221,8 @@ export function WorkspaceSettingsForm() {
     || form.startingCapital !== initialForm.startingCapital
     || form.defaultPenaltyRate !== initialForm.defaultPenaltyRate
     || form.publicLoanRequestSlug !== initialForm.publicLoanRequestSlug
+    || form.ownerLoanMobileNumber !== initialForm.ownerLoanMobileNumber
+    || form.excludeOwnerLoanInterestFromProfit !== initialForm.excludeOwnerLoanInterestFromProfit
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -230,6 +236,7 @@ export function WorkspaceSettingsForm() {
     setSaving(true)
     setSubmitError('')
     const toastId = showLoading('Saving workspace settings...')
+    const ownerLoanMobileNumber = form.ownerLoanMobileNumber.trim()
 
     try {
       const nextSettings = await updateSettings({
@@ -237,6 +244,8 @@ export function WorkspaceSettingsForm() {
         startingCapital: parsedStartingCapital.value ?? settings.startingCapital,
         defaultPenaltyRateBps: parsedDefaultPenaltyRate.value ?? settings.defaultPenaltyRateBps,
         publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
+        ownerLoanMobileNumber: ownerLoanMobileNumber && ownerLoanMobileNumber !== '+63' ? ownerLoanMobileNumber : null,
+        excludeOwnerLoanInterestFromProfit: form.excludeOwnerLoanInterestFromProfit,
       })
 
       setSettings(nextSettings)
@@ -342,6 +351,26 @@ export function WorkspaceSettingsForm() {
                   <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
                 </div>
               ) : null}
+            </div>
+          </CardWrapper>
+
+          <CardWrapper title="Owner Loan Profit Exclusion">
+            <div className="stack">
+              <Input
+                id="workspace-owner-loan-mobile-number"
+                label="Owner borrower mobile number"
+                value={form.ownerLoanMobileNumber}
+                placeholder="+63"
+                onChange={(event) => updateField('ownerLoanMobileNumber', event.target.value)}
+              />
+
+              <Checkbox
+                id="workspace-exclude-owner-loan-interest-from-profit"
+                label="Exclude owner loan interest from Profit Outlook"
+                description="When enabled, Profit Outlook excludes interest and penalties from loans linked to this mobile number. Capital, active loans, and receivable metrics remain unchanged."
+                checked={form.excludeOwnerLoanInterestFromProfit}
+                onChange={(event) => updateField('excludeOwnerLoanInterestFromProfit', event.target.checked)}
+              />
             </div>
           </CardWrapper>
         </div>

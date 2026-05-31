@@ -4,6 +4,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types/lending'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
+import { Badge } from '@/components/shared'
 import { classNames } from '@/utils/class-names'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -260,6 +261,10 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
+  const profitOutlookCollectedProfitMinor = summary.profitOutlookCollectedProfitMinor ?? summary.collectedProfitMinor
+  const profitOutlookTotalProjectedProfitMinor = summary.profitOutlookTotalProjectedProfitMinor ?? summary.totalProjectedProfitMinor
+  const profitOutlookCollectedProfitVsCapitalBps = summary.profitOutlookCollectedProfitVsCapitalBps ?? summary.collectedProfitVsCapitalBps
+  const profitOutlookProjectedProfitVsCapitalBps = summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
@@ -477,22 +482,25 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 <p>
                   Realized interest and penalties are already in the business. Remaining projected profit is expected future profit from active schedules and is not current cash.
                 </p>
+                {summary.ownerLoanInterestExcluded ? (
+                  <Badge tone="warning">Owner loan interest excluded from profit</Badge>
+                ) : null}
               </div>
               <div className={dashboardClass('dashboard-overview__progressSummary')}>
                 <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total collected + projected profit</span>
-                <strong>{formatMinorCurrency(summary.totalProjectedProfitMinor, dashboardCurrency)}</strong>
-                <span>{formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} collected so far · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} vs capital</span>
+                <strong>{formatMinorCurrency(profitOutlookTotalProjectedProfitMinor, dashboardCurrency)}</strong>
+                <span>{formatMinorCurrency(profitOutlookCollectedProfitMinor, dashboardCurrency)} collected so far · {formatBasisPointsPercentage(profitOutlookCollectedProfitVsCapitalBps)} vs capital</span>
               </div>
             </div>
 
             <div className={dashboardClass('dashboard-overview__progressBody')}>
-              {summary.totalProjectedProfitMinor > 0 ? (
+              {profitOutlookTotalProjectedProfitMinor > 0 ? (
                 <DashboardPortfolioChart
                   caption="This chart compares collected profit with remaining projected profit, while the center shows projected profit against starting capital."
                   centerKicker="Projected profit vs capital"
-                  centerSubvalue={`${formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} collected so far`}
-                  centerValue={formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)}
-                  centerValueMinor={summary.totalProjectedProfitMinor}
+                  centerSubvalue={`${formatBasisPointsPercentage(profitOutlookCollectedProfitVsCapitalBps)} collected so far`}
+                  centerValue={formatBasisPointsPercentage(profitOutlookProjectedProfitVsCapitalBps)}
+                  centerValueMinor={profitOutlookTotalProjectedProfitMinor}
                   currency={dashboardCurrency}
                   segments={interestOutlookSegments}
                 />

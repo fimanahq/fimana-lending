@@ -6,6 +6,8 @@ export interface UpdateSettingsInput {
   startingCapital?: number
   defaultPenaltyRateBps?: number
   publicLoanRequestSlug?: string | null
+  ownerLoanMobileNumber?: string | null
+  excludeOwnerLoanInterestFromProfit?: boolean
 }
 
 export function getSettings() {

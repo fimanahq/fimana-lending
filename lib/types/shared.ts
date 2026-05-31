@@ -17,6 +17,8 @@ export interface Settings {
   startingCapital: number
   defaultPenaltyRateBps: number
   publicLoanRequestSlug: string | null
+  ownerLoanMobileNumber?: string | null
+  excludeOwnerLoanInterestFromProfit?: boolean
   createdAt: string | Date
   updatedAt?: string | Date
 }
