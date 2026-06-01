@@ -13,7 +13,6 @@ export type LoanApplicationCutoffPatternCode = '5_20' | '15_month_end'
 export type LoanApplicationSource = 'internal' | 'public'
 export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled'
 export type LoanInstallmentStatus = 'pending' | 'partial' | 'paid'
-export type LoanReminderStatus = 'pending' | 'sent' | 'cancelled'
 export type LoanDisbursementMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'check' | 'internal_transfer' | 'general'
 export type LoanPaymentMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'internal_offset'
 export type LoanPaymentAllocationStatus = 'unallocated' | 'partially_allocated' | 'fully_allocated'
@@ -105,16 +104,6 @@ export interface LoanInstallment {
   status: LoanInstallmentStatus
   paidAt?: string | null
   paidAmount: number
-}
-
-export interface LoanReminder {
-  _id: string
-  installmentSequence: number
-  scheduledAt: string
-  type: string
-  channel: 'email'
-  status: LoanReminderStatus
-  sentAt?: string | null
 }
 
 export interface LoanRecordBorrower {
@@ -361,20 +350,8 @@ export interface Loan {
   status: LoanStatus
   notes?: string
   installments: LoanInstallment[]
-  reminders: LoanReminder[]
   createdAt: string
   updatedAt?: string
-}
-
-export interface UpcomingLoanReminder {
-  loanId: string
-  installmentSequence: number
-  scheduledAt: string
-  type: string
-  channel: 'email'
-  status: LoanReminderStatus
-  borrower: LoanBorrower | null
-  loanStatus: LoanStatus
 }
 
 export interface DashboardCutoffReceivableLoan {

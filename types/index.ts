@@ -5,13 +5,10 @@ export type {
   LoanInstallment,
   LoanInstallmentStatus,
   LoanInterestRulesConfig,
-  LoanReminder,
-  LoanReminderStatus,
   LoanApplication,
   LoanApplicationRecordStatus,
   LoanSchedulePreviewRow,
   LoanStatus,
-  UpcomingLoanReminder,
 } from '@/lib/types/lending'
 
 export type {

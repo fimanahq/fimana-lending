@@ -1,7 +1,6 @@
 import type {
   LoanApplicationRecordStatus,
   LoanInstallmentStatus,
-  LoanReminderStatus,
   LoanScheduleRowStatus,
   LoanStatus,
 } from '@/lib/types/lending'
@@ -26,7 +25,7 @@ export function formatLoanApplicationStatus(status: LoanApplicationRecordStatus)
 }
 
 export function getStatusClassName(
-  status: LoanStatus | LoanInstallmentStatus | LoanScheduleRowStatus | LoanReminderStatus | LoanApplicationRecordStatus,
+  status: LoanStatus | LoanInstallmentStatus | LoanScheduleRowStatus | LoanApplicationRecordStatus,
 ) {
   return `status-pill ${status === 'pending' ? 'submitted' : status}`
 }

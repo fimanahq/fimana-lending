@@ -39,9 +39,7 @@
 .dashboard-shell__sidebarBrand,
 .dashboard-overview__statValue,
 .dashboard-overview__sectionHead h2,
-.dashboard-overview__sideColumn h2,
 .dashboard-overview__actionCard h2,
-.dashboard-overview__taskBody h3,
 .dashboard-overview__featureContent h3 {
   font-family: 'Plus Jakarta Sans', var(--font-heading), sans-serif;
 }
@@ -188,9 +186,7 @@
 .dashboard-shell__sidebarToggle,
 .dashboard-shell__menuButton,
 .dashboard-shell__logout,
-.dashboard-shell__notificationButton,
 .dashboard-overview__actionCard,
-.dashboard-overview__taskCard,
 .dashboard-overview__clientCell,
 .dashboard-overview__featureContent a,
 .dashboard-overview__sectionHead a {
@@ -254,10 +250,8 @@
 .dashboard-shell__navIcon,
 .dashboard-shell__searchIcon,
 .dashboard-shell__menuButton,
-.dashboard-shell__notificationButton,
 .dashboard-overview__statMetaIcon,
 .dashboard-overview__actionIcon,
-.dashboard-overview__taskIcon,
 .dashboard-overview__emptyIcon {
   display: inline-flex;
   align-items: center;
@@ -280,11 +274,9 @@
 .dashboard-shell__navIcon,
 .dashboard-shell__searchIcon,
 .dashboard-shell__menuButton svg,
-.dashboard-shell__notificationButton svg,
 .dashboard-shell__sidebarClose svg,
 .dashboard-overview__statMetaIcon svg,
 .dashboard-overview__actionIcon svg,
-.dashboard-overview__taskIcon svg,
 .dashboard-overview__emptyIcon svg,
 .dashboard-overview__statArtwork svg {
   width: 1.1rem;
@@ -419,7 +411,6 @@
   z-index: 21;
 }
 
-.dashboard-shell__notificationButton,
 .dashboard-shell__accountButton {
   position: relative;
   display: inline-flex;
@@ -430,21 +421,6 @@
   background: rgba(255, 255, 255, 0.58);
   color: rgba(84, 67, 57, 0.84);
   cursor: pointer;
-}
-
-.dashboard-shell__notificationButton {
-  gap: 0.45rem;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  color: var(--accent-strong);
-  font-family: 'Plus Jakarta Sans', var(--font-heading), sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.dashboard-shell__notificationButton svg {
-  width: 1rem;
-  height: 1rem;
 }
 
 .dashboard-shell__accountButton {
@@ -643,7 +619,6 @@
 .dashboard-overview__statCard,
 .dashboard-overview__actionCard,
 .dashboard-overview__tableCard,
-.dashboard-overview__taskCard,
 .dashboard-overview__progressCard,
 .dashboard-overview__progressLegendItem,
 .dashboard-overview__emptyState {
@@ -679,7 +654,6 @@
 }
 
 .dashboard-overview__statLabel,
-.dashboard-overview__taskPill,
 .dashboard-overview__table th {
   font-family: 'Manrope', var(--font-body), sans-serif;
   letter-spacing: 0.12em;
@@ -804,7 +778,6 @@
 
 .dashboard-overview__actionCard h2,
 .dashboard-overview__sectionHead h2,
-.dashboard-overview__sideColumn h2,
 .dashboard-overview__progressHeader h2 {
   margin: 0;
   color: #17140f;
@@ -813,7 +786,6 @@
 }
 
 .dashboard-overview__actionCard p,
-.dashboard-overview__taskBody p,
 .dashboard-overview__progressHeader p,
 .dashboard-overview__progressLegendItem p,
 .dashboard-overview__emptyState p {
@@ -824,7 +796,7 @@
 }
 
 .dashboard-overview__contentGrid {
-  grid-template-columns: minmax(0, 1.8fr) minmax(18.75rem, 0.82fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
@@ -846,8 +818,7 @@
   border: 1px solid rgba(97, 84, 62, 0.1);
 }
 
-.dashboard-overview__mainColumn,
-.dashboard-overview__sideColumn {
+.dashboard-overview__mainColumn {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -1109,96 +1080,6 @@
 .dashboard-overview__loanCell {
   display: grid;
   gap: 0.2rem;
-}
-
-.dashboard-overview__taskStack {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.dashboard-overview__taskCard {
-  display: flex;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.76);
-}
-
-.dashboard-overview__taskCard:hover {
-  transform: translateX(4px);
-}
-
-.dashboard-overview__taskCard--amber {
-  box-shadow:
-    inset 4px 0 0 rgba(146, 75, 16, 0.92),
-    0 30px 60px rgba(29, 28, 18, 0.04);
-}
-
-.dashboard-overview__taskCard--green {
-  box-shadow:
-    inset 4px 0 0 rgba(58, 103, 83, 0.92),
-    0 30px 60px rgba(29, 28, 18, 0.04);
-}
-
-.dashboard-overview__taskCard--olive {
-  box-shadow:
-    inset 4px 0 0 rgba(73, 101, 79, 0.88),
-    0 30px 60px rgba(29, 28, 18, 0.04);
-}
-
-.dashboard-overview__taskIcon {
-  width: 2.7rem;
-  height: 2.7rem;
-  flex: 0 0 auto;
-}
-
-.dashboard-overview__taskCard--amber .dashboard-overview__taskIcon {
-  color: var(--accent-strong);
-}
-
-.dashboard-overview__taskCard--green .dashboard-overview__taskIcon {
-  color: var(--success);
-}
-
-.dashboard-overview__taskCard--olive .dashboard-overview__taskIcon {
-  color: #355443;
-}
-
-.dashboard-overview__taskBody {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.dashboard-overview__taskBody h3 {
-  margin: 0;
-  color: #17140f;
-  font-size: 1.15rem;
-  letter-spacing: -0.04em;
-}
-
-.dashboard-overview__taskPill {
-  display: inline-flex;
-  width: fit-content;
-  padding: 0.45rem 0.8rem;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.dashboard-overview__taskPill--amber {
-  background: rgba(146, 75, 16, 0.08);
-  color: var(--accent-strong);
-}
-
-.dashboard-overview__taskPill--green {
-  background: rgba(58, 103, 83, 0.1);
-  color: var(--success);
-}
-
-.dashboard-overview__taskPill--olive {
-  background: rgba(73, 101, 79, 0.12);
-  color: #355443;
 }
 
 .dashboard-overview__progressCard {
@@ -1555,12 +1436,6 @@
     justify-content: flex-end;
   }
 
-  .dashboard-shell__notificationButton {
-    width: 2.4rem;
-    min-height: 2.4rem;
-    padding: 0;
-  }
-
   .dashboard-shell__accountButton {
     width: 2.4rem;
     height: 2.4rem;
@@ -1572,10 +1447,6 @@
     width: 1.8rem;
     height: 1.8rem;
     font-size: 0.72rem;
-  }
-
-  .dashboard-shell__notificationButton span {
-    display: none;
   }
 
   .dashboard-shell__footerLinks {

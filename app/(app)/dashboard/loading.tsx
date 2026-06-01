@@ -48,15 +48,6 @@ export default function DashboardLoading() {
               <SkeletonLines count={6} />
             </article>
           </div>
-
-          <aside className={dashboardClass('dashboard-overview__sideColumn')}>
-            <article className={dashboardClass('dashboard-overview__progressCard')}>
-              <SkeletonLines count={4} />
-            </article>
-            <article className={dashboardClass('dashboard-overview__progressCard')}>
-              <SkeletonLines count={4} />
-            </article>
-          </aside>
         </section>
       </section>
     </div>

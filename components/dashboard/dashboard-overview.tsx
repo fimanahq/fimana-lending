@@ -78,10 +78,6 @@ function getApplicationName(application: LoanApplication) {
     || 'Borrower'
 }
 
-function getReminderTone(index: number) {
-  return ['amber', 'green', 'olive'][index % 3]
-}
-
 function ProgressLegend({
   currency,
   segments,
@@ -257,7 +253,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     capitalPositionSegments,
     interestOutlookSegments,
     recentApplications,
-    dueSoon,
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
@@ -622,15 +617,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
       </section>
 
       <section className={dashboardClass('dashboard-overview__operator')}>
-        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
-          <div>
-            <h2 className="section-title title-offset">Recent applications and due-soon work</h2>
-            <p className="muted">
-              Keep the operating queue visible without mixing it into the capital and receivable summaries.
-            </p>
-          </div>
-        </div>
-
         <section className={dashboardClass('dashboard-overview__contentGrid')}>
           <div className={dashboardClass('dashboard-overview__mainColumn')}>
             <div className={dashboardClass('dashboard-overview__sectionHead')}>
@@ -691,47 +677,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               )}
             </div>
           </div>
-
-          <aside className={dashboardClass('dashboard-overview__sideColumn')}>
-            <div className={dashboardClass('dashboard-overview__sectionHead')}>
-              <h2>Tasks Due Soon</h2>
-            </div>
-
-            <div className={dashboardClass('dashboard-overview__taskStack')}>
-              {dueSoon.length > 0 ? (
-                dueSoon.map((reminder, index) => (
-                  <Link
-                    key={`${reminder.loanId}-${reminder.installmentSequence}`}
-                    href={`/loans/${reminder.loanId}`}
-                    className={dashboardClass('dashboard-overview__taskCard', `dashboard-overview__taskCard--${getReminderTone(index)}`)}
-                  >
-                    <span className={dashboardClass('dashboard-overview__taskIcon')}>
-                      <OverviewGlyph name={index === 0 ? 'shield' : index === 1 ? 'note' : 'alert'} />
-                    </span>
-                    <div className={dashboardClass('dashboard-overview__taskBody')}>
-                      <h3>
-                        {reminder.borrower?.fullName || 'Borrower'} installment #{reminder.installmentSequence}
-                      </h3>
-                      <p>Due {formatDate(reminder.scheduledAt)} on the active collection schedule.</p>
-                      <span className={dashboardClass('dashboard-overview__taskPill', `dashboard-overview__taskPill--${getReminderTone(index)}`)}>
-                        {index === 0 ? 'High priority' : index === 1 ? 'Recurring' : 'Follow up'}
-                      </span>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
-                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
-                    <OverviewGlyph name="shield" />
-                  </span>
-                  <div>
-                    <strong>No reminder tasks yet</strong>
-                    <p>Upcoming collections will surface here when reminders are scheduled.</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </aside>
         </section>
       </section>
     </div>

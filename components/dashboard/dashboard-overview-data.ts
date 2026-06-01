@@ -1,11 +1,10 @@
 import type {
   LoanApplication,
   LoanDashboardSummary,
-  UpcomingLoanReminder,
 } from '@/lib/types/lending'
 import type { SettingsCurrency } from '@/lib/types/shared'
 
-export type DashboardDataSource = 'summary' | 'applications' | 'reminders'
+export type DashboardDataSource = 'summary' | 'applications'
 
 export interface DashboardSummaryMetrics extends LoanDashboardSummary {
   pendingReviewCount: number
@@ -26,21 +25,18 @@ export interface DashboardOverviewData {
   capitalPositionSegments: DashboardProgressSegment[]
   interestOutlookSegments: DashboardProgressSegment[]
   recentApplications: LoanApplication[]
-  dueSoon: UpcomingLoanReminder[]
   partialFailureNotice: string | null
 }
 
 interface BuildDashboardOverviewDataInput {
   summary?: LoanDashboardSummary | null
   applications: LoanApplication[]
-  reminders: UpcomingLoanReminder[]
   failedSources?: DashboardDataSource[]
 }
 
 const FAILED_SOURCE_LABELS: Record<DashboardDataSource, string> = {
   summary: 'dashboard summary',
   applications: 'loan applications',
-  reminders: 'upcoming reminders',
 }
 
 function formatFailedSources(failedSources: DashboardDataSource[]) {
@@ -115,7 +111,6 @@ function getDefaultSummary(): DashboardSummaryMetrics {
 export function buildDashboardOverviewData({
   summary,
   applications,
-  reminders,
   failedSources = [],
 }: BuildDashboardOverviewDataInput): DashboardOverviewData {
   const mergedSummary: DashboardSummaryMetrics = {
@@ -217,7 +212,6 @@ export function buildDashboardOverviewData({
     capitalPositionSegments,
     interestOutlookSegments,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
-    dueSoon: [...reminders].sort((left, right) => left.scheduledAt.localeCompare(right.scheduledAt)).slice(0, 3),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }
 }

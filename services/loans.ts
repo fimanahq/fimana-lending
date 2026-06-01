@@ -36,13 +36,6 @@ export function listLoansByBorrowerId(borrowerId: string) {
   ) as Promise<LoanRecord[]>
 }
 
-export function postLoan(input: Record<string, unknown>) {
-  return apiRequest<LoanRecord>('/api/loans', {
-    method: 'POST',
-    body: JSON.stringify(input),
-  })
-}
-
 export function deleteLoan(loanId: string) {
   return apiRequest<void>(`/api/loans/${loanId}`, {
     method: 'DELETE',

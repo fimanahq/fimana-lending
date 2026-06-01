@@ -9,7 +9,6 @@ import { classNames } from '@/utils/class-names'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 import {
-  Bell,
   Calculator,
   CreditCard,
   FileText,
@@ -34,7 +33,6 @@ type IconName =
   | 'applications'
   | 'loans'
   | 'settings'
-  | 'bell'
   | 'menu'
   | 'panel-left-close'
   | 'panel-left-open'
@@ -84,7 +82,6 @@ const icons = {
   collections: ReceiptText,
   calculator: Calculator,
   settings: Settings,
-  bell: Bell,
   menu: Menu,
   'panel-left-close': PanelLeftClose,
   'panel-left-open': PanelLeftOpen,
@@ -330,11 +327,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <h1 className={dashboardClass('dashboard-shell__pageTitle')}>{pageTitle}</h1>
             </div>
             <div className={dashboardClass('dashboard-shell__actions')}>
-              <button className={dashboardClass('dashboard-shell__notificationButton')} type="button" aria-label="Notifications placeholder">
-                <DashboardIcon name="bell" />
-                <span>0</span>
-              </button>
-
               <div className={dashboardClass('dashboard-shell__accountMenu')} ref={accountMenuRef}>
                 <button
                   className={dashboardClass('dashboard-shell__accountButton')}
