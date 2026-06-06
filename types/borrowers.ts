@@ -2,6 +2,7 @@
     page?: number
     itemsPerPage?: number
     search?: string
+    hasDefaultedLoan?: boolean
   }
 
   export type CreateBorrowerInput = {

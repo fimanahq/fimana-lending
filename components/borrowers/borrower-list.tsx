@@ -20,7 +20,14 @@ import { listBorrowersPaginated } from '@/services'
 import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 
-const ITEMS_PER_PAGE = 10
+type BorrowerListFilter = 'all' | 'defaulted'
+
+const ITEMS_PER_PAGE = 20
+
+const BORROWER_FILTERS: Array<{ label: string; value: BorrowerListFilter }> = [
+  { label: 'All', value: 'all' },
+  { label: 'Defaulted', value: 'defaulted' },
+]
 
 function getBorrowerName(borrower: Borrower) {
   return borrower.fullName.trim() || 'Unnamed borrower'
@@ -35,6 +42,7 @@ export function BorrowerList() {
 
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [activeFilter, setActiveFilter] = useState<BorrowerListFilter>('all')
 
   const [page, setPage] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
@@ -58,6 +66,7 @@ export function BorrowerList() {
         page,
         itemsPerPage: ITEMS_PER_PAGE,
         search: debouncedQuery,
+        hasDefaultedLoan: activeFilter === 'defaulted' ? true : undefined,
       })
 
       setBorrowers(response.items)
@@ -68,7 +77,7 @@ export function BorrowerList() {
     } finally {
       setLoading(false)
     }
-  }, [page, debouncedQuery])
+  }, [page, debouncedQuery, activeFilter])
 
   useEffect(() => {
     void loadBorrowers()
@@ -109,6 +118,22 @@ export function BorrowerList() {
         </div>
       </div>
 
+      <div className="application-status-tabs" aria-label="Borrower list filters">
+        {BORROWER_FILTERS.map((filter) => (
+          <button
+            key={filter.value}
+            type="button"
+            className={activeFilter === filter.value ? 'is-active' : ''}
+            onClick={() => {
+              setActiveFilter(filter.value)
+              setPage(1)
+            }}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <LoadingState title="Loading borrowers" description="Fetching borrower records from the service." />
       ) : null}
@@ -125,7 +150,7 @@ export function BorrowerList() {
         />
       ) : null}
 
-      {!loading && !error && borrowers.length === 0 && !debouncedQuery ? (
+      {!loading && !error && borrowers.length === 0 && !debouncedQuery && activeFilter === 'all' ? (
         <EmptyState
           title="No borrowers yet"
           description="Add the first borrower profile before issuing or tracking loans."
@@ -137,7 +162,25 @@ export function BorrowerList() {
         />
       ) : null}
 
-      {!loading && !error && borrowers.length === 0 && debouncedQuery ? (
+      {!loading && !error && borrowers.length === 0 && activeFilter === 'defaulted' ? (
+        <EmptyState
+          title={debouncedQuery ? 'No defaulted borrowers match your search' : 'No defaulted borrowers'}
+          description={
+            debouncedQuery
+              ? 'Clear the search or return to all borrowers.'
+              : 'Borrowers with defaulted loans will appear here.'
+          }
+          action={
+            debouncedQuery ? (
+              <Button variant="ghost" onClick={clearSearch}>
+                Clear search
+              </Button>
+            ) : null
+          }
+        />
+      ) : null}
+
+      {!loading && !error && borrowers.length === 0 && debouncedQuery && activeFilter === 'all' ? (
         <EmptyState
           title="No borrowers match your search"
           description="Clear the search to return to the full borrower list."
@@ -159,6 +202,7 @@ export function BorrowerList() {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Status</th>
+                  <th>Loan flags</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -187,6 +231,18 @@ export function BorrowerList() {
                       <Badge tone={borrower.status === 'active' ? 'success' : 'warning'}>
                         {borrower.status}
                       </Badge>
+                    </td>
+
+                    <td>
+                      {borrower.hasDefaultedLoan ? (
+                        <Badge tone="danger">
+                          {borrower.defaultedLoanCount > 1
+                            ? `${borrower.defaultedLoanCount} defaulted loans`
+                            : 'Defaulted loan'}
+                        </Badge>
+                      ) : (
+                        <span className="muted micro-copy">None</span>
+                      )}
                     </td>
 
                     <td>

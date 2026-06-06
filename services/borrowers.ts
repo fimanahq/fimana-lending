@@ -12,6 +12,7 @@ export function listBorrowersPaginated(params: ListBorrowersParams = {}) {
     page: params.page ?? 1,
     itemsPerPage: params.itemsPerPage ?? 10,
     search: params.search?.trim(),
+    hasDefaultedLoan: params.hasDefaultedLoan,
   }))
   return getOrCreateCachedRequest(
     borrowerListRequests,

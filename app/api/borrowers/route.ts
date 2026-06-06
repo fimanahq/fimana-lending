@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page')
     const itemsPerPage = searchParams.get('itemsPerPage')
     const search = searchParams.get('search')?.trim()
+    const hasDefaultedLoan = searchParams.get('hasDefaultedLoan')
 
-    const isPaginatedRequest = Boolean(page || itemsPerPage || search)
+    const isPaginatedRequest = Boolean(page || itemsPerPage || search || hasDefaultedLoan)
 
     if (!isPaginatedRequest) {
       const borrowers = await authorizedBackendRequest<Borrower[]>('/borrowers')
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
         page: page ?? '1',
         itemsPerPage: itemsPerPage ?? '10',
         search,
+        hasDefaultedLoan,
       })),
     )
 

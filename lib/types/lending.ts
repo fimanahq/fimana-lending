@@ -79,6 +79,9 @@ export interface Borrower {
   income: number | null
   notes: string
   status: 'active' | 'inactive' | 'blacklisted'
+  hasDefaultedLoan: boolean
+  defaultedLoanCount: number
+  defaultedPrincipalAmountMinor: number
   createdAt: string
   updatedAt?: string
 }
