@@ -2,36 +2,28 @@
 
 import { useEffect, useMemo, useState, type WheelEvent } from 'react'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/shared'
-import { defaultLoanInterestRules } from '@/content/rules'
+import {
+  applyRateBasis,
+  calculateReducingBalanceLoan,
+  getAutoRate,
+  rateReductionOptions,
+  type RateBasis,
+} from '@/components/loan-calculator/loan-calculator-utils'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
   buildLoanDueDates,
   buildScheduleForCalculationMethod,
   buildPaymentDays,
   getRecommendedFirstPaymentDate,
-  getInterestRateFromRules,
   paymentDayOptions,
 } from '@/lib/loan-schedule'
 import type {
   InterestMode,
   LoanCalculationMethod,
-  LoanInterestRulesConfig,
   PostInterestOnlyMethod,
   SimpleInterestMethod,
 } from '@/lib/types/lending'
 import type { PaymentFrequency } from '@/lib/types/shared'
-
-function getGivesBucketLabel(gives: number) {
-  if (gives <= 1) {
-    return '1 give'
-  }
-
-  if (gives === 2) {
-    return '2 gives'
-  }
-
-  return '3+ gives'
-}
 
 const paymentFrequencyOptions: SearchableSelectOption[] = [
   { label: 'Monthly', value: 'monthly' },
@@ -44,9 +36,16 @@ const paymentDaySelectOptions = paymentDayOptions.map((option) => ({
 }))
 
 const interestModeOptions: SearchableSelectOption[] = [
-  { label: 'Use configured rules', value: 'rules' },
-  { label: 'Manual interest rate', value: 'manual' },
+  { label: 'Automatic tiered pricing', value: 'rules' },
+  { label: 'Manual what-if', value: 'manual' },
 ]
+
+const rateBasisOptions: SearchableSelectOption[] = rateReductionOptions.map((option) => ({
+  label: option.reduction > 0
+    ? `${option.label} (-${option.reduction}%)`
+    : option.label,
+  value: option.value,
+}))
 
 const calculationMethodOptions: SearchableSelectOption[] = [
   { label: 'Reducing balance', value: 'reducing_balance' },
@@ -79,13 +78,13 @@ export function LoanCalculator() {
     firstPaymentDate: '',
     interestMode: 'rules' as InterestMode,
     manualInterestRate: '9',
+    rateBasis: 'standard' as RateBasis,
     calculationMethod: 'reducing_balance' as LoanCalculationMethod,
     interestOnlyPeriod: '1',
     postInterestOnlyMethod: 'bullet' as PostInterestOnlyMethod,
     simpleInterestMethod: 'equal_principal' as SimpleInterestMethod,
   })
   const [firstPaymentDateIsAuto, setFirstPaymentDateIsAuto] = useState(true)
-  const [rules, setRules] = useState<LoanInterestRulesConfig>(defaultLoanInterestRules)
 
   const paymentDays = useMemo(
     () => buildPaymentDays(form.paymentFrequency, form.firstDay, form.secondDay),
@@ -111,8 +110,18 @@ export function LoanCalculator() {
         error: 'Select the first payment date to generate the schedule.',
         schedule: [],
         interestRate: 0,
+        selectedRate: 0,
+        amountTier: '',
+        amountTierLabel: '',
+        cutoffRange: '',
+        cutoffRangeLabel: '',
+        baseRate: 0,
+        rateBasis: 'standard' as RateBasis,
+        rateBasisLabel: '',
+        rateReduction: 0,
         totalInterest: 0,
         totalPayment: 0,
+        paymentPerCutoff: 0,
       }
     }
 
@@ -128,15 +137,41 @@ export function LoanCalculator() {
         throw new Error('Loan term must be a whole number of gives')
       }
 
-      const interestRate = form.interestMode === 'manual'
-        ? Number(form.manualInterestRate)
-        : getInterestRateFromRules(principal, gives, rules)
+      const dueDates = buildLoanDueDates(gives, form.paymentFrequency, paymentDays, form.firstPaymentDate)
+
+      if (form.interestMode === 'rules') {
+        const autoCalculation = calculateReducingBalanceLoan({
+          principal,
+          cutoffs: gives,
+          dueDates,
+          rateBasis: form.rateBasis,
+        })
+
+        return {
+          error: '',
+          schedule: autoCalculation.schedule,
+          interestRate: autoCalculation.selectedRate,
+          selectedRate: autoCalculation.selectedRate,
+          amountTier: autoCalculation.amountTier,
+          amountTierLabel: autoCalculation.amountTierLabel,
+          cutoffRange: autoCalculation.cutoffRange,
+          cutoffRangeLabel: autoCalculation.cutoffRangeLabel,
+          baseRate: autoCalculation.baseRate,
+          rateBasis: autoCalculation.rateBasis,
+          rateBasisLabel: autoCalculation.rateBasisLabel,
+          rateReduction: autoCalculation.rateReduction,
+          totalInterest: autoCalculation.totalInterest,
+          totalPayment: autoCalculation.totalPayable,
+          paymentPerCutoff: autoCalculation.paymentPerCutoff,
+        }
+      }
+
+      const interestRate = Number(form.manualInterestRate)
 
       if (!Number.isFinite(interestRate) || interestRate < 0) {
         throw new Error('Interest rate must be 0 or greater')
       }
 
-      const dueDates = buildLoanDueDates(gives, form.paymentFrequency, paymentDays, form.firstPaymentDate)
       const interestOnlyPeriod = Number(form.interestOnlyPeriod)
 
       if (
@@ -157,46 +192,71 @@ export function LoanCalculator() {
       })
       const totalInterest = Number(schedule.reduce((sum, row) => sum + row.interest, 0).toFixed(2))
       const totalPayment = Number(schedule.reduce((sum, row) => sum + row.totalPayment, 0).toFixed(2))
+      const paymentPerCutoff = gives > 0 ? Number((totalPayment / gives).toFixed(2)) : 0
 
       return {
         error: '',
         schedule,
         interestRate,
+        selectedRate: interestRate,
+        amountTier: '',
+        amountTierLabel: '',
+        cutoffRange: '',
+        cutoffRangeLabel: '',
+        baseRate: interestRate,
+        rateBasis: 'standard' as RateBasis,
+        rateBasisLabel: '',
+        rateReduction: 0,
         totalInterest,
         totalPayment,
+        paymentPerCutoff,
       }
     } catch (caughtError) {
       return {
         error: caughtError instanceof Error ? caughtError.message : 'Unable to generate schedule',
         schedule: [],
         interestRate: 0,
+        selectedRate: 0,
+        amountTier: '',
+        amountTierLabel: '',
+        cutoffRange: '',
+        cutoffRangeLabel: '',
+        baseRate: 0,
+        rateBasis: 'standard' as RateBasis,
+        rateBasisLabel: '',
+        rateReduction: 0,
         totalInterest: 0,
         totalPayment: 0,
+        paymentPerCutoff: 0,
       }
     }
-  }, [form, paymentDays, rules])
+  }, [form, paymentDays])
 
   const appliedInterestDetail = useMemo(() => {
     if (form.interestMode === 'manual') {
-      return 'Manual override from Interest per cutoff (%) input.'
+      return 'Manual what-if from Interest per cutoff (%) input.'
     }
 
     const principal = Number(form.principal)
     const gives = Number(form.gives)
 
     if (!Number.isFinite(principal) || principal <= 0 || !Number.isInteger(gives) || gives <= 0) {
-      return 'Enter a valid loan amount and gives to resolve the configured rule.'
+      return 'Enter a valid loan amount and cutoffs to resolve automatic pricing.'
     }
 
-    const bandLabel = principal <= rules.thresholdAmount
-      ? `Small loan (≤ ${formatCurrency(rules.thresholdAmount)})`
-      : `Large loan (> ${formatCurrency(rules.thresholdAmount)})`
+    try {
+      const autoPricing = getAutoRate(principal, gives)
+      const rateDetails = applyRateBasis(autoPricing.selectedRate, form.rateBasis)
 
-    const givesLabel = getGivesBucketLabel(gives)
-    const appliedRate = getInterestRateFromRules(principal, gives, rules)
+      if (rateDetails.rateReduction > 0) {
+        return `Using ${autoPricing.amountTierLabel}, ${autoPricing.cutoffRangeLabel}: ${rateDetails.baseRate}% base less ${rateDetails.rateReduction}% ${rateDetails.rateBasisLabel.toLowerCase()} = ${rateDetails.selectedRate}%.`
+      }
 
-    return `Using ${bandLabel}, ${givesLabel} rule = ${appliedRate}%.`
-  }, [form.gives, form.interestMode, form.principal, rules])
+      return `Using ${autoPricing.amountTierLabel}, ${autoPricing.cutoffRangeLabel} = ${rateDetails.selectedRate}%.`
+    } catch (caughtError) {
+      return caughtError instanceof Error ? caughtError.message : 'Unable to resolve automatic pricing.'
+    }
+  }, [form.gives, form.interestMode, form.principal, form.rateBasis])
 
   return (
     <div className="stack">
@@ -320,213 +380,165 @@ export function LoanCalculator() {
             </div>
           ) : null}
 
-          <SearchableSelect
-            id="calculatorCalculationMethod"
-            label="Calculation method"
-            options={calculationMethodOptions}
-            searchable={false}
-            value={form.calculationMethod}
-            onChange={(nextValue) =>
-              setForm((current) => ({
-                ...current,
-                calculationMethod: nextValue as LoanCalculationMethod,
-              }))
-            }
-          />
-
-          {form.calculationMethod === 'interest_only' ? (
-            <div className="grid two">
-              <div className="field">
-                <label htmlFor="calculatorInterestOnlyPeriod">Interest-only cutoffs</label>
-                <input
-                  id="calculatorInterestOnlyPeriod"
-                  type="number"
-                  min="0"
-                  step="1"
-                  onWheel={preventWheelValueChange}
-                  value={form.interestOnlyPeriod}
-                  onChange={(event) => setForm((current) => ({ ...current, interestOnlyPeriod: event.target.value }))}
-                />
-              </div>
+          {form.interestMode === 'manual' ? (
+            <>
               <SearchableSelect
-                id="calculatorPostInterestOnlyMethod"
-                label="After interest-only"
-                options={postInterestOnlyMethodOptions}
-                value={form.postInterestOnlyMethod}
+                id="calculatorCalculationMethod"
+                label="Calculation method"
+                options={calculationMethodOptions}
+                searchable={false}
+                value={form.calculationMethod}
                 onChange={(nextValue) =>
                   setForm((current) => ({
                     ...current,
-                    postInterestOnlyMethod: nextValue as PostInterestOnlyMethod,
+                    calculationMethod: nextValue as LoanCalculationMethod,
                   }))
                 }
               />
-            </div>
-          ) : null}
 
-          {form.calculationMethod === 'simple_interest' ? (
-            <SearchableSelect
-              id="calculatorSimpleInterestMethod"
-              label="Simple interest type"
-              options={simpleInterestMethodOptions}
-              value={form.simpleInterestMethod}
-              onChange={(nextValue) =>
-                setForm((current) => ({
-                  ...current,
-                  simpleInterestMethod: nextValue as SimpleInterestMethod,
-                }))
-              }
-            />
-          ) : null}
+              {form.calculationMethod === 'interest_only' ? (
+                <div className="grid two">
+                  <div className="field">
+                    <label htmlFor="calculatorInterestOnlyPeriod">Interest-only cutoffs</label>
+                    <input
+                      id="calculatorInterestOnlyPeriod"
+                      type="number"
+                      min="0"
+                      step="1"
+                      onWheel={preventWheelValueChange}
+                      value={form.interestOnlyPeriod}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, interestOnlyPeriod: event.target.value }))
+                      }
+                    />
+                  </div>
+                  <SearchableSelect
+                    id="calculatorPostInterestOnlyMethod"
+                    label="After interest-only"
+                    options={postInterestOnlyMethodOptions}
+                    value={form.postInterestOnlyMethod}
+                    onChange={(nextValue) =>
+                      setForm((current) => ({
+                        ...current,
+                        postInterestOnlyMethod: nextValue as PostInterestOnlyMethod,
+                      }))
+                    }
+                  />
+                </div>
+              ) : null}
+
+              {form.calculationMethod === 'simple_interest' ? (
+                <SearchableSelect
+                  id="calculatorSimpleInterestMethod"
+                  label="Simple interest type"
+                  options={simpleInterestMethodOptions}
+                  value={form.simpleInterestMethod}
+                  onChange={(nextValue) =>
+                    setForm((current) => ({
+                      ...current,
+                      simpleInterestMethod: nextValue as SimpleInterestMethod,
+                    }))
+                  }
+                />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <div className="field">
+                <label htmlFor="calculatorRateBasis">Rate basis</label>
+                <select
+                  id="calculatorRateBasis"
+                  value={form.rateBasis}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      rateBasis: event.target.value as RateBasis,
+                    }))
+                  }
+                >
+                  {rateBasisOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="notice">
+                Standard uses the table rate. Reduced rates require a selected basis and never go below 5%.
+              </div>
+            </>
+          )}
         </section>
 
         <section className="card panel stack">
-          <div className="section-title">Rule configuration</div>
+          <div className="section-title">Automatic pricing details</div>
           <p className="muted">
-            Edit the threshold and per-cutoff rates below. The calculator will use these values when interest mode is set to configured rules.
+            The calculator selects the rate from amount tier and cutoffs.
           </p>
 
-          <div className="field">
-            <label htmlFor="ruleThreshold">Small-loan threshold</label>
-            <input
-              id="ruleThreshold"
-              type="number"
-              min="1"
-              step="0.01"
-              onWheel={preventWheelValueChange}
-              value={rules.thresholdAmount}
-              onChange={(event) =>
-                setRules((current) => ({ ...current, thresholdAmount: Number(event.target.value) || 0 }))
-              }
-            />
-          </div>
-
-          <div className="grid two">
-            <div className="data-card stack">
-              <div className="section-title subsection-title">Small loan rates</div>
-              <div className="field">
-                <label htmlFor="smallOneGive">1 give (%)</label>
-                <input
-                  id="smallOneGive"
-                  className="input-no-spinner"
-                  type="number"
-                  step="0.01"
-                  onWheel={preventWheelValueChange}
-                  value={rules.smallLoanRates.oneGive}
-                  onChange={(event) =>
-                    setRules((current) => ({
-                      ...current,
-                      smallLoanRates: { ...current.smallLoanRates, oneGive: Number(event.target.value) || 0 },
-                    }))
-                  }
-                />
+          {form.interestMode === 'manual' ? (
+            <div className="notice">Automatic pricing details are shown when automatic tiered pricing is selected.</div>
+          ) : (
+            <div className="grid two">
+              <div className="data-card">
+                <span className="muted">Amount tier</span>
+                <strong>{calculation.amountTierLabel || '--'}</strong>
               </div>
-              <div className="field">
-                <label htmlFor="smallTwoGives">2 gives (%)</label>
-                <input
-                  id="smallTwoGives"
-                  className="input-no-spinner"
-                  type="number"
-                  step="0.01"
-                  onWheel={preventWheelValueChange}
-                  value={rules.smallLoanRates.twoGives}
-                  onChange={(event) =>
-                    setRules((current) => ({
-                      ...current,
-                      smallLoanRates: { ...current.smallLoanRates, twoGives: Number(event.target.value) || 0 },
-                    }))
-                  }
-                />
+              <div className="data-card">
+                <span className="muted">Cutoff range</span>
+                <strong>{calculation.cutoffRangeLabel || '--'}</strong>
               </div>
-              <div className="field">
-                <label htmlFor="smallThreePlus">3+ gives (%)</label>
-                <input
-                  id="smallThreePlus"
-                  className="input-no-spinner"
-                  type="number"
-                  step="0.01"
-                  onWheel={preventWheelValueChange}
-                  value={rules.smallLoanRates.threePlusGives}
-                  onChange={(event) =>
-                    setRules((current) => ({
-                      ...current,
-                      smallLoanRates: { ...current.smallLoanRates, threePlusGives: Number(event.target.value) || 0 },
-                    }))
-                  }
-                />
+              <div className="data-card">
+                <span className="muted">Base table rate</span>
+                <strong>{calculation.baseRate ? `${calculation.baseRate}%` : '--'}</strong>
+              </div>
+              <div className="data-card">
+                <span className="muted">Rate basis</span>
+                <strong>{calculation.rateBasisLabel || '--'}</strong>
+              </div>
+              <div className="data-card">
+                <span className="muted">Reduction</span>
+                <strong>{calculation.rateReduction ? `-${calculation.rateReduction}%` : 'None'}</strong>
+              </div>
+              <div className="data-card">
+                <span className="muted">Final rate</span>
+                <strong>{calculation.selectedRate ? `${calculation.selectedRate}%` : '--'}</strong>
+              </div>
+              <div className="data-card">
+                <span className="muted">Total interest</span>
+                <strong>{formatCurrency(calculation.totalInterest)}</strong>
               </div>
             </div>
-
-            <div className="data-card stack">
-              <div className="section-title subsection-title">Large loan rates</div>
-              <div className="field">
-                <label htmlFor="largeOneGive">1 give (%)</label>
-                <input
-                  id="largeOneGive"
-                  className="input-no-spinner"
-                  type="number"
-                  step="0.01"
-                  onWheel={preventWheelValueChange}
-                  value={rules.largeLoanRates.oneGive}
-                  onChange={(event) =>
-                    setRules((current) => ({
-                      ...current,
-                      largeLoanRates: { ...current.largeLoanRates, oneGive: Number(event.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="largeTwoGives">2 gives (%)</label>
-                <input
-                  id="largeTwoGives"
-                  className="input-no-spinner"
-                  type="number"
-                  step="0.01"
-                  onWheel={preventWheelValueChange}
-                  value={rules.largeLoanRates.twoGives}
-                  onChange={(event) =>
-                    setRules((current) => ({
-                      ...current,
-                      largeLoanRates: { ...current.largeLoanRates, twoGives: Number(event.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="largeThreePlus">3+ gives (%)</label>
-                <input
-                  id="largeThreePlus"
-                  className="input-no-spinner"
-                  type="number"
-                  step="0.01"
-                  onWheel={preventWheelValueChange}
-                  value={rules.largeLoanRates.threePlusGives}
-                  onChange={(event) =>
-                    setRules((current) => ({
-                      ...current,
-                      largeLoanRates: { ...current.largeLoanRates, threePlusGives: Number(event.target.value) || 0 },
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
+          )}
         </section>
       </div>
 
       <section className="summary-grid">
         <div className="card summary-stat">
-          <span className="muted">Applied interest</span>
+          <span className="muted">Final rate</span>
           <strong>{calculation.interestRate ? `${calculation.interestRate}%` : '--'}</strong>
           <span className="muted">{appliedInterestDetail}</span>
+        </div>
+        <div className="card summary-stat">
+          <span className="muted">Base table rate</span>
+          <strong>{calculation.baseRate ? `${calculation.baseRate}%` : '--'}</strong>
+        </div>
+        <div className="card summary-stat">
+          <span className="muted">Rate basis</span>
+          <strong>{calculation.rateBasisLabel || '--'}</strong>
+          <span className="muted">{calculation.rateReduction ? `${calculation.rateReduction}% reduction.` : 'No reduction.'}</span>
         </div>
         <div className="card summary-stat">
           <span className="muted">Total interest</span>
           <strong>{formatCurrency(calculation.totalInterest)}</strong>
         </div>
         <div className="card summary-stat">
-          <span className="muted">Total payment</span>
+          <span className="muted">Total payable</span>
           <strong>{formatCurrency(calculation.totalPayment)}</strong>
+        </div>
+        <div className="card summary-stat">
+          <span className="muted">Payment per cutoff</span>
+          <strong>{formatCurrency(calculation.paymentPerCutoff)}</strong>
         </div>
       </section>
 
@@ -535,8 +547,8 @@ export function LoanCalculator() {
         <p className="muted">
           Payment days: {paymentDays.map(formatPaymentDay).join(' and ')}.
           {form.interestMode === 'rules'
-            ? ' The interest rate is coming from the configured rules above.'
-            : ' The interest rate is using your manual override.'}
+            ? ' Automatic pricing uses reducing balance interest with the selected tiered rate.'
+            : ' Manual what-if uses your selected interest and calculation method.'}
         </p>
 
         {calculation.error ? <div className="notice danger">{calculation.error}</div> : null}
