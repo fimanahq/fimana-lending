@@ -23,7 +23,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
 import { getSettings } from '@/services'
-import { getLoan } from '@/services/loans'
+import { getLoan, updateLoan } from '@/services/loans'
 import {
   deleteLoanAdjustment,
   deleteLoanPayment,
@@ -70,6 +70,22 @@ function formatPaymentMethod(value: string) {
     .split('_')
     .map((part) => part[0]?.toUpperCase() + part.slice(1))
     .join(' ')
+}
+
+function formatLoanNextDue(loan: LoanRecord) {
+  if (loan.status === 'completed') {
+    return 'Completed'
+  }
+
+  if (loan.status === 'defaulted') {
+    return 'Defaulted'
+  }
+
+  if (loan.nextDueDate) {
+    return formatDate(loan.nextDueDate)
+  }
+
+  return 'Not scheduled'
 }
 
 function getPaymentStatusClassName(status: LoanPaymentHistory['status']) {
@@ -145,8 +161,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [selectedPenaltyRow, setSelectedPenaltyRow] = useState<LoanScheduleRow | null>(null)
   const [deletePaymentId, setDeletePaymentId] = useState('')
   const [deleteAdjustmentId, setDeleteAdjustmentId] = useState('')
+  const [statusAction, setStatusAction] = useState<'default' | 'reopen' | null>(null)
   const [deletingPayment, setDeletingPayment] = useState(false)
   const [deletingAdjustment, setDeletingAdjustment] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<LoanPaymentMethod>('cash')
@@ -163,6 +181,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [submittingPenalty, setSubmittingPenalty] = useState(false)
   const [paymentActionError, setPaymentActionError] = useState('')
   const [adjustmentActionError, setAdjustmentActionError] = useState('')
+  const [statusActionError, setStatusActionError] = useState('')
   const [penaltyActionError, setPenaltyActionError] = useState('')
 
   useEffect(() => {
@@ -218,11 +237,16 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const currency = loan.loanProduct.currency || 'PHP'
   const schedule = loan.schedule ?? []
   const overallProfitAmountMinor = loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor
+  const defaultLossAmountMinor = loan.lossAmountMinor ?? 0
+  const defaultCollectedProfitMinor = loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0)
+  const netDefaultImpactMinor = defaultCollectedProfitMinor - defaultLossAmountMinor
   const overallProfitPercentage = loan.principalAmountMinor > 0
     ? (overallProfitAmountMinor / loan.principalAmountMinor) * 100
     : 0
   const canPostPayment = loan.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
   const canOpenLoanAdjustment = loan.status === 'active' || loan.status === 'completed'
+  const canMarkAsDefaulted = loan.status === 'active' && loan.balances.principalOutstandingAmountMinor > 0
+  const canReopenLoan = loan.status === 'defaulted'
   const editPaymentAmountMinor = toAmountMinor(paymentAmount)
   const selectedPaymentAllocatedAmountMinor = selectedPayment ? getPaymentAllocatedAmountMinor(selectedPayment) : 0
   const selectedPaymentRoundingIncomeMinor = selectedPayment
@@ -514,11 +538,43 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     }
   }
 
+  const handleStatusAction = async () => {
+    if (!statusAction) {
+      return
+    }
+
+    const nextStatus = statusAction === 'default' ? 'defaulted' : 'active'
+    const toastId = showLoading(statusAction === 'default' ? 'Marking loan as defaulted...' : 'Reopening loan...')
+    setUpdatingStatus(true)
+    setStatusActionError('')
+
+    try {
+      const updatedLoan = await updateLoan(loanId, { status: nextStatus })
+      setLoan(updatedLoan)
+      setStatusAction(null)
+      update(toastId, statusAction === 'default' ? 'Loan marked as defaulted.' : 'Loan reopened.', {
+        tone: 'success',
+        title: 'Success',
+      })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setStatusActionError(caughtError instanceof Error ? caughtError.message : 'Unable to update loan status')
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   return (
     <div className="stack">
       <div className="inline-actions">
         <Button variant="secondary" onClick={() => setPaymentDialogOpen(true)} disabled={!canPostPayment}>Post payment</Button>
         <Button variant="secondary" onClick={() => setAdjustmentDialogOpen(true)} disabled={!canOpenLoanAdjustment}>Loan adjustment</Button>
+        {canMarkAsDefaulted ? (
+          <Button variant="danger" onClick={() => setStatusAction('default')}>Mark as Defaulted</Button>
+        ) : null}
+        {canReopenLoan ? (
+          <Button variant="secondary" onClick={() => setStatusAction('reopen')}>Reopen Loan</Button>
+        ) : null}
         <Link href={`/loan-applications/${loan.loanApplicationId}`} className="button-secondary">View application</Link>
         <Link href="/loan-applications" className="button-ghost">Back to applications</Link>
       </div>
@@ -533,6 +589,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
 
       {adjustmentActionError && !selectedAdjustment ? (
         <ErrorBanner title="Unable to update adjustment" message={adjustmentActionError} />
+      ) : null}
+
+      {statusActionError ? (
+        <ErrorBanner title="Unable to update loan status" message={statusActionError} />
       ) : null}
 
       <Card
@@ -558,7 +618,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
             <strong>{formatMinorCurrency(loan.balances.penaltyOutstandingAmountMinor ?? 0, currency)}</strong>
           </div>
           <div className="data-card">
-            <span className="muted">Total profit</span>
+            <span className="muted">{loan.status === 'defaulted' ? 'Projected profit' : 'Total profit'}</span>
             <strong>{formatMinorCurrency(overallProfitAmountMinor, currency)}</strong>
           </div>
           <div className="data-card">
@@ -575,9 +635,39 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           </div>
           <div className="data-card">
             <span className="muted">Next due</span>
-            <strong>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Completed'}</strong>
+            <strong>{formatLoanNextDue(loan)}</strong>
           </div>
         </div>
+
+        {loan.status === 'defaulted' ? (
+          <section className={styles.defaultOutcome} aria-label="Default outcome">
+            <div className={styles.defaultOutcomeHeader}>
+              <div>
+                <div className="muted">Default outcome</div>
+                <strong>Net impact after collected profit</strong>
+              </div>
+              <span className={getStatusClassName(loan.status)}>{formatLoanStatus(loan.status)}</span>
+            </div>
+            <div className={styles.defaultOutcomeGrid}>
+              <div>
+                <span className="muted">Principal write-off</span>
+                <strong>{formatMinorCurrency(defaultLossAmountMinor, currency)}</strong>
+              </div>
+              <div>
+                <span className="muted">Collected profit</span>
+                <strong>{formatMinorCurrency(defaultCollectedProfitMinor, currency)}</strong>
+              </div>
+              <div>
+                <span className="muted">Net default impact</span>
+                <strong>{formatMinorCurrency(netDefaultImpactMinor, currency)}</strong>
+              </div>
+              <div>
+                <span className="muted">Defaulted date</span>
+                <strong>{loan.defaultedAt ? formatDate(loan.defaultedAt) : 'Not recorded'}</strong>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <div className="grid two">
           <div>
@@ -742,6 +832,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                           aria-label={`Edit payment ${payment.receiptNumber}`}
                           title="Edit payment"
                           onClick={() => openEditPaymentDialog(payment)}
+                          disabled={loan.status === 'defaulted'}
                         >
                           <EditIcon />
                         </button>
@@ -751,6 +842,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                           aria-label={`Delete payment ${payment.receiptNumber}`}
                           title="Delete payment"
                           onClick={() => setDeletePaymentId(payment.id)}
+                          disabled={loan.status === 'defaulted'}
                         >
                           <DeleteIcon />
                         </button>
@@ -813,6 +905,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                             aria-label={`Edit adjustment ${adjustment.reason}`}
                             title="Edit adjustment"
                             onClick={() => openEditAdjustmentDialog(adjustment)}
+                            disabled={loan.status === 'defaulted'}
                           >
                             <EditIcon />
                           </button>
@@ -822,6 +915,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                             aria-label={`Delete adjustment ${adjustment.reason}`}
                             title="Delete adjustment"
                             onClick={() => setDeleteAdjustmentId(adjustment.id)}
+                            disabled={loan.status === 'defaulted'}
                           >
                             <DeleteIcon />
                           </button>
@@ -1033,6 +1127,29 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           </div>
         </div>
       </Dialog>
+
+      <ConfirmationDialog
+        open={statusAction === 'default'}
+        title="Mark loan as defaulted?"
+        message="The unpaid principal will be recorded as a loss."
+        confirmLabel="Mark as Defaulted"
+        cancelLabel="Cancel"
+        destructive
+        confirmDisabled={updatingStatus}
+        onConfirm={() => void handleStatusAction()}
+        onClose={() => setStatusAction(null)}
+      />
+
+      <ConfirmationDialog
+        open={statusAction === 'reopen'}
+        title="Reopen loan?"
+        message="This will clear the recorded loss and make the loan active again."
+        confirmLabel="Reopen Loan"
+        cancelLabel="Cancel"
+        confirmDisabled={updatingStatus}
+        onConfirm={() => void handleStatusAction()}
+        onClose={() => setStatusAction(null)}
+      />
 
       <ConfirmationDialog
         open={Boolean(deletePaymentId)}

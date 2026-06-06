@@ -11,7 +11,7 @@ export type PostInterestOnlyMethod = 'bullet' | 'amortizing'
 export type SimpleInterestMethod = 'equal_principal' | 'equal_payment'
 export type LoanApplicationCutoffPatternCode = '5_20' | '15_month_end'
 export type LoanApplicationSource = 'internal' | 'public'
-export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled'
+export type LoanStatus = 'pending_disbursement' | 'active' | 'completed' | 'cancelled' | 'defaulted'
 export type LoanInstallmentStatus = 'pending' | 'partial' | 'paid'
 export type LoanDisbursementMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'check' | 'internal_transfer' | 'general'
 export type LoanPaymentMethod = 'cash' | 'bank_transfer' | 'ewallet' | 'internal_offset'
@@ -196,6 +196,8 @@ export interface LoanRecord {
   totalInterestAmountMinor: number
   totalPenaltyAmountMinor: number
   totalProfitAmountMinor: number
+  lossAmountMinor: number
+  defaultedAt?: string | null
   balances: LoanRecordBalances
   disbursement: LoanDisbursementRecord
   createdAt: string
@@ -400,6 +402,8 @@ export interface LoanDashboardSummary {
   cashOnHandMinor: number
   outstandingPrincipalMinor: number
   moneyWithBorrowersMinor: number
+  defaultedLoanCount: number
+  writtenOffPrincipalMinor: number
   nextCutoffReceivableMinor: number
   overdueReceivableMinor: number
   overduePrincipalMinor: number

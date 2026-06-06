@@ -5,7 +5,7 @@ import { Card, EmptyState, TableShell } from '@/components/shared'
 import { OpenLoanIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { Loan } from '@/lib/types/lending'
+import type { Loan, LoanStatus } from '@/lib/types/lending'
 import borrowerStyles from './borrowers.module.css'
 
 interface BorrowerLoanHistoryProps {
@@ -17,8 +17,30 @@ function getNextDueDate(loan: Loan) {
   return loan.installments.find((installment) => installment.status !== 'paid')?.dueDate
 }
 
+function formatLoanStatus(status: LoanStatus) {
+  return status.split('_').map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ')
+}
+
+function formatLoanNextDue(loan: Loan) {
+  if (loan.status === 'completed') {
+    return 'Completed'
+  }
+
+  if (loan.status === 'defaulted') {
+    return 'Defaulted'
+  }
+
+  const nextDueDate = getNextDueDate(loan)
+  if (nextDueDate) {
+    return formatDate(nextDueDate)
+  }
+
+  return 'Not scheduled'
+}
+
 export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistoryProps) {
   const activeLoans = loans.filter((loan) => loan.status === 'active')
+  const defaultedLoans = loans.filter((loan) => loan.status === 'defaulted')
   const completedLoans = loans.filter((loan) => loan.status === 'completed')
   const totals = loans.reduce(
     (summary, loan) => ({
@@ -35,7 +57,9 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
       <section className={borrowerStyles.summaryGrid} aria-label={`${borrowerName} loan history summary`}>
         <Card className={borrowerStyles.summaryCard} title="Loans">
           <strong>{loans.length}</strong>
-          <span className="muted">{activeLoans.length} active</span>
+          <span className="muted">
+            {activeLoans.length} active{defaultedLoans.length > 0 ? ` · ${defaultedLoans.length} defaulted` : ''}
+          </span>
         </Card>
         <Card className={borrowerStyles.summaryCard} title="Principal">
           <strong>{formatCurrency(totals.principal, currency)}</strong>
@@ -73,8 +97,6 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
             </thead>
             <tbody>
               {loans.map((loan) => {
-                const nextDueDate = getNextDueDate(loan)
-
                 return (
                   <tr key={loan._id}>
                     <td>
@@ -84,8 +106,8 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
                     <td>{formatCurrency(loan.principal, loan.currency)}</td>
                     <td>{formatCurrency(loan.totalInterest, loan.currency)}</td>
                     <td>{formatCurrency(loan.totalPayment, loan.currency)}</td>
-                    <td>{nextDueDate ? formatDate(nextDueDate) : 'Complete'}</td>
-                    <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
+                    <td>{formatLoanNextDue(loan)}</td>
+                    <td><span className={getStatusClassName(loan.status)}>{formatLoanStatus(loan.status)}</span></td>
                     <td>
                       <Link
                         href={`/loans/${loan._id}`}

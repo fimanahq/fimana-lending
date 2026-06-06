@@ -653,6 +653,7 @@ th {
 
 .status-pill.rejected,
 .status-pill.cancelled,
+.status-pill.defaulted,
 .status-pill.withdrawn,
 .status-pill.expired {
   background: rgba(143, 51, 38, 0.12);

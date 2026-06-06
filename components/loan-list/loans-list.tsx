@@ -14,7 +14,7 @@ import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 import styles from './loan-list.module.css'
 
-type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement'
+type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement' | 'defaulted'
 
 const PAGE_SIZE = 20
 
@@ -22,6 +22,7 @@ const STATUS_FILTERS: Array<{ label: string; value: LoanListFilter }> = [
   { label: 'Active', value: 'active' },
   { label: 'Pending', value: 'pending_disbursement' },
   { label: 'Completed', value: 'completed' },
+  { label: 'Defaulted', value: 'defaulted' },
   { label: 'All', value: 'all' },
 ]
 
@@ -36,6 +37,22 @@ function formatLoanStatus(status: LoanStatus) {
 function formatLoanSchedule(loan: LoanRecord) {
   const frequencyLabel = loan.paymentFrequency === 'monthly' ? 'Monthly' : 'Semi-monthly'
   return `${frequencyLabel} on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`
+}
+
+function formatLoanNextDue(loan: LoanRecord) {
+  if (loan.nextDueDate) {
+    return formatDate(loan.nextDueDate)
+  }
+
+  if (loan.status === 'completed') {
+    return 'Completed'
+  }
+
+  if (loan.status === 'defaulted') {
+    return 'Defaulted'
+  }
+
+  return 'Not scheduled'
 }
 
 export function LoansList() {
@@ -224,7 +241,7 @@ export function LoansList() {
                     <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
-                    <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Completed'}</td>
+                    <td>{formatLoanNextDue(loan)}</td>
                     <td>
                       <span className={getStatusClassName(loan.status)}>
                         {formatLoanStatus(loan.status)}
@@ -247,6 +264,7 @@ export function LoansList() {
                           className={classNames('button-ghost table-action-icon', styles.iconAction)}
                           aria-label={`Post payment for ${loan.loanNumber}`}
                           title="Post payment"
+                          disabled={loan.status !== 'active' || loan.balances.totalOutstandingAmountMinor <= 0}
                           onClick={(event) => {
                             event.stopPropagation()
                             setPaymentLoanId(loan.id)

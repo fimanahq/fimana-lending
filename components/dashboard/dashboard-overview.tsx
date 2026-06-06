@@ -288,7 +288,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </strong>
             <span className={dashboardClass('dashboard-overview__statMeta')}>Available to lend again</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              Current capital basis less principal still deployed
+              {summary.writtenOffPrincipalMinor > 0
+                ? `${formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)} written off across ${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
+                : 'Current capital basis less active principal and write-offs'}
             </span>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="shield" />

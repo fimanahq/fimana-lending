@@ -16,6 +16,25 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params
+
+  try {
+    const body = await request.json()
+    const loan = await authorizedBackendRequest(`/loans/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    })
+    return NextResponse.json(loan)
+  } catch (caughtError) {
+    const message = caughtError instanceof Error ? caughtError.message : 'Unable to update loan'
+    return jsonError(message, message === 'Loan not found' ? 404 : 400)
+  }
+}
+
 export async function DELETE(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },

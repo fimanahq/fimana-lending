@@ -16,7 +16,7 @@ import { BorrowerForm } from '@/components/borrowers/borrower-form'
 import { EditIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { Borrower, LoanRecord } from '@/lib/types/lending'
+import type { Borrower, LoanRecord, LoanStatus } from '@/lib/types/lending'
 import { getBorrower, listLoansByBorrowerId } from '@/services'
 import borrowerStyles from './borrowers.module.css'
 
@@ -47,6 +47,46 @@ function renderCurrencyTotals(totals: Record<string, number>) {
   return Object.entries(totals).map(([currency, amount]) => (
     <strong key={currency}>{formatMinorCurrency(amount, currency)}</strong>
   ))
+}
+
+function hasPositiveCurrencyTotal(totals: Record<string, number>) {
+  return Object.values(totals).some((amount) => amount > 0)
+}
+
+function formatLoanStatus(status: LoanStatus) {
+  return status.split('_').map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ')
+}
+
+function formatLoanNextDue(loan: LoanRecord) {
+  if (loan.status === 'completed') {
+    return 'Completed'
+  }
+
+  if (loan.status === 'defaulted') {
+    return 'Defaulted'
+  }
+
+  if (loan.nextDueDate) {
+    return formatDate(loan.nextDueDate)
+  }
+
+  return 'Not scheduled'
+}
+
+function getCollectedProfitAmountMinor(loan: LoanRecord) {
+  return loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0)
+}
+
+function getDefaultLossAmountMinor(loan: LoanRecord) {
+  return loan.status === 'defaulted' ? loan.lossAmountMinor ?? loan.balances.principalOutstandingAmountMinor : 0
+}
+
+function getNetDefaultImpactAmountMinor(loan: LoanRecord) {
+  return loan.status === 'defaulted' ? getCollectedProfitAmountMinor(loan) - getDefaultLossAmountMinor(loan) : 0
+}
+
+function getNetProfitAfterWriteOffAmountMinor(loan: LoanRecord) {
+  return getCollectedProfitAmountMinor(loan) - getDefaultLossAmountMinor(loan)
 }
 
 export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
@@ -101,13 +141,17 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
 
   const borrowerName = getBorrowerName(borrower)
   const activeLoans = borrowerLoans.filter((loan) => loan.status === 'active')
+  const defaultedLoans = borrowerLoans.filter((loan) => loan.status === 'defaulted')
   const activeLoansCount = activeLoans.length
+  const hasDefaultedLoans = defaultedLoans.length > 0
   const borrowerCurrency = borrowerLoans[0]?.loanProduct.currency || 'PHP'
   const principalTotals = sumByCurrency(borrowerLoans, (loan) => loan.principalAmountMinor)
-  const collectedProfitTotals = sumByCurrency(borrowerLoans, (loan) =>
-    loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0),
-  )
+  const collectedProfitTotals = sumByCurrency(borrowerLoans, getCollectedProfitAmountMinor)
+  const writtenOffPrincipalTotals = sumByCurrency(defaultedLoans, getDefaultLossAmountMinor)
+  const netDefaultImpactTotals = sumByCurrency(defaultedLoans, getNetDefaultImpactAmountMinor)
+  const netProfitAfterWriteOffTotals = sumByCurrency(borrowerLoans, getNetProfitAfterWriteOffAmountMinor)
   const projectedProfitTotals = sumByCurrency(activeLoans, (loan) => loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor)
+  const showProjectedProfit = hasPositiveCurrencyTotal(projectedProfitTotals)
   const outstandingTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.totalOutstandingAmountMinor)
 
   return (
@@ -122,6 +166,11 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
           actions={(
             <div className="inline-actions">
               <Badge tone={borrower.status === 'active' ? 'success' : 'warning'}>{borrower.status}</Badge>
+              {hasDefaultedLoans ? (
+                <Badge tone="danger">
+                  {defaultedLoans.length} defaulted loan{defaultedLoans.length === 1 ? '' : 's'}
+                </Badge>
+              ) : null}
               <button
                 type="button"
                 className="button-ghost table-action-icon"
@@ -182,12 +231,26 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
               </Card>
               <Card className={borrowerStyles.summaryCard} title="Collected profit">
                 {renderCurrencyTotals(collectedProfitTotals)}
-                <span className="muted">Paid interest and penalties on all loans</span>
+                <span className="muted">Paid interest and penalties; not reduced by write-offs</span>
               </Card>
-              <Card className={borrowerStyles.summaryCard} title="Projected profit">
-                {renderCurrencyTotals(projectedProfitTotals)}
-                <span className="muted">Expected interest and penalties on active loans only</span>
-              </Card>
+              {hasDefaultedLoans ? (
+                <>
+                  <Card className={borrowerStyles.summaryCard} title="Principal write-off">
+                    {renderCurrencyTotals(writtenOffPrincipalTotals)}
+                    <span className="muted">Unpaid principal from defaulted loans</span>
+                  </Card>
+                  <Card className={borrowerStyles.summaryCard} title="Net profit after write-off">
+                    {renderCurrencyTotals(netProfitAfterWriteOffTotals)}
+                    <span className="muted">All collected profit less principal write-offs</span>
+                  </Card>
+                </>
+              ) : null}
+              {showProjectedProfit ? (
+                <Card className={borrowerStyles.summaryCard} title="Projected profit">
+                  {renderCurrencyTotals(projectedProfitTotals)}
+                  <span className="muted">Expected interest and penalties on active loans only</span>
+                </Card>
+              ) : null}
               <Card className={borrowerStyles.summaryCard} title="Outstanding balance">
                 {renderCurrencyTotals(outstandingTotals)}
                 <span className="muted">Remaining borrower exposure</span>
@@ -202,6 +265,8 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                     <th>Principal</th>
                     <th>Projected profit</th>
                     <th>Profit collected</th>
+                    {hasDefaultedLoans ? <th>Write-off</th> : null}
+                    {hasDefaultedLoans ? <th>Default result</th> : null}
                     <th>Total paid</th>
                     <th>Outstanding</th>
                     <th>Next due</th>
@@ -217,11 +282,17 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                       </td>
                       <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{formatMinorCurrency(loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
-                      <td>{formatMinorCurrency(loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0), loan.loanProduct.currency)}</td>
+                      <td>{formatMinorCurrency(getCollectedProfitAmountMinor(loan), loan.loanProduct.currency)}</td>
+                      {hasDefaultedLoans ? (
+                        <td>{loan.status === 'defaulted' ? formatMinorCurrency(getDefaultLossAmountMinor(loan), loan.loanProduct.currency) : '-'}</td>
+                      ) : null}
+                      {hasDefaultedLoans ? (
+                        <td>{loan.status === 'defaulted' ? formatMinorCurrency(getNetDefaultImpactAmountMinor(loan), loan.loanProduct.currency) : '-'}</td>
+                      ) : null}
                       <td>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
-                      <td>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Complete'}</td>
-                      <td><span className={getStatusClassName(loan.status)}>{loan.status}</span></td>
+                      <td>{formatLoanNextDue(loan)}</td>
+                      <td><span className={getStatusClassName(loan.status)}>{formatLoanStatus(loan.status)}</span></td>
                     </tr>
                   ))}
                 </tbody>

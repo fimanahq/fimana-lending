@@ -74,6 +74,8 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     cashOnHandMinor: 0,
     outstandingPrincipalMinor: 0,
     moneyWithBorrowersMinor: 0,
+    defaultedLoanCount: 0,
+    writtenOffPrincipalMinor: 0,
     nextCutoffReceivableMinor: 0,
     overdueReceivableMinor: 0,
     overduePrincipalMinor: 0,
