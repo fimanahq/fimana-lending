@@ -136,7 +136,7 @@ export function buildDashboardOverviewData({
   mergedSummary.profitOutlookCollectedProfitVsCapitalBps = mergedSummary.profitOutlookCollectedProfitVsCapitalBps ?? mergedSummary.collectedProfitVsCapitalBps
   mergedSummary.profitOutlookProjectedProfitVsCapitalBps = mergedSummary.profitOutlookProjectedProfitVsCapitalBps ?? mergedSummary.projectedProfitVsCapitalBps
 
-  const capitalPositionBaseMinor = Math.max(0, mergedSummary.currentCapitalBasisMinor)
+  const capitalPositionBaseMinor = Math.max(0, mergedSummary.cashOnHandMinor) + mergedSummary.moneyWithBorrowersMinor
   const activeLoanBalanceBaseMinor = Math.max(
     0,
     mergedSummary.moneyWithBorrowersMinor + mergedSummary.activeCollectedProfitMinor + mergedSummary.remainingProjectedProfitMinor,
@@ -184,14 +184,6 @@ export function buildDashboardOverviewData({
       valueMinor: mergedSummary.moneyWithBorrowersMinor,
       percentage: capitalPositionBaseMinor > 0 ? (mergedSummary.moneyWithBorrowersMinor / capitalPositionBaseMinor) * 100 : 0,
       tone: 'amber',
-    },
-    {
-      key: 'written_off_principal',
-      label: 'Defaulted principal',
-      description: 'Defaulted principal that is no longer active receivable.',
-      valueMinor: mergedSummary.writtenOffPrincipalMinor,
-      percentage: capitalPositionBaseMinor > 0 ? (mergedSummary.writtenOffPrincipalMinor / capitalPositionBaseMinor) * 100 : 0,
-      tone: 'red',
     },
   ]
 

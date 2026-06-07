@@ -262,6 +262,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const profitOutlookProjectedProfitVsCapitalBps = summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
   const hasPrincipalWriteOff = summary.writtenOffPrincipalMinor > 0
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
+  const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
   const projectedNetWorthAfterWriteOffMinor = summary.currentCapitalBasisMinor - summary.writtenOffPrincipalMinor + summary.remainingProjectedProfitMinor
 
   return (
@@ -343,24 +344,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               <OverviewGlyph name="alert" />
             </div>
           </article>
-
-          {hasPrincipalWriteOff ? (
-            <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--plain')}>
-              <span className={dashboardClass('dashboard-overview__statLabel')}>Net default loss</span>
-              <strong className={dashboardClass('dashboard-overview__statValue')}>
-                {formatMinorCurrency(summary.netDefaultLossMinor, dashboardCurrency)}
-              </strong>
-              <span className={dashboardClass('dashboard-overview__statMeta')}>
-                Principal impact across {defaultedLoanLabel}
-              </span>
-              <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-                {formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)} defaulted principal less {formatMinorCurrency(summary.defaultedCollectedProfitMinor, dashboardCurrency)} collected profit
-              </span>
-              <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-                <OverviewGlyph name="alert" />
-              </div>
-            </article>
-          ) : null}
 
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Projected total net worth</span>
@@ -448,23 +431,23 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
                 <h2>Where the current capital sits now</h2>
                 <p>
-                  The capital basis uses starting capital plus collected profit, then splits that basis into cash on hand, active principal with borrowers, and written-off principal.
+                  This view focuses on live capital only: cash available now and principal still deployed across active loans.
                 </p>
               </div>
               <div className={dashboardClass('dashboard-overview__progressSummary')}>
-                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Current capital basis</span>
-                <strong>{formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}</strong>
-                <span>{formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} collected profit already added back</span>
+                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Live capital position</span>
+                <strong>{formatMinorCurrency(liveCapitalPositionMinor, dashboardCurrency)}</strong>
+                <span>Cash plus active principal, excluding write-offs</span>
               </div>
             </div>
 
             <div className={dashboardClass('dashboard-overview__progressBody')}>
-              {summary.currentCapitalBasisMinor > 0 || summary.moneyWithBorrowersMinor > 0 ? (
+              {liveCapitalPositionMinor > 0 ? (
                 <DashboardPortfolioChart
-                  caption="This view separates available cash, active principal still with borrowers, and defaulted principal that has been written off."
-                  centerKicker="Current capital basis"
+                  caption="Defaulted principal is excluded from this live-capital view and shown separately in Defaulted / Losses."
+                  centerKicker="Live capital position"
                   centerSubvalue={`${formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)} cash available right now`}
-                  centerValueMinor={summary.currentCapitalBasisMinor}
+                  centerValueMinor={liveCapitalPositionMinor}
                   currency={dashboardCurrency}
                   segments={capitalPositionSegments}
                 />
@@ -544,6 +527,37 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         />
 
         <section className="grid two">
+          {hasPrincipalWriteOff ? (
+            <article className={dashboardClass('dashboard-overview__progressCard')}>
+              <div className={dashboardClass('dashboard-overview__progressHeader')}>
+                <div>
+                  <span className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</span>
+                  <h2>Defaulted principal and net loss</h2>
+                  <p>
+                    Defaulted loans are excluded from active receivables. This section keeps the written-off principal and recovered profit visible separately from live capital.
+                  </p>
+                </div>
+              </div>
+              <div className={dashboardClass('dashboard-overview__miniGrid')}>
+                <MiniMetric
+                  label="Defaulted principal"
+                  value={formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}
+                  meta={`Across ${defaultedLoanLabel}`}
+                />
+                <MiniMetric
+                  label="Collected profit"
+                  value={formatMinorCurrency(summary.defaultedCollectedProfitMinor, dashboardCurrency)}
+                  meta="Interest and penalties collected before default"
+                />
+                <MiniMetric
+                  label="Net default loss"
+                  value={formatMinorCurrency(summary.netDefaultLossMinor, dashboardCurrency)}
+                  meta="Defaulted principal less collected profit"
+                />
+              </div>
+            </article>
+          ) : null}
+
           <article className={dashboardClass('dashboard-overview__progressCard')}>
             <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div>
