@@ -1201,6 +1201,10 @@
   color: #5f7153;
 }
 
+.dashboard-overview__progressLegendItem--red {
+  color: #8f3326;
+}
+
 .dashboard-overview__progressLegendLabel {
   display: inline-flex;
   align-items: center;

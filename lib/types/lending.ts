@@ -407,6 +407,8 @@ export interface LoanDashboardSummary {
   moneyWithBorrowersMinor: number
   defaultedLoanCount: number
   writtenOffPrincipalMinor: number
+  defaultedCollectedProfitMinor: number
+  netDefaultLossMinor: number
   nextCutoffReceivableMinor: number
   overdueReceivableMinor: number
   overduePrincipalMinor: number

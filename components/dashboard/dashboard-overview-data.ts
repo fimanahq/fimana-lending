@@ -16,7 +16,7 @@ export interface DashboardProgressSegment {
   description: string
   valueMinor: number
   percentage: number
-  tone: 'green' | 'amber' | 'olive'
+  tone: 'green' | 'amber' | 'olive' | 'red'
 }
 
 export interface DashboardOverviewData {
@@ -76,6 +76,8 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     moneyWithBorrowersMinor: 0,
     defaultedLoanCount: 0,
     writtenOffPrincipalMinor: 0,
+    defaultedCollectedProfitMinor: 0,
+    netDefaultLossMinor: 0,
     nextCutoffReceivableMinor: 0,
     overdueReceivableMinor: 0,
     overduePrincipalMinor: 0,
@@ -182,6 +184,14 @@ export function buildDashboardOverviewData({
       valueMinor: mergedSummary.moneyWithBorrowersMinor,
       percentage: capitalPositionBaseMinor > 0 ? (mergedSummary.moneyWithBorrowersMinor / capitalPositionBaseMinor) * 100 : 0,
       tone: 'amber',
+    },
+    {
+      key: 'written_off_principal',
+      label: 'Defaulted principal',
+      description: 'Defaulted principal that is no longer active receivable.',
+      valueMinor: mergedSummary.writtenOffPrincipalMinor,
+      percentage: capitalPositionBaseMinor > 0 ? (mergedSummary.writtenOffPrincipalMinor / capitalPositionBaseMinor) * 100 : 0,
+      tone: 'red',
     },
   ]
 

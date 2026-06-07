@@ -239,7 +239,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const overallProfitAmountMinor = loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor
   const defaultLossAmountMinor = loan.lossAmountMinor ?? 0
   const defaultCollectedProfitMinor = loan.balances.interestPaidAmountMinor + (loan.balances.penaltyPaidAmountMinor ?? 0)
-  const netDefaultImpactMinor = defaultCollectedProfitMinor - defaultLossAmountMinor
+  const netDefaultLossMinor = Math.max(0, defaultLossAmountMinor - defaultCollectedProfitMinor)
   const overallProfitPercentage = loan.principalAmountMinor > 0
     ? (overallProfitAmountMinor / loan.principalAmountMinor) * 100
     : 0
@@ -644,13 +644,13 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
             <div className={styles.defaultOutcomeHeader}>
               <div>
                 <div className="muted">Default outcome</div>
-                <strong>Net impact after collected profit</strong>
+                <strong>Net principal loss after collected profit</strong>
               </div>
               <span className={getStatusClassName(loan.status)}>{formatLoanStatus(loan.status)}</span>
             </div>
             <div className={styles.defaultOutcomeGrid}>
               <div>
-                <span className="muted">Principal write-off</span>
+                <span className="muted">Defaulted principal</span>
                 <strong>{formatMinorCurrency(defaultLossAmountMinor, currency)}</strong>
               </div>
               <div>
@@ -658,8 +658,8 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
                 <strong>{formatMinorCurrency(defaultCollectedProfitMinor, currency)}</strong>
               </div>
               <div>
-                <span className="muted">Net default impact</span>
-                <strong>{formatMinorCurrency(netDefaultImpactMinor, currency)}</strong>
+                <span className="muted">Net default loss</span>
+                <strong>{formatMinorCurrency(netDefaultLossMinor, currency)}</strong>
               </div>
               <div>
                 <span className="muted">Defaulted date</span>

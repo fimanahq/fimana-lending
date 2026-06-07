@@ -39,6 +39,8 @@ function getProgressToneColor(tone: DashboardProgressSegment['tone']) {
       return '#b96d2a'
     case 'olive':
       return '#5f7153'
+    case 'red':
+      return '#8f3326'
     default:
       return '#b96d2a'
   }

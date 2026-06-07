@@ -56,6 +56,10 @@ async function backendFetch(path: string, init: RequestInit = {}, accessToken?: 
   })
 }
 
+function logSessionLookupError(action: string, error: unknown) {
+  console.warn(`[auth] ${action} failed`, error)
+}
+
 async function setSessionCookies(payload: AuthPayload) {
   const cookieStore = await cookies()
   const accessCookieOptions = getSessionCookieOptions(payload.accessToken)
@@ -83,74 +87,89 @@ export async function createSession(payload: AuthPayload) {
 }
 
 async function refreshAuthSession(): Promise<AuthPayload | null> {
-  const cookieStore = await cookies()
-  const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
+  try {
+    const cookieStore = await cookies()
+    const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
 
-  if (!refreshToken) {
-    return null
-  }
-
-  const response = await backendFetch('/auth/refresh', {
-    method: 'POST',
-    body: JSON.stringify({ refreshToken }),
-  })
-
-  if (!response.ok) {
-    await clearSessionCookies()
-    return null
-  }
-
-  const authPayload = await parseBackendResponse<AuthPayload>(response)
-  await setSessionCookies(authPayload)
-  return authPayload
-}
-
-export async function getSessionUser() {
-  const cookieStore = await cookies()
-  const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
-
-  if (!accessToken) {
-    return null
-  }
-
-  const response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
-  if (!response.ok) {
-    return null
-  }
-
-  return parseBackendResponse<User>(response)
-}
-
-export async function getSessionUserWithRefresh() {
-  const cookieStore = await cookies()
-  let accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
-
-  if (!accessToken && !cookieStore.get(REFRESH_COOKIE_NAME)?.value) {
-    return null
-  }
-
-  if (!accessToken) {
-    const refreshed = await refreshAuthSession()
-    return refreshed?.user ?? null
-  }
-
-  let response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
-  if (response.status === 401) {
-    const refreshed = await refreshAuthSession()
-    if (!refreshed) {
+    if (!refreshToken) {
       return null
     }
 
-    accessToken = refreshed.accessToken
-    response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
-  }
+    const response = await backendFetch('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+    })
 
-  if (!response.ok) {
-    await clearSessionCookies()
+    if (!response.ok) {
+      await clearSessionCookies()
+      return null
+    }
+
+    const authPayload = await parseBackendResponse<AuthPayload>(response)
+    await setSessionCookies(authPayload)
+    return authPayload
+  } catch (error) {
+    logSessionLookupError('refresh session', error)
     return null
   }
+}
 
-  return parseBackendResponse<User>(response)
+export async function getSessionUser() {
+  try {
+    const cookieStore = await cookies()
+    const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
+
+    if (!accessToken) {
+      return null
+    }
+
+    const response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
+    if (!response.ok) {
+      return null
+    }
+
+    return parseBackendResponse<User>(response)
+  } catch (error) {
+    logSessionLookupError('get session user', error)
+    return null
+  }
+}
+
+export async function getSessionUserWithRefresh() {
+  try {
+    const cookieStore = await cookies()
+    let accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
+
+    if (!accessToken && !cookieStore.get(REFRESH_COOKIE_NAME)?.value) {
+      return null
+    }
+
+    if (!accessToken) {
+      const refreshed = await refreshAuthSession()
+      return refreshed?.user ?? null
+    }
+
+    let response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
+    if (response.status === 401) {
+      const refreshed = await refreshAuthSession()
+      if (!refreshed) {
+        return null
+      }
+
+      accessToken = refreshed.accessToken
+      response = await backendFetch('/users/me', { method: 'GET' }, accessToken)
+    }
+
+    if (!response.ok) {
+      await clearSessionCookies()
+      return null
+    }
+
+    return parseBackendResponse<User>(response)
+  } catch (error) {
+    logSessionLookupError('get session user with refresh', error)
+    return null
+  }
 }
 
 export async function authorizedBackendRequest<T>(path: string, init: RequestInit = {}) {

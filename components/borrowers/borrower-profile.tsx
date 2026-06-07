@@ -81,12 +81,12 @@ function getDefaultLossAmountMinor(loan: LoanRecord) {
   return loan.status === 'defaulted' ? loan.lossAmountMinor ?? loan.balances.principalOutstandingAmountMinor : 0
 }
 
-function getNetDefaultImpactAmountMinor(loan: LoanRecord) {
-  return loan.status === 'defaulted' ? getCollectedProfitAmountMinor(loan) - getDefaultLossAmountMinor(loan) : 0
-}
+function getNetDefaultLossAmountMinor(loan: LoanRecord) {
+  if (loan.status !== 'defaulted') {
+    return 0
+  }
 
-function getNetProfitAfterWriteOffAmountMinor(loan: LoanRecord) {
-  return getCollectedProfitAmountMinor(loan) - getDefaultLossAmountMinor(loan)
+  return Math.max(0, getDefaultLossAmountMinor(loan) - getCollectedProfitAmountMinor(loan))
 }
 
 export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
@@ -147,9 +147,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const borrowerCurrency = borrowerLoans[0]?.loanProduct.currency || 'PHP'
   const principalTotals = sumByCurrency(borrowerLoans, (loan) => loan.principalAmountMinor)
   const collectedProfitTotals = sumByCurrency(borrowerLoans, getCollectedProfitAmountMinor)
-  const writtenOffPrincipalTotals = sumByCurrency(defaultedLoans, getDefaultLossAmountMinor)
-  const netDefaultImpactTotals = sumByCurrency(defaultedLoans, getNetDefaultImpactAmountMinor)
-  const netProfitAfterWriteOffTotals = sumByCurrency(borrowerLoans, getNetProfitAfterWriteOffAmountMinor)
+  const netDefaultLossTotals = sumByCurrency(defaultedLoans, getNetDefaultLossAmountMinor)
   const projectedProfitTotals = sumByCurrency(activeLoans, (loan) => loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor)
   const showProjectedProfit = hasPositiveCurrencyTotal(projectedProfitTotals)
   const outstandingTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.totalOutstandingAmountMinor)
@@ -234,16 +232,10 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                 <span className="muted">Paid interest and penalties; not reduced by write-offs</span>
               </Card>
               {hasDefaultedLoans ? (
-                <>
-                  <Card className={borrowerStyles.summaryCard} title="Principal write-off">
-                    {renderCurrencyTotals(writtenOffPrincipalTotals)}
-                    <span className="muted">Unpaid principal from defaulted loans</span>
-                  </Card>
-                  <Card className={borrowerStyles.summaryCard} title="Net profit after write-off">
-                    {renderCurrencyTotals(netProfitAfterWriteOffTotals)}
-                    <span className="muted">All collected profit less principal write-offs</span>
-                  </Card>
-                </>
+                <Card className={borrowerStyles.summaryCard} title="Net default loss">
+                  {renderCurrencyTotals(netDefaultLossTotals)}
+                  <span className="muted">Defaulted principal less profit collected on defaulted loans</span>
+                </Card>
               ) : null}
               {showProjectedProfit ? (
                 <Card className={borrowerStyles.summaryCard} title="Projected profit">
@@ -265,8 +257,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                     <th>Principal</th>
                     <th>Projected profit</th>
                     <th>Profit collected</th>
-                    {hasDefaultedLoans ? <th>Write-off</th> : null}
-                    {hasDefaultedLoans ? <th>Default result</th> : null}
+                    {hasDefaultedLoans ? <th>Net default loss</th> : null}
                     <th>Total paid</th>
                     <th>Outstanding</th>
                     <th>Next due</th>
@@ -284,10 +275,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                       <td>{formatMinorCurrency(loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{formatMinorCurrency(getCollectedProfitAmountMinor(loan), loan.loanProduct.currency)}</td>
                       {hasDefaultedLoans ? (
-                        <td>{loan.status === 'defaulted' ? formatMinorCurrency(getDefaultLossAmountMinor(loan), loan.loanProduct.currency) : '-'}</td>
-                      ) : null}
-                      {hasDefaultedLoans ? (
-                        <td>{loan.status === 'defaulted' ? formatMinorCurrency(getNetDefaultImpactAmountMinor(loan), loan.loanProduct.currency) : '-'}</td>
+                        <td>{loan.status === 'defaulted' ? formatMinorCurrency(getNetDefaultLossAmountMinor(loan), loan.loanProduct.currency) : '-'}</td>
                       ) : null}
                       <td>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, loan.loanProduct.currency)}</td>
                       <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
