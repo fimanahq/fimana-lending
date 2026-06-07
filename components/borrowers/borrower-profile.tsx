@@ -147,7 +147,14 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
   const borrowerCurrency = borrowerLoans[0]?.loanProduct.currency || 'PHP'
   const principalTotals = sumByCurrency(borrowerLoans, (loan) => loan.principalAmountMinor)
   const collectedProfitTotals = sumByCurrency(borrowerLoans, getCollectedProfitAmountMinor)
+  const defaultedPrincipalTotals = sumByCurrency(defaultedLoans, getDefaultLossAmountMinor)
   const netDefaultLossTotals = sumByCurrency(defaultedLoans, getNetDefaultLossAmountMinor)
+  const netCollectedProfitTotals = Object.fromEntries(
+    Object.entries(collectedProfitTotals).map(([currency, collectedProfitMinor]) => [
+      currency,
+      collectedProfitMinor - (defaultedPrincipalTotals[currency] ?? 0),
+    ]),
+  )
   const projectedProfitTotals = sumByCurrency(activeLoans, (loan) => loan.totalProfitAmountMinor ?? loan.totalInterestAmountMinor)
   const showProjectedProfit = hasPositiveCurrencyTotal(projectedProfitTotals)
   const outstandingTotals = sumByCurrency(borrowerLoans, (loan) => loan.balances.totalOutstandingAmountMinor)
@@ -232,10 +239,16 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                 <span className="muted">Paid interest and penalties; not reduced by write-offs</span>
               </Card>
               {hasDefaultedLoans ? (
-                <Card className={borrowerStyles.summaryCard} title="Net default loss">
-                  {renderCurrencyTotals(netDefaultLossTotals)}
-                  <span className="muted">Defaulted principal less profit collected on defaulted loans</span>
-                </Card>
+                <>
+                  <Card className={borrowerStyles.summaryCard} title="Net collected profit">
+                    {renderCurrencyTotals(netCollectedProfitTotals)}
+                    <span className="muted">Collected profit less defaulted principal</span>
+                  </Card>
+                  <Card className={borrowerStyles.summaryCard} title="Net default loss">
+                    {renderCurrencyTotals(netDefaultLossTotals)}
+                    <span className="muted">Defaulted principal less profit collected on defaulted loans</span>
+                  </Card>
+                </>
               ) : null}
               {showProjectedProfit ? (
                 <Card className={borrowerStyles.summaryCard} title="Projected profit">
