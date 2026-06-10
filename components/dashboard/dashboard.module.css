@@ -39,7 +39,6 @@
 .dashboard-shell__sidebarBrand,
 .dashboard-overview__statValue,
 .dashboard-overview__sectionHead h2,
-.dashboard-overview__actionCard h2,
 .dashboard-overview__featureContent h3 {
   font-family: 'Plus Jakarta Sans', var(--font-heading), sans-serif;
 }
@@ -186,7 +185,6 @@
 .dashboard-shell__sidebarToggle,
 .dashboard-shell__menuButton,
 .dashboard-shell__logout,
-.dashboard-overview__actionCard,
 .dashboard-overview__clientCell,
 .dashboard-overview__featureContent a,
 .dashboard-overview__sectionHead a {
@@ -251,7 +249,6 @@
 .dashboard-shell__searchIcon,
 .dashboard-shell__menuButton,
 .dashboard-overview__statMetaIcon,
-.dashboard-overview__actionIcon,
 .dashboard-overview__emptyIcon {
   display: inline-flex;
   align-items: center;
@@ -276,7 +273,6 @@
 .dashboard-shell__menuButton svg,
 .dashboard-shell__sidebarClose svg,
 .dashboard-overview__statMetaIcon svg,
-.dashboard-overview__actionIcon svg,
 .dashboard-overview__emptyIcon svg,
 .dashboard-overview__statArtwork svg {
   width: 1.1rem;
@@ -552,7 +548,6 @@
 .dashboard-overview__executive,
 .dashboard-overview__operator,
 .dashboard-overview__kpiGrid,
-.dashboard-overview__actionsRow,
 .dashboard-overview__contentGrid,
 .dashboard-overview__progressBody {
   display: grid;
@@ -617,7 +612,6 @@
 }
 
 .dashboard-overview__statCard,
-.dashboard-overview__actionCard,
 .dashboard-overview__tableCard,
 .dashboard-overview__interestCard,
 .dashboard-overview__progressCard,
@@ -739,45 +733,6 @@
   color: rgba(255, 248, 235, 0.12);
 }
 
-.dashboard-overview__actionsRow {
-  grid-template-columns: repeat(auto-fit, minmax(13.75rem, 1fr));
-}
-
-.dashboard-overview__actionCard {
-  display: flex;
-  min-height: 13rem;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.78);
-}
-
-.dashboard-overview__actionCard:hover {
-  transform: translateY(-2px);
-}
-
-.dashboard-overview__actionIcon {
-  width: 3.6rem;
-  height: 3.6rem;
-  border-radius: 999px;
-}
-
-.dashboard-overview__actionIcon--amber {
-  background: rgba(146, 75, 16, 0.08);
-  color: var(--accent-strong);
-}
-
-.dashboard-overview__actionIcon--green {
-  background: rgba(58, 103, 83, 0.1);
-  color: var(--success);
-}
-
-.dashboard-overview__actionIcon--olive {
-  background: rgba(73, 101, 79, 0.12);
-  color: #355443;
-}
-
-.dashboard-overview__actionCard h2,
 .dashboard-overview__sectionHead h2,
 .dashboard-overview__progressHeader h2 {
   margin: 0;
@@ -786,7 +741,6 @@
   letter-spacing: -0.05em;
 }
 
-.dashboard-overview__actionCard p,
 .dashboard-overview__progressHeader p,
 .dashboard-overview__progressLegendItem p,
 .dashboard-overview__emptyState p {
@@ -1281,7 +1235,6 @@
   .dashboard-shell,
   .dashboard-overview__kpiGrid,
   .dashboard-overview__miniGrid,
-  .dashboard-overview__actionsRow,
   .dashboard-overview__contentGrid,
   .dashboard-overview__progressBody {
     grid-template-columns: 1fr;

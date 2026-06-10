@@ -606,52 +606,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__progressCard')}>
-            <div className={dashboardClass('dashboard-overview__progressHeader')}>
-              <div>
-                <span className={dashboardClass('dashboard-overview__statLabel')}>Day-to-day actions</span>
-                <h2>Origination and workspace shortcuts</h2>
-                <p>Keep loan intake moving and jump straight into the core lending workflows.</p>
-              </div>
-            </div>
-            <section className={dashboardClass('dashboard-overview__actionsRow')}>
-              <Link href="/loan-applications/new" className={dashboardClass('dashboard-overview__actionCard')}>
-                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--amber')}>
-                  <OverviewGlyph name="plus" />
-                </span>
-                <h2>Create a new application</h2>
-                <p>Start the origination flow from application intake through approval and disbursement.</p>
-              </Link>
-
-              <Link href="/loan-applications" className={dashboardClass('dashboard-overview__actionCard')}>
-                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--green')}>
-                  <OverviewGlyph name="applications" />
-                </span>
-                <h2>Review applications</h2>
-                <p>
-                  {summary.pendingReviewCount > 0
-                    ? `${summary.pendingReviewCount} pending application${summary.pendingReviewCount === 1 ? '' : 's'} need a review decision.`
-                    : 'The intake queue is clear and ready for the next borrower submission.'}
-                </p>
-              </Link>
-
-              <Link href="/rules" className={dashboardClass('dashboard-overview__actionCard')}>
-                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--olive')}>
-                  <OverviewGlyph name="rules" />
-                </span>
-                <h2>Adjust rules</h2>
-                <p>Refine underwriting parameters and lending guardrails without leaving the operating workspace.</p>
-              </Link>
-
-              <Link href="/calculator" className={dashboardClass('dashboard-overview__actionCard')}>
-                <span className={dashboardClass('dashboard-overview__actionIcon', 'dashboard-overview__actionIcon--green')}>
-                  <OverviewGlyph name="calculator" />
-                </span>
-                <h2>Open lending calculator</h2>
-                <p>Preview cutoff dates, interest, and repayment tables before creating or approving a loan.</p>
-              </Link>
-            </section>
-          </article>
         </section>
       </section>
 
