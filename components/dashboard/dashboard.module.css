@@ -1066,6 +1066,228 @@
     linear-gradient(180deg, rgba(255, 252, 245, 0.92) 0%, rgba(245, 237, 219, 0.88) 100%);
 }
 
+.dashboard-overview__activeLoansPanel {
+  position: relative;
+  display: grid;
+  gap: 1.35rem;
+  overflow: hidden;
+  padding: 1.7rem;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(217, 131, 69, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(255, 252, 245, 0.94) 0%, rgba(245, 237, 219, 0.9) 100%);
+  box-shadow: 0 30px 60px rgba(29, 28, 18, 0.04);
+}
+
+.dashboard-overview__activeLoansHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.34fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.dashboard-overview__activeLoansTitleGroup {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.dashboard-overview__activeLoansTitleGroup h2 {
+  margin: 0;
+  color: #17140f;
+  font-family: 'Plus Jakarta Sans', var(--font-heading), sans-serif;
+  font-size: clamp(1.65rem, 2.3vw, 2.45rem);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.dashboard-overview__activeLoansTitleGroup p {
+  max-width: 48rem;
+  margin: 0;
+  color: rgba(73, 64, 51, 0.88);
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+.dashboard-overview__activeLoansSummary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(97, 84, 62, 0.12);
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-overview__activeLoansSummary strong {
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.55rem, 2vw, 2rem);
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-overview__activeLoansSummary span:last-child {
+  color: rgba(84, 67, 57, 0.8);
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.dashboard-overview__activeLoansBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.34fr);
+  gap: 1rem;
+}
+
+.dashboard-overview__activeLoansMain {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid rgba(97, 84, 62, 0.1);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.dashboard-overview__activeLoansMix {
+  display: grid;
+  grid-template-columns: minmax(19rem, 1.12fr) minmax(16rem, 0.88fr);
+  align-items: start;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.dashboard-overview__activeLoansMix .dashboard-overview__progressChartPanel {
+  min-height: 0;
+  padding: 0.85rem 0.85rem 0.65rem;
+}
+
+.dashboard-overview__activeLoansMix .dashboard-overview__progressChartCanvas {
+  height: 17.5rem;
+  min-height: 17.5rem;
+}
+
+.dashboard-overview__activeLoansMetric span,
+.dashboard-overview__activeLoansAttention span,
+.dashboard-overview__activeLoansNote p {
+  color: rgba(84, 67, 57, 0.78);
+}
+
+.dashboard-overview__activeLoansMetric span,
+.dashboard-overview__activeLoansAttention span {
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.dashboard-overview__activeLoansMetrics {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-overview__activeLoansMetric {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(97, 84, 62, 0.1);
+  border-radius: 1.15rem;
+  background: rgba(255, 252, 245, 0.72);
+}
+
+.dashboard-overview__activeLoansMetric strong {
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.15rem, 1.55vw, 1.45rem);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-overview__activeLoansMetricLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: currentColor;
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.dashboard-overview__activeLoansSwatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.dashboard-overview__activeLoansMetric--green {
+  color: #2d6b59;
+}
+
+.dashboard-overview__activeLoansMetric--amber {
+  color: #b96d2a;
+}
+
+.dashboard-overview__activeLoansMetric--olive {
+  color: #5f7153;
+}
+
+.dashboard-overview__activeLoansMetric--red {
+  color: #8f3326;
+}
+
+.dashboard-overview__activeLoansAside {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.dashboard-overview__activeLoansAttention,
+.dashboard-overview__activeLoansNote {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border-radius: 1.5rem;
+}
+
+.dashboard-overview__activeLoansAttention {
+  min-height: 13rem;
+  border: 1px solid rgba(176, 64, 44, 0.14);
+  background: linear-gradient(145deg, rgba(255, 247, 241, 0.78), rgba(255, 255, 255, 0.72));
+}
+
+.dashboard-overview__activeLoansAttention strong {
+  color: #8f3326;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-overview__activeLoansAttention p,
+.dashboard-overview__activeLoansNote p {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.dashboard-overview__activeLoansAttention p {
+  color: rgba(143, 51, 38, 0.78);
+}
+
+.dashboard-overview__activeLoansNote {
+  border: 1px solid rgba(97, 84, 62, 0.1);
+  background: rgba(255, 255, 255, 0.58);
+}
+
 .dashboard-overview__progressSummary {
   display: flex;
   min-width: 13.125rem;
@@ -1236,6 +1458,10 @@
   .dashboard-overview__kpiGrid,
   .dashboard-overview__miniGrid,
   .dashboard-overview__contentGrid,
+  .dashboard-overview__activeLoansHeader,
+  .dashboard-overview__activeLoansBody,
+  .dashboard-overview__activeLoansMix,
+  .dashboard-overview__activeLoansMetrics,
   .dashboard-overview__progressBody {
     grid-template-columns: 1fr;
   }
@@ -1443,6 +1669,30 @@
   .dashboard-overview__statCard {
     min-height: 0;
     padding: 1.35rem;
+  }
+
+  .dashboard-overview__activeLoansPanel,
+  .dashboard-overview__activeLoansMain,
+  .dashboard-overview__activeLoansAttention,
+  .dashboard-overview__activeLoansNote {
+    border-radius: 1.35rem;
+  }
+
+  .dashboard-overview__activeLoansPanel {
+    padding: 1.25rem;
+  }
+
+  .dashboard-overview__activeLoansSummary {
+    width: 100%;
+  }
+
+  .dashboard-overview__activeLoansMix .dashboard-overview__progressChartCanvas {
+    height: 18rem;
+    min-height: 18rem;
+  }
+
+  .dashboard-overview__activeLoansAttention {
+    min-height: 0;
   }
 
   .dashboard-overview__cutoffDialogSummary {

@@ -246,6 +246,103 @@ function MiniMetric({
   )
 }
 
+function ActiveLoansPanel({
+  currency,
+  segments,
+  summary,
+}: {
+  currency: string
+  segments: DashboardProgressSegment[]
+  summary: DashboardOverviewData['summary']
+}) {
+  const hasActiveLoanMix = summary.moneyWithBorrowersMinor > 0
+    || summary.activeCollectedProfitMinor > 0
+    || summary.remainingProjectedProfitMinor > 0
+  const totalActiveReceivableMinor = summary.moneyWithBorrowersMinor + summary.remainingProjectedProfitMinor
+  const totalActiveBalanceMixMinor = summary.moneyWithBorrowersMinor
+    + summary.activeCollectedProfitMinor
+    + summary.remainingProjectedProfitMinor
+  const overdueMeta = summary.overdueLoanCount > 0
+    ? `${summary.overdueLoanCount.toLocaleString('en-PH')} overdue loan${summary.overdueLoanCount === 1 ? '' : 's'}`
+    : 'No overdue loans right now'
+  const oldestDueMeta = summary.oldestUnpaidDueDate
+    ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}`
+    : `${summary.overdueBorrowerCount.toLocaleString('en-PH')} borrower${summary.overdueBorrowerCount === 1 ? '' : 's'} with missed payments`
+
+  return (
+    <article className={dashboardClass('dashboard-overview__activeLoansPanel')}>
+      <div className={dashboardClass('dashboard-overview__activeLoansHeader')}>
+        <div className={dashboardClass('dashboard-overview__activeLoansTitleGroup')}>
+          <span className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</span>
+          <h2>Active loan position</h2>
+          <p>See deployed principal, realized profit, and expected profit from active schedules in one operating view.</p>
+        </div>
+        <div className={dashboardClass('dashboard-overview__activeLoansSummary')}>
+          <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total active receivable</span>
+          <strong>{formatMinorCurrency(totalActiveReceivableMinor, currency)}</strong>
+          <span>{summary.activeLoanCount === 1 ? '1 active loan' : `${summary.activeLoanCount.toLocaleString('en-PH')} active loans`}</span>
+        </div>
+      </div>
+
+      {hasActiveLoanMix ? (
+        <div className={dashboardClass('dashboard-overview__activeLoansBody')}>
+          <section className={dashboardClass('dashboard-overview__activeLoansMain')} aria-label="Active loan balance mix">
+            <div className={dashboardClass('dashboard-overview__activeLoansMix')}>
+              <DashboardPortfolioChart
+                caption="Capital, realized profit, and expected profit within active loans."
+                centerKicker="Active loan mix"
+                centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
+                centerValueMinor={totalActiveBalanceMixMinor}
+                currency={currency}
+                segments={segments}
+              />
+
+              <div className={dashboardClass('dashboard-overview__activeLoansMetrics')} aria-label="Active loan mix ledger">
+                {segments.map((segment) => (
+                  <article
+                    key={segment.key}
+                    className={dashboardClass('dashboard-overview__activeLoansMetric', `dashboard-overview__activeLoansMetric--${segment.tone}`)}
+                  >
+                    <span className={dashboardClass('dashboard-overview__activeLoansMetricLabel')}>
+                      <span className={dashboardClass('dashboard-overview__activeLoansSwatch')} />
+                      {segment.label}
+                    </span>
+                    <strong>{formatMinorCurrency(segment.valueMinor, currency)}</strong>
+                    <span>{formatPercentage(segment.percentage)} of mix</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <aside className={dashboardClass('dashboard-overview__activeLoansAside')} aria-label="Active loan collection attention">
+            <section className={dashboardClass('dashboard-overview__activeLoansAttention')}>
+              <span className={dashboardClass('dashboard-overview__statLabel')}>Collection attention</span>
+              <strong>{formatMinorCurrency(summary.overdueReceivableMinor, currency)}</strong>
+              <span>{overdueMeta}</span>
+              <p>{oldestDueMeta}</p>
+            </section>
+            <section className={dashboardClass('dashboard-overview__activeLoansNote')}>
+              <span className={dashboardClass('dashboard-overview__statLabel')}>Portfolio note</span>
+              <p>Active balance includes deployed principal, realized profit, and expected profit from active schedules.</p>
+            </section>
+          </aside>
+        </div>
+      ) : (
+        <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+          <span className={dashboardClass('dashboard-overview__emptyIcon')}>
+            <OverviewGlyph name="applications" />
+          </span>
+          <div>
+            <strong>No active loans yet</strong>
+            <p>Disburse a loan to start tracking deployed principal and expected profit.</p>
+          </div>
+        </div>
+      )}
+    </article>
+  )
+}
+
 export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const {
     summary,
@@ -363,69 +460,11 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </article>
         </section>
 
-        <article className={dashboardClass('dashboard-overview__progressCard')}>
-          <div className={dashboardClass('dashboard-overview__progressHeader')}>
-            <div>
-              <span className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</span>
-              <h2>Portfolio mix across active loans</h2>
-              <p>
-                Track active principal deployment together with realized and incoming profit to see what is already earned and what is still expected.
-              </p>
-            </div>
-            <div className={dashboardClass('dashboard-overview__progressSummary')}>
-              <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total active receivable</span>
-              <strong>{formatMinorCurrency(summary.moneyWithBorrowersMinor + summary.remainingProjectedProfitMinor, dashboardCurrency)}</strong>
-              <span>{summary.activeLoanCount === 1 ? '1 active loan' : `${summary.activeLoanCount.toLocaleString('en-PH')} active loans`}</span>
-            </div>
-          </div>
-
-          <div className={dashboardClass('dashboard-overview__progressBody')}>
-            {summary.moneyWithBorrowersMinor > 0
-              || summary.activeCollectedProfitMinor > 0
-              || summary.remainingProjectedProfitMinor > 0 ? (
-              <DashboardPortfolioChart
-                caption="This view combines deployed principal, collected profit, and incoming profit for active loans."
-                centerKicker="Active loan balance mix"
-                centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
-                centerValueMinor={
-                  summary.moneyWithBorrowersMinor
-                  + summary.activeCollectedProfitMinor
-                  + summary.remainingProjectedProfitMinor
-                }
-                currency={dashboardCurrency}
-                segments={activeLoanBalanceSegments}
-              />
-            ) : (
-              <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
-                <span className={dashboardClass('dashboard-overview__emptyIcon')}>
-                  <OverviewGlyph name="applications" />
-                </span>
-                <div>
-                  <strong>No active loan mix yet</strong>
-                  <p>Disburse and activate loans to start tracking active capital and interest mix.</p>
-                </div>
-              </div>
-            )}
-
-            <div className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--three')}>
-              <MiniMetric
-                label="Capital in active loans"
-                value={formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
-                meta="Outstanding principal still deployed"
-              />
-              <MiniMetric
-                label="Collected profit"
-                value={formatMinorCurrency(summary.activeCollectedProfitMinor, dashboardCurrency)}
-                meta="Already realized interest and penalties"
-              />
-              <MiniMetric
-                label="Incoming profit"
-                value={formatMinorCurrency(summary.remainingProjectedProfitMinor, dashboardCurrency)}
-                meta="Projected interest and penalties still to be collected"
-              />
-            </div>
-          </div>
-        </article>
+        <ActiveLoansPanel
+          currency={dashboardCurrency}
+          segments={activeLoanBalanceSegments}
+          summary={summary}
+        />
 
         <div className="grid two">
           <article className={dashboardClass('dashboard-overview__progressCard')}>
