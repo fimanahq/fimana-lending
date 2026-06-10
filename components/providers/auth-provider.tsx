@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { AUTH_FETCH_TIMEOUT_MS, fetchWithTimeout } from '@/lib/fetch-timeout'
 import type { User } from '@/lib/types/shared'
 
 interface AuthContextValue {
@@ -25,22 +26,39 @@ export function AuthProvider({
 }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(initialUser)
   const [loading, setLoading] = useState(initialUser ? false : shouldRefreshOnMount)
+  const refreshInFlightRef = useRef<Promise<void> | null>(null)
 
-  const refresh = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/auth/session', { cache: 'no-store' })
-      if (!response.ok) {
-        setUser(null)
-        return
-      }
-
-      const payload = (await response.json()) as { user: User }
-      setUser(payload.user)
-    } finally {
-      setLoading(false)
+  const refresh = useCallback(() => {
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current
     }
-  }
+
+    refreshInFlightRef.current = (async () => {
+      setLoading(true)
+
+      try {
+        const response = await fetchWithTimeout('/api/auth/session', { cache: 'no-store' }, AUTH_FETCH_TIMEOUT_MS)
+        if (response.status === 408 || response.status === 503) {
+          return
+        }
+
+        if (!response.ok) {
+          setUser(null)
+          return
+        }
+
+        const payload = (await response.json()) as { user: User }
+        setUser(payload.user)
+      } catch {
+        return
+      } finally {
+        setLoading(false)
+        refreshInFlightRef.current = null
+      }
+    })()
+
+    return refreshInFlightRef.current
+  }, [])
 
   useEffect(() => {
     if (!shouldRefreshOnMount || initialUser) {
@@ -48,14 +66,14 @@ export function AuthProvider({
     }
 
     void refresh()
-  }, [initialUser, shouldRefreshOnMount])
+  }, [initialUser, refresh, shouldRefreshOnMount])
 
   const value = useMemo(() => ({
     user,
     loading,
     setUser,
     refresh,
-  }), [loading, user])
+  }), [loading, refresh, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

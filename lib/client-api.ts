@@ -1,5 +1,6 @@
 'use client'
 
+import { fetchWithTimeout, getFetchFailureMessage, isAbortLikeError } from '@/lib/fetch-timeout'
 import type { ApiErrorPayload } from '@/lib/types/shared'
 
 export class ApiRequestError extends Error {
@@ -20,10 +21,20 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}) {
     headers.set('Content-Type', 'application/json')
   }
 
-  const response = await fetch(input, {
-    ...init,
-    headers,
-  })
+  let response: Response
+
+  try {
+    response = await fetchWithTimeout(input, {
+      ...init,
+      headers,
+    })
+  } catch (error) {
+    if (isAbortLikeError(error)) {
+      throw new ApiRequestError(getFetchFailureMessage(error), 408, null)
+    }
+
+    throw error
+  }
 
   const payload = (await response.json().catch(() => null)) as T | ApiErrorPayload | null
 

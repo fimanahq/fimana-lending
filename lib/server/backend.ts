@@ -1,6 +1,13 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
+import {
+  API_UNAVAILABLE_MESSAGE,
+  fetchWithTimeout,
+  getFetchFailureMessage,
+  isAbortLikeError,
+  REQUEST_TIMEOUT_MESSAGE,
+} from '@/lib/fetch-timeout'
 import { getExpiredSessionCookieOptions, getSessionCookieOptions } from '@/lib/session-cookies'
 import type { User } from '@/lib/types/shared'
 
@@ -13,6 +20,24 @@ interface AuthPayload {
   accessToken: string
   refreshToken: string
   user: User
+}
+
+export class BackendRequestError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'BackendRequestError'
+    this.status = status
+  }
+}
+
+function isDefinitiveAuthFailure(status: number) {
+  return status === 401 || status === 403
+}
+
+function isTransientBackendFailure(error: unknown) {
+  return error instanceof BackendRequestError && (error.status === 408 || error.status === 503)
 }
 
 function getErrorMessage(payload: unknown, fallback: string) {
@@ -31,7 +56,7 @@ async function parseBackendResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json().catch(() => null)) as BackendEnvelope<T> | null
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(payload, 'Request failed'))
+    throw new BackendRequestError(getErrorMessage(payload, 'Request failed'), response.status)
   }
 
   return payload?.data ?? (payload as unknown as T)
@@ -49,11 +74,15 @@ async function backendFetch(path: string, init: RequestInit = {}, accessToken?: 
     headers.set('Authorization', `Bearer ${accessToken}`)
   }
 
-  return fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    cache: 'no-store',
-  })
+  try {
+    return await fetchWithTimeout(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      cache: 'no-store',
+    })
+  } catch (error) {
+    throw new BackendRequestError(getFetchFailureMessage(error), isAbortLikeError(error) ? 408 : 503)
+  }
 }
 
 function logSessionLookupError(action: string, error: unknown) {
@@ -101,7 +130,10 @@ async function refreshAuthSession(): Promise<AuthPayload | null> {
     })
 
     if (!response.ok) {
-      await clearSessionCookies()
+      if (isDefinitiveAuthFailure(response.status)) {
+        await clearSessionCookies()
+      }
+
       return null
     }
 
@@ -109,6 +141,10 @@ async function refreshAuthSession(): Promise<AuthPayload | null> {
     await setSessionCookies(authPayload)
     return authPayload
   } catch (error) {
+    if (isTransientBackendFailure(error)) {
+      throw error
+    }
+
     logSessionLookupError('refresh session', error)
     return null
   }
@@ -161,12 +197,19 @@ export async function getSessionUserWithRefresh() {
     }
 
     if (!response.ok) {
-      await clearSessionCookies()
+      if (isDefinitiveAuthFailure(response.status)) {
+        await clearSessionCookies()
+      }
+
       return null
     }
 
     return parseBackendResponse<User>(response)
   } catch (error) {
+    if (isTransientBackendFailure(error)) {
+      throw error
+    }
+
     logSessionLookupError('get session user with refresh', error)
     return null
   }
@@ -199,5 +242,11 @@ export async function authorizedBackendRequest<T>(path: string, init: RequestIni
 }
 
 export function jsonError(message: string, status = 400) {
-  return NextResponse.json({ message }, { status })
+  const resolvedStatus = message === REQUEST_TIMEOUT_MESSAGE
+    ? 408
+    : message === API_UNAVAILABLE_MESSAGE
+      ? 503
+      : status
+
+  return NextResponse.json({ message }, { status: resolvedStatus })
 }

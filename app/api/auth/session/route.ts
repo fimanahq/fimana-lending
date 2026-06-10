@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server'
 import { hasLoanAppAccess } from '@/lib/access'
-import { clearSessionCookies, getSessionUserWithRefresh, jsonError } from '@/lib/server/backend'
+import { BackendRequestError, clearSessionCookies, getSessionUserWithRefresh, jsonError } from '@/lib/server/backend'
 
 export async function GET() {
-  const user = await getSessionUserWithRefresh()
+  let user
+
+  try {
+    user = await getSessionUserWithRefresh()
+  } catch (caughtError) {
+    if (caughtError instanceof BackendRequestError) {
+      return jsonError(caughtError.message, caughtError.status)
+    }
+
+    return jsonError('Unable to verify session', 503)
+  }
+
   if (!user) {
     return jsonError('Unauthorized', 401)
   }

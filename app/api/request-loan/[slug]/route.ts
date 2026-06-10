@@ -4,6 +4,7 @@ import {
   validateLoanApplicationInput,
 } from '@/lib/loan-application-validation'
 import { API_BASE_URL } from '@/lib/constants'
+import { fetchWithTimeout, isAbortLikeError } from '@/lib/fetch-timeout'
 import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { jsonError } from '@/lib/server/backend'
 import { readJsonBody } from '@/lib/server/request'
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
       income,
     })
 
-    const response = await fetch(`${API_BASE_URL}/loan-applications/public/${encodeURIComponent(slug)}`, {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/loan-applications/public/${encodeURIComponent(slug)}`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
   } catch (caughtError) {
     const message = caughtError instanceof Error ? caughtError.message : 'Unable to submit loan application'
 
-    if (message === 'fetch failed') {
+    if (message === 'fetch failed' || isAbortLikeError(caughtError)) {
       return jsonError(`Fimana API is unavailable at ${API_BASE_URL}`, 503)
     }
 

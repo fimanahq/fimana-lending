@@ -14,6 +14,7 @@ const editorialImageUrl = '/images/login-lending-dashboard-office.png'
 interface LoginPageProps {
   searchParams?: Promise<{
     next?: string | string[]
+    authError?: string | string[]
   }>
 }
 
@@ -26,6 +27,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const cookieStore = await cookies()
   const params = await searchParams
   const destination = getSafeDestination(params?.next)
+  const authError = Array.isArray(params?.authError) ? params.authError[0] : params?.authError
+  const hasTransientRefreshError = authError === 'refresh_unavailable'
   const user = await getSessionUser()
 
   if (user && hasLoanAppAccess(user)) {
@@ -35,7 +38,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
   const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
 
-  if (!user && !accessToken && refreshToken) {
+  if (!hasTransientRefreshError && !user && !accessToken && refreshToken) {
     redirect(destination)
   }
 
