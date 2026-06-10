@@ -78,44 +78,17 @@ function getApplicationName(application: LoanApplication) {
     || 'Borrower'
 }
 
-function ProgressLegend({
-  currency,
-  segments,
-}: {
-  currency: string
-  segments: DashboardProgressSegment[]
-}) {
-  return (
-    <div className={dashboardClass('dashboard-overview__progressLegend')}>
-      {segments.map((segment) => (
-        <article
-          key={segment.key}
-          className={dashboardClass('dashboard-overview__progressLegendItem', `dashboard-overview__progressLegendItem--${segment.tone}`)}
-        >
-          <div className={dashboardClass('dashboard-overview__progressLegendTop')}>
-            <span className={dashboardClass('dashboard-overview__progressLegendLabel')}>
-              <span className={dashboardClass('dashboard-overview__progressLegendSwatch')} />
-              {segment.label}
-            </span>
-            <strong>{formatPercentage(segment.percentage)}</strong>
-          </div>
-          <div className={dashboardClass('dashboard-overview__progressLegendValue')}>{formatMinorCurrency(segment.valueMinor, currency)}</div>
-          <p>{segment.description}</p>
-        </article>
-      ))}
-    </div>
-  )
-}
-
 function ProgressSegmentLedger({
+  ariaLabel,
   currency,
   segments,
 }: {
+  ariaLabel: string
   currency: string
   segments: DashboardProgressSegment[]
 }) {
   return (
-    <div className={dashboardClass('dashboard-overview__mixLedger')} aria-label="Portfolio mix ledger">
+    <div className={dashboardClass('dashboard-overview__mixLedger')} aria-label={ariaLabel}>
       {segments.map((segment) => (
         <article
           key={segment.key}
@@ -130,6 +103,85 @@ function ProgressSegmentLedger({
         </article>
       ))}
     </div>
+  )
+}
+
+function MixContext({
+  label,
+  meta,
+  value,
+}: {
+  label: string
+  meta: string
+  value: string
+}) {
+  return (
+    <div className={dashboardClass('dashboard-overview__mixContext')}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <span>{meta}</span>
+    </div>
+  )
+}
+
+function ProfitOutlookPanel({
+  currency,
+  segments,
+  summary,
+}: {
+  currency: string
+  segments: DashboardProgressSegment[]
+  summary: DashboardOverviewData['summary']
+}) {
+  const collectedProfitMinor = summary.profitOutlookCollectedProfitMinor ?? summary.collectedProfitMinor
+  const totalProjectedProfitMinor = summary.profitOutlookTotalProjectedProfitMinor ?? summary.totalProjectedProfitMinor
+  const collectedProfitVsCapitalBps = summary.profitOutlookCollectedProfitVsCapitalBps ?? summary.collectedProfitVsCapitalBps
+  const projectedProfitVsCapitalBps = summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
+
+  return (
+    <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard')}>
+      <div className={dashboardClass('dashboard-overview__progressHeader')}>
+        <div>
+          <span className={dashboardClass('dashboard-overview__statLabel')}>Profit Outlook</span>
+          <h2>Collected versus projected profit</h2>
+          <p>Realized profit already booked and expected profit still tied to active schedules.</p>
+          {summary.ownerLoanInterestExcluded ? (
+            <Badge tone="warning">Owner loan interest excluded from profit</Badge>
+          ) : null}
+        </div>
+      </div>
+
+      {totalProjectedProfitMinor > 0 ? (
+        <div className={dashboardClass('dashboard-overview__mixCardBody')}>
+          <DashboardPortfolioChart
+            caption="Collected profit and remaining projected profit. Projected amounts are expected future profit, not current cash."
+            centerKicker="Profit outlook"
+            centerSubvalue={`${formatBasisPointsPercentage(projectedProfitVsCapitalBps)} vs capital`}
+            centerValueMinor={totalProjectedProfitMinor}
+            currency={currency}
+            segments={segments}
+          />
+
+          <ProgressSegmentLedger ariaLabel="Profit outlook ledger" currency={currency} segments={segments} />
+
+          <MixContext
+            label="Collected so far"
+            meta={`${formatBasisPointsPercentage(collectedProfitVsCapitalBps)} collected vs capital`}
+            value={formatMinorCurrency(collectedProfitMinor, currency)}
+          />
+        </div>
+      ) : (
+        <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+          <span className={dashboardClass('dashboard-overview__emptyIcon')}>
+            <OverviewGlyph name="note" />
+          </span>
+          <div>
+            <strong>No profit outlook yet</strong>
+            <p>Projected and collected profit will appear here once active schedules begin generating interest or penalties.</p>
+          </div>
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -323,7 +375,7 @@ function ActiveLoansPanel({
                 segments={segments}
               />
 
-              <ProgressSegmentLedger currency={currency} segments={segments} />
+              <ProgressSegmentLedger ariaLabel="Active loan balance ledger" currency={currency} segments={segments} />
             </div>
           </section>
 
@@ -366,6 +418,10 @@ function CurrentCapitalPositionPanel({
   segments: DashboardProgressSegment[]
   summary: DashboardOverviewData['summary']
 }) {
+  const availableCapitalSegment = segments.find((segment) => segment.key === 'cash_on_hand')
+  const availableCapitalMinor = availableCapitalSegment?.valueMinor ?? Math.max(0, summary.cashOnHandMinor)
+  const availableCapitalPercentage = availableCapitalSegment?.percentage ?? 0
+
   return (
     <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard')}>
       <div className={dashboardClass('dashboard-overview__progressHeader')}>
@@ -387,7 +443,13 @@ function CurrentCapitalPositionPanel({
             segments={segments}
           />
 
-          <ProgressSegmentLedger currency={currency} segments={segments} />
+          <ProgressSegmentLedger ariaLabel="Current capital position ledger" currency={currency} segments={segments} />
+
+          <MixContext
+            label="Available to lend"
+            meta={`${formatPercentage(availableCapitalPercentage)} available within live capital`}
+            value={formatMinorCurrency(availableCapitalMinor, currency)}
+          />
         </div>
       ) : (
         <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
@@ -420,10 +482,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
-  const profitOutlookCollectedProfitMinor = summary.profitOutlookCollectedProfitMinor ?? summary.collectedProfitMinor
-  const profitOutlookTotalProjectedProfitMinor = summary.profitOutlookTotalProjectedProfitMinor ?? summary.totalProjectedProfitMinor
-  const profitOutlookCollectedProfitVsCapitalBps = summary.profitOutlookCollectedProfitVsCapitalBps ?? summary.collectedProfitVsCapitalBps
-  const profitOutlookProjectedProfitVsCapitalBps = summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
   const hasPrincipalWriteOff = summary.writtenOffPrincipalMinor > 0
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
@@ -541,51 +599,11 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             summary={summary}
           />
 
-          <article className={dashboardClass('dashboard-overview__progressCard')}>
-            <div className={dashboardClass('dashboard-overview__progressHeader')}>
-              <div>
-                <span className={dashboardClass('dashboard-overview__statLabel')}>Profit Outlook</span>
-                <h2>Collected versus projected profit</h2>
-                <p>
-                  Realized interest and penalties are already in the business. Remaining projected profit is expected future profit from active schedules and is not current cash.
-                </p>
-                {summary.ownerLoanInterestExcluded ? (
-                  <Badge tone="warning">Owner loan interest excluded from profit</Badge>
-                ) : null}
-              </div>
-              <div className={dashboardClass('dashboard-overview__progressSummary')}>
-                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total collected + projected profit</span>
-                <strong>{formatMinorCurrency(profitOutlookTotalProjectedProfitMinor, dashboardCurrency)}</strong>
-                <span>{formatMinorCurrency(profitOutlookCollectedProfitMinor, dashboardCurrency)} collected so far · {formatBasisPointsPercentage(profitOutlookCollectedProfitVsCapitalBps)} vs capital</span>
-              </div>
-            </div>
-
-            <div className={dashboardClass('dashboard-overview__progressBody')}>
-              {profitOutlookTotalProjectedProfitMinor > 0 ? (
-                <DashboardPortfolioChart
-                  caption="This chart compares collected profit with remaining projected profit, while the center shows projected profit against starting capital."
-                  centerKicker="Projected profit vs capital"
-                  centerSubvalue={`${formatBasisPointsPercentage(profitOutlookCollectedProfitVsCapitalBps)} collected so far`}
-                  centerValue={formatBasisPointsPercentage(profitOutlookProjectedProfitVsCapitalBps)}
-                  centerValueMinor={profitOutlookTotalProjectedProfitMinor}
-                  currency={dashboardCurrency}
-                  segments={interestOutlookSegments}
-                />
-              ) : (
-                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
-                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
-                    <OverviewGlyph name="note" />
-                  </span>
-                  <div>
-                    <strong>No profit outlook yet</strong>
-                    <p>Projected and collected profit will appear here once active schedules begin generating interest or penalties.</p>
-                  </div>
-                </div>
-              )}
-
-              <ProgressLegend currency={dashboardCurrency} segments={interestOutlookSegments} />
-            </div>
-          </article>
+          <ProfitOutlookPanel
+            currency={dashboardCurrency}
+            segments={interestOutlookSegments}
+            summary={summary}
+          />
         </div>
 
         <DashboardCutoffReceivables
