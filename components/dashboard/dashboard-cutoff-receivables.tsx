@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
+import { DashboardCutoffInterestChart, type DashboardInterestMonthlyRow } from '@/components/dashboard/dashboard-cutoff-interest-chart'
 import { LoanPaymentDialog } from '@/components/payments'
-import { Dialog } from '@/components/shared'
+import { Dialog, Select } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
-import type { DashboardCutoffReceivable } from '@/lib/types/lending'
+import type { DashboardCutoffReceivable, DashboardInterestByCutoff } from '@/lib/types/lending'
 import { PaymentIcon, ViewIcon } from '../shared/table-icons'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -15,6 +16,60 @@ const dashboardClass = (...values: Array<string | false | null | undefined>) => 
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)
+}
+
+function getYearKey(dateKey: string) {
+  return dateKey.slice(0, 4)
+}
+
+function getCurrentYearKey() {
+  return String(new Date().getFullYear())
+}
+
+function formatMonthShortLabel(year: number, monthIndex: number) {
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+  }).format(new Date(Date.UTC(year, monthIndex, 1, 12)))
+}
+
+function getNearestYearOption(yearOptions: string[], targetYear: string) {
+  const targetValue = Number(targetYear)
+  return yearOptions.reduce((nearest, year) => {
+    const nearestDistance = Math.abs(Number(nearest) - targetValue)
+    const yearDistance = Math.abs(Number(year) - targetValue)
+    return yearDistance < nearestDistance ? year : nearest
+  }, yearOptions[0] ?? targetYear)
+}
+
+function buildMonthlyInterestRows(yearKey: string, interestByCutoff: DashboardInterestByCutoff[]): DashboardInterestMonthlyRow[] {
+  const year = Number(yearKey)
+  const rows = Array.from({ length: 12 }, (_, monthIndex) => ({
+    monthKey: `${yearKey}-${String(monthIndex + 1).padStart(2, '0')}`,
+    monthLabel: formatMonthShortLabel(year, monthIndex),
+    interestDueMinor: 0,
+    interestCollectedMinor: 0,
+    remainingInterestMinor: 0,
+    cutoffCount: 0,
+  }))
+
+  for (const entry of interestByCutoff) {
+    if (getYearKey(entry.cutoffDate) !== yearKey) {
+      continue
+    }
+
+    const monthIndex = Number(entry.cutoffDate.slice(5, 7)) - 1
+    const monthRow = rows[monthIndex]
+    if (!monthRow) {
+      continue
+    }
+
+    monthRow.interestDueMinor += entry.interestDueMinor
+    monthRow.interestCollectedMinor += entry.interestCollectedMinor
+    monthRow.remainingInterestMinor += entry.remainingInterestMinor
+    monthRow.cutoffCount += 1
+  }
+
+  return rows
 }
 
 function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
@@ -215,19 +270,47 @@ function CutoffReceivablesTable({
 export function DashboardCutoffReceivables({
   currency,
   currentCutoffReceivable,
+  interestByCutoff,
   receivableByCutoff,
 }: {
   currency: string
   currentCutoffReceivable: DashboardCutoffReceivable | null
+  interestByCutoff: DashboardInterestByCutoff[]
   receivableByCutoff: DashboardCutoffReceivable[]
 }) {
   const router = useRouter()
   const [isRefreshingCutoff, startCutoffRefresh] = useTransition()
   const [selectedCutoffDate, setSelectedCutoffDate] = useState<string | null>(null)
+  const yearOptions = useMemo(() => Array.from(
+    new Set(interestByCutoff.map((entry) => getYearKey(entry.cutoffDate))),
+  ).sort(), [interestByCutoff])
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const currentYear = getCurrentYearKey()
+    return yearOptions.includes(currentYear) ? currentYear : getNearestYearOption(yearOptions, currentYear)
+  })
   const [selectedLoanForPayment, setSelectedLoanForPayment] = useState<{
     loanId: string
     label: string
   } | null>(null)
+
+  const activeYear = yearOptions.length > 0 ? selectedYear : null
+  const selectedYearLabel = activeYear ?? 'selected year'
+  const monthlyInterestRows = activeYear ? buildMonthlyInterestRows(activeYear, interestByCutoff) : []
+  const visibleMonthlyInterestRows = monthlyInterestRows.filter((entry) =>
+    entry.interestDueMinor > 0 || entry.interestCollectedMinor > 0 || entry.remainingInterestMinor > 0,
+  )
+  const yearInterestDueMinor = monthlyInterestRows.reduce((sum, entry) => sum + entry.interestDueMinor, 0)
+  const yearInterestCollectedMinor = monthlyInterestRows.reduce((sum, entry) => sum + entry.interestCollectedMinor, 0)
+  const yearRemainingInterestMinor = monthlyInterestRows.reduce((sum, entry) => sum + entry.remainingInterestMinor, 0)
+  const yearCutoffCount = monthlyInterestRows.reduce((sum, entry) => sum + entry.cutoffCount, 0)
+  useEffect(() => {
+    if (yearOptions.length === 0 || yearOptions.includes(selectedYear)) {
+      return
+    }
+
+    const currentYear = getCurrentYearKey()
+    setSelectedYear(yearOptions.includes(currentYear) ? currentYear : getNearestYearOption(yearOptions, currentYear))
+  }, [yearOptions, selectedYear])
 
   const currentReceivable = currentCutoffReceivable
   const currentOpenReceivable = receivableByCutoff.find((entry) => (
@@ -281,36 +364,37 @@ export function DashboardCutoffReceivables({
   }
 
   return (
-    <section className={dashboardClass('dashboard-overview__operator')}>
-      <div className={dashboardClass('dashboard-overview__operatorHeader')}>
-        <div>
-          <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
-          <p className="muted">
-            Current and upcoming cutoff schedules are separated from overdue
-            receivables for cleaner collection tracking.
-          </p>
-          <p className="muted">
-            Collected reflects actual applied payments, including advance
-            payments posted before an upcoming cutoff date and cutoffs already
-            settled in full.
-          </p>
+    <>
+      <section className={dashboardClass('dashboard-overview__operator')}>
+        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
+          <div>
+            <h2 className="section-title title-offset">Per Cutoff Receivable</h2>
+            <p className="muted">
+              Current and upcoming cutoff schedules are separated from overdue
+              receivables for cleaner collection tracking.
+            </p>
+            <p className="muted">
+              Collected reflects actual applied payments, including advance
+              payments posted before an upcoming cutoff date and cutoffs already
+              settled in full.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {currentCutoffReceivable ? (
+      {currentReceivable ? (
         <section className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--five')}>
           <MiniMetric
             label="Cutoff total"
             value={formatMinorCurrency(
-              currentCutoffReceivable.totalReceivableMinor,
+              currentReceivable.totalReceivableMinor,
               currency,
             )}
-            meta={formatDate(currentCutoffReceivable.cutoffDate)}
+            meta={formatDate(currentReceivable.cutoffDate)}
           />
           <MiniMetric
             label="Principal scheduled"
             value={formatMinorCurrency(
-              currentCutoffReceivable.principalDueMinor,
+              currentReceivable.principalDueMinor,
               currency,
             )}
             meta="Scheduled principal on this cutoff"
@@ -318,7 +402,7 @@ export function DashboardCutoffReceivables({
           <MiniMetric
             label="Interest scheduled"
             value={formatMinorCurrency(
-              currentCutoffReceivable.interestDueMinor,
+              currentReceivable.interestDueMinor,
               currency,
             )}
             meta="Scheduled interest on this cutoff"
@@ -326,7 +410,7 @@ export function DashboardCutoffReceivables({
           <MiniMetric
             label="Penalty scheduled"
             value={formatMinorCurrency(
-              currentCutoffReceivable.penaltyDueMinor,
+              currentReceivable.penaltyDueMinor,
               currency,
             )}
             meta="Manual penalties on this cutoff"
@@ -334,13 +418,13 @@ export function DashboardCutoffReceivables({
           <MiniMetric
             label="Remaining to collect"
             value={formatMinorCurrency(
-              currentCutoffReceivable.remainingMinor,
+              currentReceivable.remainingMinor,
               currency,
             )}
             meta={
-              currentCutoffReceivable.remainingMinor > 0
+              currentReceivable.remainingMinor > 0
                 ? `${formatMinorCurrency(
-                  currentCutoffReceivable.totalCollectedMinor,
+                  currentReceivable.totalCollectedMinor,
                   currency,
                 )} already collected`
                 : 'Fully collected'
@@ -348,10 +432,10 @@ export function DashboardCutoffReceivables({
           />
           <MiniMetric
             label="Borrowers in cutoff"
-            value={currentCutoffReceivable.borrowerCount.toLocaleString(
+            value={currentReceivable.borrowerCount.toLocaleString(
               "en-PH",
             )}
-            meta={`${currentCutoffReceivable.loanCount.toLocaleString("en-PH")} loan${currentCutoffReceivable.loanCount === 1 ? "" : "s"} in cutoff`}
+            meta={`${currentReceivable.loanCount.toLocaleString("en-PH")} loan${currentReceivable.loanCount === 1 ? "" : "s"} in cutoff`}
           />
         </section>
       ) : (
@@ -587,5 +671,75 @@ export function DashboardCutoffReceivables({
         }}
       />
     </section>
+
+      <section className={dashboardClass('dashboard-overview__operator')}>
+        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
+          <div>
+            <h2 className="section-title title-offset">Interest by Month</h2>
+            <p className="muted">
+              Compare scheduled interest due against actual collected interest
+              across each month of the selected year.
+            </p>
+          </div>
+          {yearOptions.length > 0 ? (
+            <Select
+              id="dashboard-cutoff-interest-year"
+              label="Year"
+              value={selectedYear}
+              onChange={(event) => {
+                setSelectedYear(event.target.value)
+                setSelectedCutoffDate(null)
+              }}
+              className={dashboardClass('dashboard-overview__monthSelect')}
+            >
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </Select>
+          ) : null}
+        </div>
+
+        <section className={dashboardClass('dashboard-overview__interestCard')}>
+          <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
+            <div>
+              <h3>Monthly interest trend</h3>
+              <p>Scheduled interest due and actual collected interest across {selectedYearLabel}.</p>
+            </div>
+          </div>
+          {visibleMonthlyInterestRows.length > 0 ? (
+            <>
+              <DashboardCutoffInterestChart currency={currency} rows={monthlyInterestRows} />
+              <section className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--three')}>
+                <MiniMetric
+                  label="Interest due"
+                  value={formatMinorCurrency(yearInterestDueMinor, currency)}
+                  meta={`Scheduled across ${yearCutoffCount.toLocaleString('en-PH')} cutoff${yearCutoffCount === 1 ? '' : 's'} in ${selectedYearLabel}`}
+                />
+                <MiniMetric
+                  label="Interest collected"
+                  value={formatMinorCurrency(yearInterestCollectedMinor, currency)}
+                  meta="Actual applied payments for interest"
+                />
+                <MiniMetric
+                  label="Remaining interest"
+                  value={formatMinorCurrency(yearRemainingInterestMinor, currency)}
+                  meta="Still unpaid interest in this year"
+                />
+              </section>
+            </>
+          ) : (
+            <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+              <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>
+                +
+              </span>
+              <div>
+                <strong>No cutoff interest for this year</strong>
+                <p>Scheduled interest will appear here when a cutoff exists in the selected year.</p>
+              </div>
+            </div>
+          )}
+        </section>
+      </section>
+    </>
   );
 }

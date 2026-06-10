@@ -108,6 +108,7 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     activeLoanCount: 0,
     currentCutoffReceivable: null,
     receivableByCutoff: [],
+    interestByCutoff: [],
     pendingReviewCount: 0,
   }
 }

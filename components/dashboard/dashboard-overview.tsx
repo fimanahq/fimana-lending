@@ -264,6 +264,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
   const projectedNetWorthAfterWriteOffMinor = summary.currentCapitalBasisMinor - summary.writtenOffPrincipalMinor + summary.remainingProjectedProfitMinor
+  const projectedNetWorthMeta = summary.ownerLoanInterestExcluded
+    ? 'Current capital basis plus raw projected unpaid profit, net of write-offs. Owner loan interest is excluded only from Profit Outlook.'
+    : 'Current capital basis plus projected unpaid profit, net of write-offs'
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
@@ -350,7 +353,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(projectedNetWorthAfterWriteOffMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Current capital basis plus projected unpaid profit, net of write-offs</span>
+            <span className={dashboardClass('dashboard-overview__statMeta')}>{projectedNetWorthMeta}</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)} projected profit vs starting capital
             </span>
@@ -523,6 +526,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         <DashboardCutoffReceivables
           currency={dashboardCurrency}
           currentCutoffReceivable={summary.currentCutoffReceivable}
+          interestByCutoff={summary.interestByCutoff}
           receivableByCutoff={summary.receivableByCutoff}
         />
 

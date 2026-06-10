@@ -390,6 +390,16 @@ export interface DashboardCutoffReceivable {
   loans: DashboardCutoffReceivableLoan[]
 }
 
+export interface DashboardInterestByCutoff {
+  cutoffDate: string
+  interestDueMinor: number
+  interestCollectedMinor: number
+  remainingInterestMinor: number
+  borrowerCount: number
+  loanCount: number
+  status: DashboardReceivableStatus
+}
+
 export interface LoanDashboardSummary {
   currency: SettingsCurrency
   startingCapitalMinor: number
@@ -439,6 +449,7 @@ export interface LoanDashboardSummary {
   activeLoanCount: number
   currentCutoffReceivable: DashboardCutoffReceivable | null
   receivableByCutoff: DashboardCutoffReceivable[]
+  interestByCutoff: DashboardInterestByCutoff[]
 }
 
 export interface LoanApplication {
