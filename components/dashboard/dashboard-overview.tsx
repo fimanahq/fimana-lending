@@ -107,6 +107,32 @@ function ProgressLegend({
   )
 }
 
+function ProgressSegmentLedger({
+  currency,
+  segments,
+}: {
+  currency: string
+  segments: DashboardProgressSegment[]
+}) {
+  return (
+    <div className={dashboardClass('dashboard-overview__mixLedger')} aria-label="Portfolio mix ledger">
+      {segments.map((segment) => (
+        <article
+          key={segment.key}
+          className={dashboardClass('dashboard-overview__mixLedgerItem', `dashboard-overview__mixLedgerItem--${segment.tone}`)}
+        >
+          <span className={dashboardClass('dashboard-overview__mixLedgerLabel')}>
+            <span className={dashboardClass('dashboard-overview__mixLedgerSwatch')} />
+            {segment.label}
+          </span>
+          <strong>{formatMinorCurrency(segment.valueMinor, currency)}</strong>
+          <span>{formatPercentage(segment.percentage)} of mix</span>
+        </article>
+      ))}
+    </div>
+  )
+}
+
 function OverviewGlyph({
   name,
 }: {
@@ -297,21 +323,7 @@ function ActiveLoansPanel({
                 segments={segments}
               />
 
-              <div className={dashboardClass('dashboard-overview__activeLoansMetrics')} aria-label="Active loan mix ledger">
-                {segments.map((segment) => (
-                  <article
-                    key={segment.key}
-                    className={dashboardClass('dashboard-overview__activeLoansMetric', `dashboard-overview__activeLoansMetric--${segment.tone}`)}
-                  >
-                    <span className={dashboardClass('dashboard-overview__activeLoansMetricLabel')}>
-                      <span className={dashboardClass('dashboard-overview__activeLoansSwatch')} />
-                      {segment.label}
-                    </span>
-                    <strong>{formatMinorCurrency(segment.valueMinor, currency)}</strong>
-                    <span>{formatPercentage(segment.percentage)} of mix</span>
-                  </article>
-                ))}
-              </div>
+              <ProgressSegmentLedger currency={currency} segments={segments} />
             </div>
           </section>
 
@@ -339,6 +351,61 @@ function ActiveLoansPanel({
           </div>
         </div>
       )}
+    </article>
+  )
+}
+
+function CurrentCapitalPositionPanel({
+  currency,
+  liveCapitalPositionMinor,
+  segments,
+  summary,
+}: {
+  currency: string
+  liveCapitalPositionMinor: number
+  segments: DashboardProgressSegment[]
+  summary: DashboardOverviewData['summary']
+}) {
+  return (
+    <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard')}>
+      <div className={dashboardClass('dashboard-overview__progressHeader')}>
+        <div>
+          <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
+          <h2>Where current capital sits</h2>
+          <p>Cash available now and principal still deployed across active loans.</p>
+        </div>
+      </div>
+
+      {liveCapitalPositionMinor > 0 ? (
+        <div className={dashboardClass('dashboard-overview__mixCardBody')}>
+          <DashboardPortfolioChart
+            caption="Cash and deployed principal within live capital. Defaulted principal is excluded."
+            centerKicker="Live capital"
+            centerSubvalue="Excludes write-offs"
+            centerValueMinor={liveCapitalPositionMinor}
+            currency={currency}
+            segments={segments}
+          />
+
+          <ProgressSegmentLedger currency={currency} segments={segments} />
+        </div>
+      ) : (
+        <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+          <span className={dashboardClass('dashboard-overview__emptyIcon')}>
+            <OverviewGlyph name="trend" />
+          </span>
+          <div>
+            <strong>No capital position yet</strong>
+            <p>Set a starting capital amount or disburse a loan to start tracking where current capital sits.</p>
+          </div>
+        </div>
+      )}
+
+      {summary.cashOnHandMinor < 0 ? (
+        <div className="notice">
+          Cash on hand is negative by {formatMinorCurrency(Math.abs(summary.cashOnHandMinor), currency)}. Principal deployed is currently higher than current capital basis.
+        </div>
+      ) : null}
     </article>
   )
 }
@@ -467,53 +534,12 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         />
 
         <div className="grid two">
-          <article className={dashboardClass('dashboard-overview__progressCard')}>
-            <div className={dashboardClass('dashboard-overview__progressHeader')}>
-              <div>
-                <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
-                <h2>Where the current capital sits now</h2>
-                <p>
-                  This view focuses on live capital only: cash available now and principal still deployed across active loans.
-                </p>
-              </div>
-              <div className={dashboardClass('dashboard-overview__progressSummary')}>
-                <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Live capital position</span>
-                <strong>{formatMinorCurrency(liveCapitalPositionMinor, dashboardCurrency)}</strong>
-                <span>Cash plus active principal, excluding write-offs</span>
-              </div>
-            </div>
-
-            <div className={dashboardClass('dashboard-overview__progressBody')}>
-              {liveCapitalPositionMinor > 0 ? (
-                <DashboardPortfolioChart
-                  caption="Defaulted principal is excluded from this live-capital view and shown separately in Defaulted / Losses."
-                  centerKicker="Live capital position"
-                  centerSubvalue={`${formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)} cash available right now`}
-                  centerValueMinor={liveCapitalPositionMinor}
-                  currency={dashboardCurrency}
-                  segments={capitalPositionSegments}
-                />
-              ) : (
-                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
-                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
-                    <OverviewGlyph name="trend" />
-                  </span>
-                  <div>
-                    <strong>No capital position yet</strong>
-                    <p>Set a starting capital amount or disburse a loan to start tracking where current capital sits.</p>
-                  </div>
-                </div>
-              )}
-
-              {summary.cashOnHandMinor < 0 ? (
-                <div className="notice">
-                  Cash on hand is negative by {formatMinorCurrency(Math.abs(summary.cashOnHandMinor), dashboardCurrency)}. Principal deployed is currently higher than current capital basis.
-                </div>
-              ) : null}
-
-              <ProgressLegend currency={dashboardCurrency} segments={capitalPositionSegments} />
-            </div>
-          </article>
+          <CurrentCapitalPositionPanel
+            currency={dashboardCurrency}
+            liveCapitalPositionMinor={liveCapitalPositionMinor}
+            segments={capitalPositionSegments}
+            summary={summary}
+          />
 
           <article className={dashboardClass('dashboard-overview__progressCard')}>
             <div className={dashboardClass('dashboard-overview__progressHeader')}>

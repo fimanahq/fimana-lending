@@ -1168,24 +1168,24 @@
   min-height: 17.5rem;
 }
 
-.dashboard-overview__activeLoansMetric span,
+.dashboard-overview__mixLedgerItem span,
 .dashboard-overview__activeLoansAttention span,
 .dashboard-overview__activeLoansNote p {
   color: rgba(84, 67, 57, 0.78);
 }
 
-.dashboard-overview__activeLoansMetric span,
+.dashboard-overview__mixLedgerItem span,
 .dashboard-overview__activeLoansAttention span {
   font-size: 0.9rem;
   line-height: 1.45;
 }
 
-.dashboard-overview__activeLoansMetrics {
+.dashboard-overview__mixLedger {
   display: grid;
   gap: 0.75rem;
 }
 
-.dashboard-overview__activeLoansMetric {
+.dashboard-overview__mixLedgerItem {
   display: grid;
   min-width: 0;
   gap: 0.35rem;
@@ -1195,7 +1195,7 @@
   background: rgba(255, 252, 245, 0.72);
 }
 
-.dashboard-overview__activeLoansMetric strong {
+.dashboard-overview__mixLedgerItem strong {
   color: #17140f;
   font-family: var(--font-heading), sans-serif;
   font-size: clamp(1.15rem, 1.55vw, 1.45rem);
@@ -1204,7 +1204,7 @@
   overflow-wrap: anywhere;
 }
 
-.dashboard-overview__activeLoansMetricLabel {
+.dashboard-overview__mixLedgerLabel {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -1217,7 +1217,7 @@
   text-transform: uppercase;
 }
 
-.dashboard-overview__activeLoansSwatch {
+.dashboard-overview__mixLedgerSwatch {
   width: 0.65rem;
   height: 0.65rem;
   flex: 0 0 auto;
@@ -1225,20 +1225,34 @@
   background: currentColor;
 }
 
-.dashboard-overview__activeLoansMetric--green {
+.dashboard-overview__mixLedgerItem--green {
   color: #2d6b59;
 }
 
-.dashboard-overview__activeLoansMetric--amber {
+.dashboard-overview__mixLedgerItem--amber {
   color: #b96d2a;
 }
 
-.dashboard-overview__activeLoansMetric--olive {
+.dashboard-overview__mixLedgerItem--olive {
   color: #5f7153;
 }
 
-.dashboard-overview__activeLoansMetric--red {
+.dashboard-overview__mixLedgerItem--red {
   color: #8f3326;
+}
+
+.dashboard-overview__mixCard {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-overview__mixCardBody {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-overview__mixCard .dashboard-overview__progressChartPanel {
+  min-height: 0;
 }
 
 .dashboard-overview__activeLoansAside {
@@ -1461,7 +1475,6 @@
   .dashboard-overview__activeLoansHeader,
   .dashboard-overview__activeLoansBody,
   .dashboard-overview__activeLoansMix,
-  .dashboard-overview__activeLoansMetrics,
   .dashboard-overview__progressBody {
     grid-template-columns: 1fr;
   }
