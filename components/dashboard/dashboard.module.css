@@ -840,6 +840,47 @@
   line-height: 1.45;
 }
 
+.dashboard-overview__interestAverageGroup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+  gap: 0.65rem;
+  min-width: min(100%, 18rem);
+}
+
+.dashboard-overview__interestAverage {
+  display: grid;
+  gap: 0.22rem;
+  min-width: 0;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid rgba(185, 109, 42, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 252, 245, 0.72);
+}
+
+.dashboard-overview__interestAverage--collected {
+  border-color: rgba(45, 107, 89, 0.16);
+  background: rgba(245, 251, 247, 0.72);
+}
+
+.dashboard-overview__interestAverage span {
+  color: rgba(84, 67, 57, 0.78);
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.dashboard-overview__interestAverage strong {
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(1.05rem, 1.35vw, 1.3rem);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
 .dashboard-overview__tableScroll {
   max-height: 31rem;
   overflow: auto;
@@ -1571,6 +1612,7 @@
   .dashboard-overview__executiveHeader,
   .dashboard-overview__operatorHeader,
   .dashboard-overview__progressHeader,
+  .dashboard-overview__tableCardHeader,
   .dashboard-overview__sectionHead {
     align-items: flex-start;
     flex-direction: column;
@@ -1602,6 +1644,11 @@
     width: 100%;
     min-width: 0;
     margin-left: 0;
+  }
+
+  .dashboard-overview__interestAverageGroup {
+    width: 100%;
+    min-width: 0;
   }
 
   .dashboard-overview__statCard {
@@ -1670,6 +1717,10 @@
 
   .dashboard-shell__logout {
     flex: 0 0 auto;
+  }
+
+  .dashboard-overview__interestAverageGroup {
+    grid-template-columns: 1fr;
   }
 
 }

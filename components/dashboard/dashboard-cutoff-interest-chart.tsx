@@ -5,6 +5,7 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -63,9 +64,11 @@ function formatCompactMinorCurrency(valueMinor: number, currency: string) {
 }
 
 export function DashboardCutoffInterestChart({
+  averageInterestCollectedMinor,
   currency,
   rows,
 }: {
+  averageInterestCollectedMinor?: number
   currency: string
   rows: DashboardInterestMonthlyRow[]
 }) {
@@ -74,6 +77,7 @@ export function DashboardCutoffInterestChart({
       `${row.monthLabel}: ${formatMinorCurrency(row.interestDueMinor, currency)} due, ${formatMinorCurrency(row.interestCollectedMinor, currency)} collected`
     ))
     .join('. ')
+  const hasAverageInterestCollected = typeof averageInterestCollectedMinor === 'number' && averageInterestCollectedMinor > 0
 
   return (
     <figure className={dashboardClass('dashboard-overview__interestChart')} aria-label={ariaLabel}>
@@ -106,6 +110,15 @@ export function DashboardCutoffInterestChart({
             wrapperStyle={tooltipWrapperStyle}
           />
           <Legend />
+          {hasAverageInterestCollected ? (
+            <ReferenceLine
+              y={averageInterestCollectedMinor}
+              stroke="#2d6b59"
+              strokeDasharray="5 5"
+              strokeWidth={1.5}
+              ifOverflow="extendDomain"
+            />
+          ) : null}
           <Bar
             dataKey="interestDueMinor"
             name="Interest due"

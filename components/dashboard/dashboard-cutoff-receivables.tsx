@@ -303,6 +303,9 @@ export function DashboardCutoffReceivables({
   const yearInterestCollectedMinor = monthlyInterestRows.reduce((sum, entry) => sum + entry.interestCollectedMinor, 0)
   const yearRemainingInterestMinor = monthlyInterestRows.reduce((sum, entry) => sum + entry.remainingInterestMinor, 0)
   const yearCutoffCount = monthlyInterestRows.reduce((sum, entry) => sum + entry.cutoffCount, 0)
+  const activeInterestMonthCount = visibleMonthlyInterestRows.length
+  const averageInterestDueMinor = activeInterestMonthCount > 0 ? yearInterestDueMinor / activeInterestMonthCount : 0
+  const averageInterestCollectedMinor = activeInterestMonthCount > 0 ? yearInterestCollectedMinor / activeInterestMonthCount : 0
   useEffect(() => {
     if (yearOptions.length === 0 || yearOptions.includes(selectedYear)) {
       return
@@ -705,10 +708,26 @@ export function DashboardCutoffReceivables({
               <h3>Monthly interest trend</h3>
               <p>Scheduled interest due and actual collected interest across {selectedYearLabel}.</p>
             </div>
+            {visibleMonthlyInterestRows.length > 0 ? (
+              <div className={dashboardClass('dashboard-overview__interestAverageGroup')} aria-label="Monthly interest averages">
+                <article className={dashboardClass('dashboard-overview__interestAverage')}>
+                  <span>Avg due</span>
+                  <strong>{formatMinorCurrency(averageInterestDueMinor, currency)}</strong>
+                </article>
+                <article className={dashboardClass('dashboard-overview__interestAverage', 'dashboard-overview__interestAverage--collected')}>
+                  <span>Avg collected</span>
+                  <strong>{formatMinorCurrency(averageInterestCollectedMinor, currency)}</strong>
+                </article>
+              </div>
+            ) : null}
           </div>
           {visibleMonthlyInterestRows.length > 0 ? (
             <>
-              <DashboardCutoffInterestChart currency={currency} rows={monthlyInterestRows} />
+              <DashboardCutoffInterestChart
+                averageInterestCollectedMinor={averageInterestCollectedMinor}
+                currency={currency}
+                rows={monthlyInterestRows}
+              />
               <section className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--three')}>
                 <MiniMetric
                   label="Interest due"
