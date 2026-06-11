@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/client-api'
+import { LOGIN_FETCH_TIMEOUT_MS } from '@/lib/fetch-timeout'
 import type { User, UserAppCode } from '@/lib/types/shared'
 
 export interface LoginCredentials {
@@ -17,5 +18,6 @@ export function login(credentials: LoginCredentials) {
       email: credentials.identifier.trim(),
       password: credentials.password,
     }),
+    timeoutMs: LOGIN_FETCH_TIMEOUT_MS,
   })
 }

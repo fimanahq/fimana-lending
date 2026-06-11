@@ -3,6 +3,10 @@
 import { fetchWithTimeout, getFetchFailureMessage, isAbortLikeError } from '@/lib/fetch-timeout'
 import type { ApiErrorPayload } from '@/lib/types/shared'
 
+interface ApiRequestInit extends RequestInit {
+  timeoutMs?: number
+}
+
 export class ApiRequestError extends Error {
   status: number
   payload: ApiErrorPayload | null
@@ -15,7 +19,8 @@ export class ApiRequestError extends Error {
   }
 }
 
-export async function apiRequest<T>(input: string, init: RequestInit = {}) {
+export async function apiRequest<T>(input: string, init: ApiRequestInit = {}) {
+  const { timeoutMs, ...requestInit } = init
   const headers = new Headers(init.headers)
   if (init.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
@@ -25,9 +30,9 @@ export async function apiRequest<T>(input: string, init: RequestInit = {}) {
 
   try {
     response = await fetchWithTimeout(input, {
-      ...init,
+      ...requestInit,
       headers,
-    })
+    }, timeoutMs)
   } catch (error) {
     if (isAbortLikeError(error)) {
       throw new ApiRequestError(getFetchFailureMessage(error), 408, null)

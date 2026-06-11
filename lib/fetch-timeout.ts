@@ -1,5 +1,6 @@
 export const DEFAULT_FETCH_TIMEOUT_MS = 15_000
-export const AUTH_FETCH_TIMEOUT_MS = 10_000
+export const AUTH_FETCH_TIMEOUT_MS = 30_000
+export const LOGIN_FETCH_TIMEOUT_MS = 30_000
 export const REQUEST_TIMEOUT_MESSAGE = 'Request timed out. Please try again.'
 export const API_UNAVAILABLE_MESSAGE = 'FiMana API is unavailable. Please try again.'
 
