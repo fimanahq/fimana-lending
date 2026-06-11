@@ -26,6 +26,14 @@ function getCurrentYearKey() {
   return String(new Date().getFullYear())
 }
 
+function getCurrentMonthCount() {
+  return new Date().getMonth() + 1
+}
+
+function getMonthCountFromRow(row: DashboardInterestMonthlyRow) {
+  return Number(row.monthKey.slice(5, 7))
+}
+
 function formatMonthShortLabel(year: number, monthIndex: number) {
   return new Intl.DateTimeFormat('en-PH', {
     month: 'short',
@@ -70,6 +78,26 @@ function buildMonthlyInterestRows(yearKey: string, interestByCutoff: DashboardIn
   }
 
   return rows
+}
+
+function getCollectedAverageMonthCount(yearKey: string | null, rows: DashboardInterestMonthlyRow[]) {
+  if (!yearKey) {
+    return 0
+  }
+
+  const lastCollectedMonthCount = rows.reduce((latestMonthCount, row) => {
+    if (row.interestCollectedMinor <= 0) {
+      return latestMonthCount
+    }
+
+    return Math.max(latestMonthCount, getMonthCountFromRow(row))
+  }, 0)
+
+  if (yearKey === getCurrentYearKey()) {
+    return Math.max(1, Math.min(getCurrentMonthCount(), lastCollectedMonthCount || getCurrentMonthCount()))
+  }
+
+  return lastCollectedMonthCount
 }
 
 function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
@@ -304,8 +332,12 @@ export function DashboardCutoffReceivables({
   const yearRemainingInterestMinor = monthlyInterestRows.reduce((sum, entry) => sum + entry.remainingInterestMinor, 0)
   const yearCutoffCount = monthlyInterestRows.reduce((sum, entry) => sum + entry.cutoffCount, 0)
   const activeInterestMonthCount = visibleMonthlyInterestRows.length
+  const collectedAverageMonthCount = getCollectedAverageMonthCount(activeYear, monthlyInterestRows)
   const averageInterestDueMinor = activeInterestMonthCount > 0 ? yearInterestDueMinor / activeInterestMonthCount : 0
-  const averageInterestCollectedMinor = activeInterestMonthCount > 0 ? yearInterestCollectedMinor / activeInterestMonthCount : 0
+  const averageInterestCollectedMinor = collectedAverageMonthCount > 0 ? yearInterestCollectedMinor / collectedAverageMonthCount : 0
+  const averageInterestCollectedMeta = collectedAverageMonthCount > 0
+    ? `Through ${collectedAverageMonthCount} mo.`
+    : 'No collections yet'
   useEffect(() => {
     if (yearOptions.length === 0 || yearOptions.includes(selectedYear)) {
       return
@@ -717,6 +749,7 @@ export function DashboardCutoffReceivables({
                 <article className={dashboardClass('dashboard-overview__interestAverage', 'dashboard-overview__interestAverage--collected')}>
                   <span>Avg collected</span>
                   <strong>{formatMinorCurrency(averageInterestCollectedMinor, currency)}</strong>
+                  <small>{averageInterestCollectedMeta}</small>
                 </article>
               </div>
             ) : null}

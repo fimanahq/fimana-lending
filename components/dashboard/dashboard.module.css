@@ -872,6 +872,13 @@
   text-transform: uppercase;
 }
 
+.dashboard-overview__interestAverage small {
+  color: rgba(84, 67, 57, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
 .dashboard-overview__interestAverage strong {
   color: #17140f;
   font-family: var(--font-heading), sans-serif;
