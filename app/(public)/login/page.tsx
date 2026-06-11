@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const destination = getSafeDestination(params?.next)
   const authError = Array.isArray(params?.authError) ? params.authError[0] : params?.authError
   const hasTransientRefreshError = authError === 'refresh_unavailable'
-  const user = await getSessionUser()
+  const user = hasTransientRefreshError ? null : await getSessionUser()
 
   if (user && hasLoanAppAccess(user)) {
     redirect(destination)

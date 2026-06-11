@@ -264,7 +264,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <aside className={dashboardClass('dashboard-shell__sidebar')} aria-label="Application navigation">
         <div className={dashboardClass('dashboard-shell__sidebarHeader')}>
           <div className={dashboardClass('dashboard-shell__sidebarBrandGroup')}>
-            <Link href="/dashboard" className={dashboardClass('dashboard-shell__sidebarBrand')} aria-label="FiMana Lending dashboard home">
+            <Link
+              href="/dashboard"
+              prefetch={false}
+              className={dashboardClass('dashboard-shell__sidebarBrand')}
+              aria-label="FiMana Lending dashboard home"
+            >
               <AppLogo suffix="Lending" />
             </Link>
 
@@ -297,6 +302,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               className={dashboardClass('dashboard-shell__navLink', isRouteActive(pathname, item) && 'active')}
               aria-current={isRouteActive(pathname, item) ? 'page' : undefined}
               title={item.label}
