@@ -1,4 +1,5 @@
 import { apiRequest } from '@/lib/client-api'
+import { REQUEST_LOAN_FETCH_TIMEOUT_MS } from '@/lib/fetch-timeout'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { getOrCreateCachedRequest } from '@/lib/request-cache'
 import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
@@ -50,6 +51,7 @@ export function createPublicLoanApplication(slug: string, input: ValidatedLoanAp
   return apiRequest<LoanApplication>(`/api/request-loan/${encodeURIComponent(slug)}`, {
     method: 'POST',
     body: JSON.stringify(input),
+    timeoutMs: REQUEST_LOAN_FETCH_TIMEOUT_MS,
   })
 }
 
