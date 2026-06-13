@@ -11,7 +11,7 @@ function getLoginUrl(request: NextRequest) {
 }
 
 function getRefreshUrl(request: NextRequest) {
-  const refreshUrl = new URL('/api/auth/refresh', request.url)
+  const refreshUrl = new URL('/refresh-session', request.url)
   refreshUrl.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`)
   return refreshUrl
 }

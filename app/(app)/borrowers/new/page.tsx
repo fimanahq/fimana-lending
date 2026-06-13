@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
-import { Card, PageContainer } from '@/components/shared'
+import { Card, PageContainer, ProtectedLink as Link } from '@/components/shared'
 
 export default function NewBorrowerPage() {
   return (

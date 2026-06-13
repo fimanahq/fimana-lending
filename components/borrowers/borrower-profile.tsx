@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import {
   Badge,
@@ -10,6 +9,7 @@ import {
   ErrorState,
   LoadingState,
   PageContainer,
+  ProtectedLink as Link,
   TableShell,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'

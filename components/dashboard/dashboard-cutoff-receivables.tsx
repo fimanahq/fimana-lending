@@ -1,11 +1,10 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { DashboardCutoffInterestChart, type DashboardInterestMonthlyRow } from '@/components/dashboard/dashboard-cutoff-interest-chart'
 import { LoanPaymentDialog } from '@/components/payments'
-import { Dialog, Select } from '@/components/shared'
+import { Dialog, ProtectedLink as Link, Select } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { DashboardCutoffReceivable, DashboardInterestByCutoff } from '@/lib/types/lending'
 import { PaymentIcon, ViewIcon } from '../shared/table-icons'

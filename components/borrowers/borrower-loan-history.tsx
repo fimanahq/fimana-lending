@@ -1,7 +1,6 @@
 'use client'
 
-import Link from 'next/link'
-import { Card, EmptyState, TableShell } from '@/components/shared'
+import { Card, EmptyState, ProtectedLink as Link, TableShell } from '@/components/shared'
 import { OpenLoanIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'

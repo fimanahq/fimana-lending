@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { EditIcon, DeleteIcon, PenaltyIcon } from '@/components/shared/table-icons'
 import { LoanAdjustmentDialog, LoanPaymentDialog } from '@/components/payments'
@@ -15,6 +14,7 @@ import {
   ErrorState,
   Input,
   LoadingState,
+  ProtectedLink as Link,
   SearchableSelect,
   TableShell,
   useToast,

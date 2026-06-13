@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { LoanApplicationRiskMeter } from '@/components/loan-applications/loan-application-risk-meter'
@@ -9,7 +8,7 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
 import { getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
-import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, Textarea, useToast } from '@/components/shared'
+import { Button, Card, Dialog, EmptyState, ErrorState, LoadingState, ProtectedLink as Link, Textarea, useToast } from '@/components/shared'
 import { ApplicationBreakdownPreview } from '@/components/loan-applications/application-breakdown-preview'
 import {
   getLoanApplicationFormValues,

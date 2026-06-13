@@ -1,9 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
-import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, TableShell, useToast } from '@/components/shared'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'

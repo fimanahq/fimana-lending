@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import {
@@ -12,6 +11,7 @@ import {
   LoadingState,
   PageContainer,
   Pagination,
+  ProtectedLink as Link,
   TableShell,
 } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'

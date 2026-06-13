@@ -69,6 +69,7 @@ export function Pagination({
         <Link
           key={key}
           href={getPageHref(targetPage)}
+          prefetch={false}
           className={commonClassName}
           aria-label={ariaLabel}
           aria-current={isCurrent ? 'page' : undefined}

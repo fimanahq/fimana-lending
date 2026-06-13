@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hasLoanAppAccess } from '@/lib/access'
-import { API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
-import { AUTH_FETCH_TIMEOUT_MS, fetchWithTimeout } from '@/lib/fetch-timeout'
-import { isProtectedPath } from '@/lib/protected-routes'
-import { clearSessionCookies, createSession } from '@/lib/server/backend'
+import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
+import {
+  AUTH_FETCH_TIMEOUT_MS,
+  fetchWithTimeout,
+  getFetchFailureMessage,
+  isAbortLikeError,
+} from '@/lib/fetch-timeout'
+import { getSessionCookieOptions } from '@/lib/session-cookies'
+import { clearSessionCookies, jsonError } from '@/lib/server/backend'
 import type { User } from '@/lib/types/shared'
 
 interface AuthPayload {
@@ -12,67 +17,73 @@ interface AuthPayload {
   user: User
 }
 
-function getSafeDestination(nextPath: string | null) {
-  return nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') && isProtectedPath(nextPath)
-    ? nextPath
-    : '/dashboard'
-}
+function setRefreshResponseCookies(response: NextResponse, authPayload: AuthPayload) {
+  const accessCookieOptions = getSessionCookieOptions(authPayload.accessToken)
+  const refreshCookieOptions = getSessionCookieOptions(authPayload.refreshToken)
 
-function getLoginUrl(request: NextRequest, nextPath: string, reason?: string) {
-  const loginUrl = new URL('/login', request.url)
-  loginUrl.searchParams.set('next', nextPath)
-
-  if (reason) {
-    loginUrl.searchParams.set('authError', reason)
+  if (!accessCookieOptions || !refreshCookieOptions) {
+    return false
   }
 
-  return loginUrl
+  response.cookies.set(ACCESS_COOKIE_NAME, authPayload.accessToken, accessCookieOptions)
+  response.cookies.set(REFRESH_COOKIE_NAME, authPayload.refreshToken, refreshCookieOptions)
+  return true
 }
 
-export async function GET(request: NextRequest) {
-  const nextPath = getSafeDestination(request.nextUrl.searchParams.get('next'))
+function isDefinitiveAuthFailure(status: number) {
+  return status === 401 || status === 403
+}
+
+export async function POST(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value
 
   if (!refreshToken) {
-    return NextResponse.redirect(getLoginUrl(request, nextPath))
+    return jsonError('Unauthorized', 401)
   }
 
-  const response = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({ refreshToken }),
-    cache: 'no-store',
-  }, AUTH_FETCH_TIMEOUT_MS).catch(() => null)
+  let response: Response
 
-  if (!response) {
-    return NextResponse.redirect(getLoginUrl(request, nextPath, 'refresh_unavailable'))
+  try {
+    response = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+      cache: 'no-store',
+    }, AUTH_FETCH_TIMEOUT_MS)
+  } catch (error) {
+    return jsonError(getFetchFailureMessage(error), isAbortLikeError(error) ? 408 : 503)
   }
 
   if (!response.ok) {
-    const isAuthFailure = response.status === 401 || response.status === 403
+    const isAuthFailure = isDefinitiveAuthFailure(response.status)
 
     if (isAuthFailure) {
       await clearSessionCookies()
     }
 
-    return NextResponse.redirect(getLoginUrl(request, nextPath, isAuthFailure ? undefined : 'refresh_unavailable'))
+    return jsonError(isAuthFailure ? 'Unauthorized' : 'Unable to refresh session', isAuthFailure ? response.status : 503)
   }
 
   const payload = await response.json().catch(() => null) as { data?: AuthPayload } | null
   const authPayload = payload?.data
 
   if (!authPayload?.accessToken || !authPayload.refreshToken || !authPayload.user) {
-    return NextResponse.redirect(getLoginUrl(request, nextPath, 'refresh_unavailable'))
+    return jsonError('Unable to refresh session', 503)
   }
 
   if (!hasLoanAppAccess(authPayload.user)) {
     await clearSessionCookies()
-    return NextResponse.redirect(getLoginUrl(request, nextPath))
+    return jsonError('This account does not have access to FiMana Lending.', 403)
   }
 
-  await createSession(authPayload)
-  return NextResponse.redirect(new URL(nextPath, request.url))
+  const refreshResponse = NextResponse.json({ ok: true })
+
+  if (!setRefreshResponseCookies(refreshResponse, authPayload)) {
+    return jsonError('Unable to refresh session', 503)
+  }
+
+  return refreshResponse
 }
