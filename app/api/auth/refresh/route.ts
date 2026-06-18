@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { hasLoanAppAccess } from '@/lib/access'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
 import {
@@ -15,6 +16,24 @@ interface AuthPayload {
   accessToken: string
   refreshToken: string
   user: User
+}
+
+type RefreshResult =
+  | {
+    ok: true
+    authPayload: AuthPayload
+  }
+  | {
+    ok: false
+    clearCookies: boolean
+    message: string
+    status: number
+  }
+
+const refreshInFlight = new Map<string, Promise<RefreshResult>>()
+
+function getRefreshSingleFlightKey(refreshToken: string) {
+  return createHash('sha256').update(refreshToken).digest('hex')
 }
 
 function setRefreshResponseCookies(response: NextResponse, authPayload: AuthPayload) {
@@ -34,13 +53,7 @@ function isDefinitiveAuthFailure(status: number) {
   return status === 401 || status === 403
 }
 
-export async function POST(request: NextRequest) {
-  const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value
-
-  if (!refreshToken) {
-    return jsonError('Unauthorized', 401)
-  }
-
+async function refreshBackendSession(refreshToken: string): Promise<RefreshResult> {
   let response: Response
 
   try {
@@ -54,34 +67,89 @@ export async function POST(request: NextRequest) {
       cache: 'no-store',
     }, AUTH_FETCH_TIMEOUT_MS)
   } catch (error) {
-    return jsonError(getFetchFailureMessage(error), isAbortLikeError(error) ? 408 : 503)
+    return {
+      ok: false,
+      clearCookies: false,
+      message: getFetchFailureMessage(error),
+      status: isAbortLikeError(error) ? 408 : 503,
+    }
   }
 
   if (!response.ok) {
     const isAuthFailure = isDefinitiveAuthFailure(response.status)
 
-    if (isAuthFailure) {
-      await clearSessionCookies()
+    return {
+      ok: false,
+      clearCookies: isAuthFailure,
+      message: isAuthFailure ? 'Unauthorized' : 'Unable to refresh session',
+      status: isAuthFailure ? response.status : 503,
     }
-
-    return jsonError(isAuthFailure ? 'Unauthorized' : 'Unable to refresh session', isAuthFailure ? response.status : 503)
   }
 
   const payload = await response.json().catch(() => null) as { data?: AuthPayload } | null
   const authPayload = payload?.data
 
   if (!authPayload?.accessToken || !authPayload.refreshToken || !authPayload.user) {
-    return jsonError('Unable to refresh session', 503)
+    return {
+      ok: false,
+      clearCookies: false,
+      message: 'Unable to refresh session',
+      status: 503,
+    }
   }
 
   if (!hasLoanAppAccess(authPayload.user)) {
-    await clearSessionCookies()
-    return jsonError('This account does not have access to FiMana Lending.', 403)
+    return {
+      ok: false,
+      clearCookies: true,
+      message: 'This account does not have access to FiMana Lending.',
+      status: 403,
+    }
+  }
+
+  return { ok: true, authPayload }
+}
+
+function refreshBackendSessionOnce(refreshToken: string) {
+  const key = getRefreshSingleFlightKey(refreshToken)
+  const currentRequest = refreshInFlight.get(key)
+
+  if (currentRequest) {
+    return currentRequest
+  }
+
+  const nextRequest = refreshBackendSession(refreshToken).finally(() => {
+    globalThis.setTimeout(() => {
+      if (refreshInFlight.get(key) === nextRequest) {
+        refreshInFlight.delete(key)
+      }
+    }, 5000)
+  })
+
+  refreshInFlight.set(key, nextRequest)
+  return nextRequest
+}
+
+export async function POST(request: NextRequest) {
+  const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value
+
+  if (!refreshToken) {
+    return jsonError('Unauthorized', 401)
+  }
+
+  const result = await refreshBackendSessionOnce(refreshToken)
+
+  if (!result.ok) {
+    if (result.clearCookies) {
+      await clearSessionCookies()
+    }
+
+    return jsonError(result.message, result.status)
   }
 
   const refreshResponse = NextResponse.json({ ok: true })
 
-  if (!setRefreshResponseCookies(refreshResponse, authPayload)) {
+  if (!setRefreshResponseCookies(refreshResponse, result.authPayload)) {
     return jsonError('Unable to refresh session', 503)
   }
 
