@@ -1,157 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createHash } from 'crypto'
-import { hasLoanAppAccess } from '@/lib/access'
-import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
-import {
-  AUTH_FETCH_TIMEOUT_MS,
-  fetchWithTimeout,
-  getFetchFailureMessage,
-  isAbortLikeError,
-} from '@/lib/fetch-timeout'
-import { getSessionCookieOptions } from '@/lib/session-cookies'
-import { clearSessionCookies, jsonError } from '@/lib/server/backend'
-import type { User } from '@/lib/types/shared'
+import { isProtectedPath } from '@/lib/protected-routes'
+import { BackendRequestError, jsonError, refreshAuthSession } from '@/lib/server/backend'
 
-interface AuthPayload {
-  accessToken: string
-  refreshToken: string
-  user: User
+function getSafeDestination(nextPath: string | null) {
+  return nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') && isProtectedPath(nextPath)
+    ? nextPath
+    : '/dashboard'
 }
 
-type RefreshResult =
-  | {
-    ok: true
-    authPayload: AuthPayload
-  }
-  | {
-    ok: false
-    clearCookies: boolean
-    message: string
-    status: number
+function getLoginUrl(request: NextRequest, nextPath: string, reason?: string) {
+  const loginUrl = new URL('/login', request.url)
+  loginUrl.searchParams.set('next', nextPath)
+
+  if (reason) {
+    loginUrl.searchParams.set('authError', reason)
   }
 
-const refreshInFlight = new Map<string, Promise<RefreshResult>>()
-
-function getRefreshSingleFlightKey(refreshToken: string) {
-  return createHash('sha256').update(refreshToken).digest('hex')
+  return loginUrl
 }
 
-function setRefreshResponseCookies(response: NextResponse, authPayload: AuthPayload) {
-  const accessCookieOptions = getSessionCookieOptions(authPayload.accessToken)
-  const refreshCookieOptions = getSessionCookieOptions(authPayload.refreshToken)
-
-  if (!accessCookieOptions || !refreshCookieOptions) {
-    return false
-  }
-
-  response.cookies.set(ACCESS_COOKIE_NAME, authPayload.accessToken, accessCookieOptions)
-  response.cookies.set(REFRESH_COOKIE_NAME, authPayload.refreshToken, refreshCookieOptions)
-  return true
-}
-
-function isDefinitiveAuthFailure(status: number) {
-  return status === 401 || status === 403
-}
-
-async function refreshBackendSession(refreshToken: string): Promise<RefreshResult> {
-  let response: Response
+export async function GET(request: NextRequest) {
+  const nextPath = getSafeDestination(request.nextUrl.searchParams.get('next'))
 
   try {
-    response = await fetchWithTimeout(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ refreshToken }),
-      cache: 'no-store',
-    }, AUTH_FETCH_TIMEOUT_MS)
-  } catch (error) {
-    return {
-      ok: false,
-      clearCookies: false,
-      message: getFetchFailureMessage(error),
-      status: isAbortLikeError(error) ? 408 : 503,
+    const authPayload = await refreshAuthSession()
+
+    if (!authPayload) {
+      return NextResponse.redirect(getLoginUrl(request, nextPath))
     }
-  }
 
-  if (!response.ok) {
-    const isAuthFailure = isDefinitiveAuthFailure(response.status)
-
-    return {
-      ok: false,
-      clearCookies: isAuthFailure,
-      message: isAuthFailure ? 'Unauthorized' : 'Unable to refresh session',
-      status: isAuthFailure ? response.status : 503,
+    return NextResponse.redirect(new URL(nextPath, request.url))
+  } catch (caughtError) {
+    if (caughtError instanceof BackendRequestError && (caughtError.status === 408 || caughtError.status === 503)) {
+      return NextResponse.redirect(getLoginUrl(request, nextPath, 'refresh_unavailable'))
     }
+
+    return NextResponse.redirect(getLoginUrl(request, nextPath))
   }
-
-  const payload = await response.json().catch(() => null) as { data?: AuthPayload } | null
-  const authPayload = payload?.data
-
-  if (!authPayload?.accessToken || !authPayload.refreshToken || !authPayload.user) {
-    return {
-      ok: false,
-      clearCookies: false,
-      message: 'Unable to refresh session',
-      status: 503,
-    }
-  }
-
-  if (!hasLoanAppAccess(authPayload.user)) {
-    return {
-      ok: false,
-      clearCookies: true,
-      message: 'This account does not have access to FiMana Lending.',
-      status: 403,
-    }
-  }
-
-  return { ok: true, authPayload }
 }
 
-function refreshBackendSessionOnce(refreshToken: string) {
-  const key = getRefreshSingleFlightKey(refreshToken)
-  const currentRequest = refreshInFlight.get(key)
+export async function POST() {
+  try {
+    const authPayload = await refreshAuthSession()
 
-  if (currentRequest) {
-    return currentRequest
-  }
-
-  const nextRequest = refreshBackendSession(refreshToken).finally(() => {
-    globalThis.setTimeout(() => {
-      if (refreshInFlight.get(key) === nextRequest) {
-        refreshInFlight.delete(key)
-      }
-    }, 5000)
-  })
-
-  refreshInFlight.set(key, nextRequest)
-  return nextRequest
-}
-
-export async function POST(request: NextRequest) {
-  const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value
-
-  if (!refreshToken) {
-    return jsonError('Unauthorized', 401)
-  }
-
-  const result = await refreshBackendSessionOnce(refreshToken)
-
-  if (!result.ok) {
-    if (result.clearCookies) {
-      await clearSessionCookies()
+    if (!authPayload) {
+      return jsonError('Unauthorized', 401)
     }
 
-    return jsonError(result.message, result.status)
-  }
+    return NextResponse.json({ ok: true })
+  } catch (caughtError) {
+    if (caughtError instanceof BackendRequestError) {
+      return jsonError(caughtError.message, caughtError.status)
+    }
 
-  const refreshResponse = NextResponse.json({ ok: true })
-
-  if (!setRefreshResponseCookies(refreshResponse, result.authPayload)) {
     return jsonError('Unable to refresh session', 503)
   }
-
-  return refreshResponse
 }

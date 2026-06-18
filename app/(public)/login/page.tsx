@@ -4,7 +4,7 @@ import { LoginForm } from '@/components/auth/login-form'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
 import { hasLoanAppAccess } from '@/lib/access'
-import { ACCESS_COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/lib/constants'
+import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 import { isProtectedPath } from '@/lib/protected-routes'
 import { getSessionUser } from '@/lib/server/backend'
 import Image from 'next/image'
@@ -35,10 +35,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(destination)
   }
 
-  const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
   const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
 
-  if (!hasTransientRefreshError && !user && !accessToken && refreshToken) {
+  if (!hasTransientRefreshError && !user && refreshToken) {
     redirect(destination)
   }
 

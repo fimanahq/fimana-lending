@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { createHash } from 'crypto'
+import { hasLoanAppAccess } from '@/lib/access'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
 import {
   API_UNAVAILABLE_MESSAGE,
@@ -22,6 +24,20 @@ interface AuthPayload {
   user: User
 }
 
+type RefreshResult =
+  | {
+    ok: true
+    authPayload: AuthPayload
+  }
+  | {
+    ok: false
+    clearCookies: boolean
+    message: string
+    status: number
+  }
+
+const refreshInFlight = new Map<string, Promise<RefreshResult>>()
+
 export class BackendRequestError extends Error {
   status: number
 
@@ -38,6 +54,10 @@ function isDefinitiveAuthFailure(status: number) {
 
 function isTransientBackendFailure(error: unknown) {
   return error instanceof BackendRequestError && (error.status === 408 || error.status === 503)
+}
+
+function getRefreshSingleFlightKey(refreshToken: string) {
+  return createHash('sha256').update(refreshToken).digest('hex')
 }
 
 function getErrorMessage(payload: unknown, fallback: string) {
@@ -115,39 +135,122 @@ export async function createSession(payload: AuthPayload) {
   return payload.user
 }
 
-async function refreshAuthSession(): Promise<AuthPayload | null> {
+async function refreshBackendSession(refreshToken: string): Promise<RefreshResult> {
+  let response: Response
+
   try {
-    const cookieStore = await cookies()
-    const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
-
-    if (!refreshToken) {
-      return null
-    }
-
-    const response = await backendFetch('/auth/refresh', {
+    response = await backendFetch('/auth/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken }),
     })
-
-    if (!response.ok) {
-      if (isDefinitiveAuthFailure(response.status)) {
-        await clearSessionCookies()
-      }
-
-      return null
-    }
-
-    const authPayload = await parseBackendResponse<AuthPayload>(response)
-    await setSessionCookies(authPayload)
-    return authPayload
   } catch (error) {
-    if (isTransientBackendFailure(error)) {
-      throw error
+    if (error instanceof BackendRequestError && isTransientBackendFailure(error)) {
+      return {
+        ok: false,
+        clearCookies: false,
+        message: error.message,
+        status: error.status,
+      }
     }
 
     logSessionLookupError('refresh session', error)
+    return {
+      ok: false,
+      clearCookies: false,
+      message: 'Unable to refresh session',
+      status: 503,
+    }
+  }
+
+  if (!response.ok) {
+    const isAuthFailure = isDefinitiveAuthFailure(response.status)
+
+    return {
+      ok: false,
+      clearCookies: isAuthFailure,
+      message: isAuthFailure ? 'Unauthorized' : 'Unable to refresh session',
+      status: isAuthFailure ? response.status : 503,
+    }
+  }
+
+  try {
+    const authPayload = await parseBackendResponse<AuthPayload>(response)
+
+    if (!authPayload?.accessToken || !authPayload.refreshToken || !authPayload.user) {
+      return {
+        ok: false,
+        clearCookies: false,
+        message: 'Unable to refresh session',
+        status: 503,
+      }
+    }
+
+    if (!hasLoanAppAccess(authPayload.user)) {
+      return {
+        ok: false,
+        clearCookies: true,
+        message: 'This account does not have access to FiMana Lending.',
+        status: 403,
+      }
+    }
+
+    return { ok: true, authPayload }
+  } catch (error) {
+    logSessionLookupError('refresh session', error)
+    return {
+      ok: false,
+      clearCookies: false,
+      message: 'Unable to refresh session',
+      status: 503,
+    }
+  }
+}
+
+function refreshBackendSessionOnce(refreshToken: string) {
+  const key = getRefreshSingleFlightKey(refreshToken)
+  const currentRequest = refreshInFlight.get(key)
+
+  if (currentRequest) {
+    return currentRequest
+  }
+
+  const nextRequest = refreshBackendSession(refreshToken).finally(() => {
+    globalThis.setTimeout(() => {
+      if (refreshInFlight.get(key) === nextRequest) {
+        refreshInFlight.delete(key)
+      }
+    }, 5000)
+  })
+
+  refreshInFlight.set(key, nextRequest)
+  return nextRequest
+}
+
+export async function refreshAuthSession(): Promise<AuthPayload | null> {
+  const cookieStore = await cookies()
+  const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
+
+  if (!refreshToken) {
     return null
   }
+
+  const result = await refreshBackendSessionOnce(refreshToken)
+
+  if (!result.ok) {
+    if (result.clearCookies) {
+      await clearSessionCookies()
+      return null
+    }
+
+    if (result.status === 408 || result.status === 503) {
+      throw new BackendRequestError(result.message, result.status)
+    }
+
+    return null
+  }
+
+  await setSessionCookies(result.authPayload)
+  return result.authPayload
 }
 
 export async function getSessionUser() {
@@ -238,6 +341,18 @@ export async function authorizedBackendRequest<T>(path: string, init: RequestIni
     response = await backendFetch(path, init, refreshed.accessToken)
   }
 
+  return parseBackendResponse<T>(response)
+}
+
+export async function authorizedBackendRequestWithCurrentAccess<T>(path: string, init: RequestInit = {}) {
+  const cookieStore = await cookies()
+  const accessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value
+
+  if (!accessToken) {
+    throw new Error('Unauthorized')
+  }
+
+  const response = await backendFetch(path, init, accessToken)
   return parseBackendResponse<T>(response)
 }
 

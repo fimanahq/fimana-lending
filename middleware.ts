@@ -11,9 +11,20 @@ function getLoginUrl(request: NextRequest) {
 }
 
 function getRefreshUrl(request: NextRequest) {
-  const refreshUrl = new URL('/refresh-session', request.url)
+  const refreshUrl = new URL('/api/auth/refresh', request.url)
   refreshUrl.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`)
   return refreshUrl
+}
+
+function continueWithCurrentPath(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-fimana-current-path', `${request.nextUrl.pathname}${request.nextUrl.search}`)
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 export function middleware(request: NextRequest) {
@@ -27,7 +38,7 @@ export function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value
 
   if (accessToken && !isJwtExpiredOrNearExpiry(accessToken, 30)) {
-    return NextResponse.next()
+    return continueWithCurrentPath(request)
   }
 
   if (refreshToken) {
