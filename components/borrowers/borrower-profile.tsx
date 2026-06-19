@@ -307,6 +307,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
         open={editDialogOpen}
         title="Edit borrower"
         description="Update borrower details without changing loan contracts."
+        className={borrowerStyles.editDialog}
         onClose={() => setEditDialogOpen(false)}
       >
         <BorrowerForm

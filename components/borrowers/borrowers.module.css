@@ -102,6 +102,10 @@
   margin-top: 0.45rem;
 }
 
+.editDialog {
+  width: min(56rem, calc(100vw - 2rem));
+}
+
 @media (max-width: 980px) {
   .profileGrid,
   .summaryGrid {
