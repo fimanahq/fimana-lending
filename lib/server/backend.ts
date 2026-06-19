@@ -5,6 +5,7 @@ import { hasLoanAppAccess } from '@/lib/access'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
 import {
   API_UNAVAILABLE_MESSAGE,
+  AUTH_FETCH_TIMEOUT_MS,
   fetchWithTimeout,
   getFetchFailureMessage,
   isAbortLikeError,
@@ -99,7 +100,7 @@ async function backendFetch(path: string, init: RequestInit = {}, accessToken?: 
       ...init,
       headers,
       cache: 'no-store',
-    })
+    }, AUTH_FETCH_TIMEOUT_MS)
   } catch (error) {
     throw new BackendRequestError(getFetchFailureMessage(error), isAbortLikeError(error) ? 408 : 503)
   }
