@@ -187,6 +187,7 @@ export interface LoanRecord {
   borrower: LoanRecordBorrower
   loanProduct: LoanRecordProduct
   status: LoanStatus
+  remarks: string
   principalAmountMinor: number
   disbursedAmountMinor: number
   installmentCount: number

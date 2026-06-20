@@ -17,6 +17,7 @@ import {
   ProtectedLink as Link,
   SearchableSelect,
   TableShell,
+  Textarea,
   useToast,
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
@@ -183,6 +184,10 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [adjustmentActionError, setAdjustmentActionError] = useState('')
   const [statusActionError, setStatusActionError] = useState('')
   const [penaltyActionError, setPenaltyActionError] = useState('')
+  const [remarksDraft, setRemarksDraft] = useState('')
+  const [editingRemarks, setEditingRemarks] = useState(false)
+  const [savingRemarks, setSavingRemarks] = useState(false)
+  const [remarksActionError, setRemarksActionError] = useState('')
 
   useEffect(() => {
     const loadLoan = async () => {
@@ -197,6 +202,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           getSettings(),
         ])
         setLoan(loanRecord)
+        setRemarksDraft(loanRecord.remarks ?? '')
         setPayments(paymentDetail.payments)
         setAdjustments(adjustmentDetail.adjustments)
         setDefaultPenaltyRateBps(settings.defaultPenaltyRateBps ?? 0)
@@ -564,6 +570,32 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     }
   }
 
+  const handleRemarksSave = async () => {
+    const nextRemarks = remarksDraft.trim()
+
+    setSavingRemarks(true)
+    setRemarksActionError('')
+    const toastId = showLoading('Saving remarks...')
+    try {
+      const updatedLoan = await updateLoan(loanId, { remarks: nextRemarks })
+      setLoan(updatedLoan)
+      setRemarksDraft(updatedLoan.remarks ?? '')
+      setEditingRemarks(false)
+      update(toastId, 'Remarks saved.', { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setRemarksActionError(caughtError instanceof Error ? caughtError.message : 'Unable to save remarks')
+    } finally {
+      setSavingRemarks(false)
+    }
+  }
+
+  const handleRemarksCancel = () => {
+    setRemarksDraft(loan.remarks ?? '')
+    setRemarksActionError('')
+    setEditingRemarks(false)
+  }
+
   return (
     <div className="stack">
       <div className="inline-actions">
@@ -695,6 +727,47 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
             <strong>{formatDate(loan.maturityDate)}</strong>
           </div>
         </div>
+      </Card>
+
+      <Card
+        title="Remarks"
+        actions={!editingRemarks ? (
+          <button
+            type="button"
+            className="button-ghost table-action-icon"
+            aria-label="Edit loan remarks"
+            title="Edit remarks"
+            onClick={() => setEditingRemarks(true)}
+          >
+            <EditIcon />
+          </button>
+        ) : null}
+      >
+        {remarksActionError ? <ErrorBanner title="Unable to save remarks" message={remarksActionError} /> : null}
+        {editingRemarks ? (
+          <div className="stack">
+            <Textarea
+              id="loan-remarks"
+              label="Remarks"
+              value={remarksDraft}
+              onChange={(event) => setRemarksDraft(event.target.value)}
+              placeholder="Add loan remarks, follow-up notes, or borrower context."
+              rows={5}
+              maxLength={2000}
+              disabled={savingRemarks}
+            />
+            <div className="inline-actions">
+              <Button onClick={() => void handleRemarksSave()} disabled={savingRemarks}>
+                {savingRemarks ? 'Saving...' : 'Save remarks'}
+              </Button>
+              <Button variant="secondary" onClick={handleRemarksCancel} disabled={savingRemarks}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <p className={`notice ${styles.remarksText}`}>{loan.remarks || 'No loan remarks recorded yet.'}</p>
+        )}
       </Card>
 
       <Card title="Disbursement" description="Recorded automatically during application approval for this MVP flow.">

@@ -10,7 +10,7 @@ export function getLoan(loanId: string) {
   return apiRequest<LoanRecord>(`/api/loans/${loanId}`)
 }
 
-export function updateLoan(loanId: string, input: { status: LoanStatus }) {
+export function updateLoan(loanId: string, input: { status?: LoanStatus; remarks?: string }) {
   return apiRequest<LoanRecord>(`/api/loans/${loanId}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
