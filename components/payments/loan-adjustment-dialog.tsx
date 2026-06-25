@@ -12,11 +12,13 @@ const adjustmentTypeLabels: Record<LoanAdjustmentRecord['type'], string> = {
   balance_adjustment: 'Balance adjustment',
   schedule_adjustment: 'Schedule adjustment',
   rounding_adjustment: 'Rounding adjustment',
+  referral_adjustment: 'Referral adjustment',
 }
 
 const adjustmentReasonLabels: Record<string, string> = {
   rounding_shortage_write_off: 'Rounding shortage write-off',
   rounding_overpayment_income: 'Rounding overpayment income',
+  referral_reward: 'Referral reward',
 }
 
 function formatMinorCurrency(value: number, currency: string) {

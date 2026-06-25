@@ -23,6 +23,7 @@ export type LoanAdjustmentType =
   | 'balance_adjustment'
   | 'schedule_adjustment'
   | 'rounding_adjustment'
+  | 'referral_adjustment'
 export type LoanAdjustmentComponent =
   | 'principal'
   | 'interest'
@@ -43,6 +44,18 @@ export type LoanApplicationStatus =
 export type LoanApplicationRecordStatus = LoanApplicationStatus | 'pending'
 export type InterestMode = 'rules' | 'manual'
 export type DashboardReceivableStatus = 'overdue' | 'current' | 'upcoming' | 'paid'
+export type LoanReferralStatus = 'none' | 'pending' | 'applied' | 'partially_applied'
+
+export interface LoanReferral {
+  referrerBorrowerId: string | null
+  referrerBorrowerNumber: string
+  referrerDisplayName: string
+  rewardAmountMinor: number
+  appliedAmountMinor: number
+  unappliedAmountMinor: number
+  appliedAdjustmentId: string | null
+  status: LoanReferralStatus
+}
 
 export interface LoanInterestRulesConfig {
   thresholdAmount: number
@@ -204,6 +217,7 @@ export interface LoanRecord {
   defaultedAt?: string | null
   balances: LoanRecordBalances
   disbursement: LoanDisbursementRecord
+  referral: LoanReferral
   createdAt: string
   updatedAt?: string | null
   scheduleVersion: number
@@ -489,6 +503,7 @@ export interface LoanApplication {
   approvalNotes?: string
   rejectionReason?: string
   reviewerRemarks?: string
+  referral?: LoanReferral
   createdAt: string
   updatedAt?: string
   submittedAt?: string | null
@@ -576,6 +591,8 @@ export interface LoanApplicationDraftInput {
   postInterestOnlyMethod?: PostInterestOnlyMethod | null
   simpleInterestMethod?: SimpleInterestMethod | null
   purpose?: string
+  referrerBorrowerId?: string | null
+  referralRewardAmountMinor?: number
 }
 
 export interface LoanApplicationPreviewSnapshot {

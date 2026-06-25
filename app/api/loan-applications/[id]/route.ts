@@ -68,7 +68,11 @@ export async function PATCH(
     const init: RequestInit = { method: 'PATCH' }
 
     if (actionPath !== 'submit') {
-      init.body = JSON.stringify({ reviewerRemarks: body?.reviewerRemarks ?? '' })
+      init.body = JSON.stringify({
+        reviewerRemarks: body?.reviewerRemarks ?? '',
+        referrerBorrowerId: body?.referrerBorrowerId ?? undefined,
+        referralRewardAmountMinor: body?.referralRewardAmountMinor ?? undefined,
+      })
     }
 
     const updated = await authorizedBackendRequest<LoanApplication>(`/loan-applications/${id}/${actionPath}`, init)

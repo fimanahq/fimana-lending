@@ -54,6 +54,11 @@
   list-style: none;
 }
 
+.optionsTop {
+  top: auto;
+  bottom: calc(100% + 0.35rem);
+}
+
 .option {
   padding: 0.6rem 0.8rem;
   border-radius: 0.75rem;
@@ -96,4 +101,3 @@
 .action:hover {
   background: var(--accent-soft);
 }
-

@@ -72,11 +72,15 @@ export function updateLoanApplication(applicationId: string, input: UpdateLoanAp
 export function updateLoanApplicationStatus(
   applicationId: string,
   status: LoanApplicationStatus,
-  reviewerRemarks?: string,
+  input: {
+    reviewerRemarks?: string
+    referrerBorrowerId?: string | null
+    referralRewardAmountMinor?: number
+  } = {},
 ) {
   return apiRequest<LoanApplication>(`/api/loan-applications/${applicationId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status, reviewerRemarks }),
+    body: JSON.stringify({ status, ...input }),
   })
 }
 

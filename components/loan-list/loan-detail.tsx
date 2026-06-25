@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CheckCircle2, Pencil, PlusCircle, X } from 'lucide-react'
 import { EditIcon, DeleteIcon, PenaltyIcon } from '@/components/shared/table-icons'
 import { LoanAdjustmentDialog, LoanPaymentDialog } from '@/components/payments'
 import {
@@ -22,9 +23,9 @@ import {
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
-import type { LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
-import { getSettings } from '@/services'
-import { getLoan, updateLoan } from '@/services/loans'
+import type { Borrower, LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
+import { getSettings, listLoanBorrowers } from '@/services'
+import { applyLoanReferral, getLoan, updateLoan } from '@/services/loans'
 import {
   deleteLoanAdjustment,
   deleteLoanPayment,
@@ -102,11 +103,13 @@ const adjustmentTypeLabels: Record<LoanAdjustmentRecord['type'], string> = {
   balance_adjustment: 'Balance adjustment',
   schedule_adjustment: 'Schedule adjustment',
   rounding_adjustment: 'Rounding adjustment',
+  referral_adjustment: 'Referral adjustment',
 }
 
 const adjustmentReasonLabels: Record<string, string> = {
   rounding_shortage_write_off: 'Rounding shortage write-off',
   rounding_overpayment_income: 'Rounding overpayment income',
+  referral_reward: 'Referral reward',
 }
 
 function formatAdjustmentMeta(adjustment: LoanAdjustmentRecord) {
@@ -188,6 +191,13 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [editingRemarks, setEditingRemarks] = useState(false)
   const [savingRemarks, setSavingRemarks] = useState(false)
   const [remarksActionError, setRemarksActionError] = useState('')
+  const [referralDialogOpen, setReferralDialogOpen] = useState(false)
+  const [referralBorrowers, setReferralBorrowers] = useState<Borrower[]>([])
+  const [loadingReferralBorrowers, setLoadingReferralBorrowers] = useState(false)
+  const [submittingReferral, setSubmittingReferral] = useState(false)
+  const [referralActionError, setReferralActionError] = useState('')
+  const [referrerBorrowerId, setReferrerBorrowerId] = useState('')
+  const [referralRewardAmount, setReferralRewardAmount] = useState('')
 
   useEffect(() => {
     const loadLoan = async () => {
@@ -307,6 +317,77 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       : editPaymentShortagePreviewMinor > 0
         ? `${formatMinorCurrency(editPaymentShortagePreviewMinor, currency)} shortage will be waived from interest as a rounding adjustment.`
         : ''
+  const hasReferral = loan.referral.status !== 'none'
+  const canEditReferral = loan.status === 'active'
+  const referralBorrowerOptions = referralBorrowers
+    .filter((borrower) => borrower.id !== loan.borrower.id)
+    .map((borrower) => ({
+      label: `${borrower.fullName} (${borrower.borrowerNumber})`,
+      value: borrower.id,
+    }))
+
+  const openReferralDialog = async () => {
+    setReferralDialogOpen(true)
+    setReferralActionError('')
+    setReferrerBorrowerId(loan.referral.referrerBorrowerId ?? '')
+    setReferralRewardAmount(loan.referral.rewardAmountMinor ? (loan.referral.rewardAmountMinor / 100).toFixed(2) : '')
+
+    if (referralBorrowers.length > 0) {
+      return
+    }
+
+    setLoadingReferralBorrowers(true)
+    try {
+      setReferralBorrowers(await listLoanBorrowers())
+    } catch (caughtError) {
+      setReferralActionError(caughtError instanceof Error ? caughtError.message : 'Unable to load borrowers')
+    } finally {
+      setLoadingReferralBorrowers(false)
+    }
+  }
+
+  const handleReferralApply = async () => {
+    const rewardAmountMinor = toAmountMinor(referralRewardAmount)
+    if (!referrerBorrowerId) {
+      setReferralActionError('Select a referrer borrower')
+      return
+    }
+
+    if (referrerBorrowerId === loan.borrower.id) {
+      setReferralActionError('Referrer cannot be the loan borrower')
+      return
+    }
+
+    if (!rewardAmountMinor || rewardAmountMinor <= 0) {
+      setReferralActionError('Enter a referral reward greater than 0')
+      return
+    }
+
+    if (rewardAmountMinor < loan.referral.appliedAmountMinor) {
+      setReferralActionError(`Referral reward cannot be less than the applied amount ${formatMinorCurrency(loan.referral.appliedAmountMinor, currency)}`)
+      return
+    }
+
+    setSubmittingReferral(true)
+    setReferralActionError('')
+    const toastId = showLoading(hasReferral ? 'Saving referral reward...' : 'Applying referral reward...')
+    try {
+      const updatedLoan = await applyLoanReferral(loanId, {
+        referrerBorrowerId,
+        referralRewardAmountMinor: rewardAmountMinor,
+      })
+      setLoan(updatedLoan)
+      const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
+      setAdjustments(adjustmentDetail.adjustments)
+      setReferralDialogOpen(false)
+      update(toastId, hasReferral ? 'Referral reward updated.' : 'Referral reward applied.', { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setReferralActionError(caughtError instanceof Error ? caughtError.message : 'Unable to apply referral reward')
+    } finally {
+      setSubmittingReferral(false)
+    }
+  }
 
   const openEditPaymentDialog = (payment: LoanPaymentHistory) => {
     setSelectedPayment(payment)
@@ -730,6 +811,56 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       </Card>
 
       <Card
+        title="Referral"
+        actions={canEditReferral ? (
+          <button
+            type="button"
+            className="button-ghost table-action-icon"
+            aria-label={hasReferral ? 'Edit referral' : 'Add referral reward'}
+            title={hasReferral ? 'Edit referral' : 'Add referral reward'}
+            onClick={() => void openReferralDialog()}
+          >
+            {hasReferral ? (
+              <Pencil className={styles.referralButtonIcon} aria-hidden="true" />
+            ) : (
+              <PlusCircle className={styles.referralButtonIcon} aria-hidden="true" />
+            )}
+          </button>
+        ) : null}
+      >
+        {loan.referral.status === 'none' ? (
+          <p className="notice">No referral reward has been recorded for this loan.</p>
+        ) : (
+          <div className="application-summary-grid">
+            <div className="data-card">
+              <span className="muted">Referrer</span>
+              <strong>{loan.referral.referrerDisplayName || 'Not selected'}</strong>
+            </div>
+            <div className="data-card">
+              <span className="muted">Reward</span>
+              <strong>{formatMinorCurrency(loan.referral.rewardAmountMinor, currency)}</strong>
+            </div>
+            <div className="data-card">
+              <span className="muted">Applied</span>
+              <strong>{formatMinorCurrency(loan.referral.appliedAmountMinor, currency)}</strong>
+            </div>
+            <div className="data-card">
+              <span className="muted">Unapplied</span>
+              <strong>{formatMinorCurrency(loan.referral.unappliedAmountMinor, currency)}</strong>
+            </div>
+            <div className="data-card">
+              <span className="muted">Status</span>
+              <strong>{loan.referral.status.replaceAll('_', ' ')}</strong>
+            </div>
+            <div className="data-card">
+              <span className="muted">Adjustment</span>
+              <strong>{loan.referral.appliedAdjustmentId || 'Not applied'}</strong>
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <Card
         title="Remarks"
         actions={!editingRemarks ? (
           <button
@@ -1092,6 +1223,59 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
               {submittingPenalty ? 'Adding…' : 'Add penalty'}
             </Button>
             <Button variant="secondary" onClick={() => setSelectedPenaltyRow(null)} disabled={submittingPenalty}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        id="loan-referral-dialog"
+        open={referralDialogOpen}
+        onClose={() => setReferralDialogOpen(false)}
+        title={hasReferral ? 'Edit referral' : 'Apply referral reward'}
+        className={styles.referralDialog}
+      >
+        <div className="stack">
+          {referralActionError ? <ErrorBanner title="Unable to apply referral reward" message={referralActionError} /> : null}
+          {loadingReferralBorrowers ? (
+            <LoadingState title="Loading borrowers" description="Fetching borrower records for referral selection." />
+          ) : (
+            <div className="grid two">
+              <SearchableSelect
+                id="loan-referrer-borrower"
+                label="Referrer"
+                placeholder="Select referrer"
+                options={referralBorrowerOptions}
+                value={referrerBorrowerId}
+                disabled={submittingReferral}
+                emptyMessage="No borrowers match your search"
+                onChange={setReferrerBorrowerId}
+              />
+              <Input
+                id="loan-referral-reward"
+                label="Referral reward"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={referralRewardAmount}
+                disabled={submittingReferral}
+                onChange={(event) => setReferralRewardAmount(event.target.value)}
+              />
+            </div>
+          )}
+          <div className="inline-actions">
+            <Button
+              className={styles.referralSubmitButton}
+              onClick={() => void handleReferralApply()}
+              disabled={submittingReferral || loadingReferralBorrowers}
+            >
+              <CheckCircle2 className={styles.referralButtonIcon} aria-hidden="true" />
+              {submittingReferral ? 'Saving...' : hasReferral ? 'Save referral' : 'Apply referral reward'}
+            </Button>
+            <Button variant="secondary" onClick={() => setReferralDialogOpen(false)} disabled={submittingReferral}>
+              <X className={styles.referralButtonIcon} aria-hidden="true" />
               Cancel
             </Button>
           </div>

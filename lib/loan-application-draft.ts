@@ -21,6 +21,8 @@ interface DraftLoanApplicationInput {
   postInterestOnlyMethod: PostInterestOnlyMethod | null
   simpleInterestMethod: SimpleInterestMethod | null
   purpose?: string
+  referrerBorrowerId?: string | null
+  referralRewardAmountMinor?: number
 }
 
 export function isDraftLoanApplicationPayload(body: Record<string, unknown>) {
@@ -71,6 +73,10 @@ export function getDraftLoanApplicationPayload(body: Record<string, unknown>): L
       ? toSimpleInterestMethod(body.simpleInterestMethod)
       : null,
     purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
+    referrerBorrowerId: typeof body.referrerBorrowerId === 'string' && body.referrerBorrowerId.trim()
+      ? body.referrerBorrowerId.trim()
+      : null,
+    referralRewardAmountMinor: Number(body.referralRewardAmountMinor ?? 0),
   })
 }
 
@@ -96,6 +102,8 @@ export function buildDraftLoanApplicationInput(
       ? input.simpleInterestMethod
       : null,
     purpose: input.purpose,
+    referrerBorrowerId: input.referrerBorrowerId ?? null,
+    referralRewardAmountMinor: input.referralRewardAmountMinor ?? 0,
   }
 }
 

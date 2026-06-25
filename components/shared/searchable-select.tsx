@@ -24,6 +24,7 @@ export interface SearchableSelectProps {
   onChange: (value: string) => void
   onQueryChange?: (query: string) => void
   options: SearchableSelectOption[]
+  optionsPlacement?: 'bottom' | 'top'
   placeholder?: string
   searchable?: boolean
   value: string
@@ -60,6 +61,7 @@ export function SearchableSelect({
   onChange,
   onQueryChange,
   options,
+  optionsPlacement = 'bottom',
   placeholder = 'Select an option',
   searchable = true,
   value,
@@ -123,7 +125,7 @@ export function SearchableSelect({
           <ComboboxButton className={styles.button} aria-label={`Toggle ${label}`}>
             <span aria-hidden="true">▾</span>
           </ComboboxButton>
-          <ComboboxOptions className={styles.options}>
+          <ComboboxOptions className={classNames(styles.options, optionsPlacement === 'top' && styles.optionsTop)}>
             {loading ? (
               <li className={styles.empty}>Loading options...</li>
             ) : null}
