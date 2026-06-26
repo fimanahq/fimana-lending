@@ -164,6 +164,8 @@ export interface LoanDisbursementRecord {
   totalDeductionsAmountMinor: number
   netReleasedAmountMinor: number
   releaseMethod?: LoanDisbursementMethod | null
+  accountId: string | null
+  transactionId: string | null
   referenceNo: string
   notes: string
 }
@@ -256,6 +258,8 @@ export interface LoanPaymentHistory {
   currency: string
   method: LoanPaymentMethod
   referenceNo: string
+  accountId: string | null
+  transactionId: string | null
   allocationStatus: LoanPaymentAllocationStatus
   allocations: LoanPaymentAllocation[]
   unallocatedAmountMinor: number

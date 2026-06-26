@@ -19,8 +19,45 @@ export interface Settings {
   publicLoanRequestSlug: string | null
   ownerLoanMobileNumber?: string | null
   excludeOwnerLoanInterestFromProfit?: boolean
+  treasuryAccountId: string | null
   createdAt: string | Date
   updatedAt?: string | Date
+}
+
+export interface TreasuryAccount {
+  id: string
+  name: string
+  type: string
+  currency: SettingsCurrency
+  balance: number
+  balanceMinor: number
+  createdAt: string | Date
+  updatedAt?: string | Date
+}
+
+export interface Treasury {
+  isConfigured: boolean
+  account: TreasuryAccount | null
+}
+
+export type TreasuryMovementDirection = 'in' | 'out'
+
+export type TreasuryMovementType = 'lending_disbursement' | 'lending_payment' | 'treasury_interest_earned'
+
+export interface TreasuryMovement {
+  id: string
+  accountId: string
+  type: TreasuryMovementType
+  direction: TreasuryMovementDirection
+  amount: number
+  amountMinor: number
+  signedAmount: number
+  signedAmountMinor: number
+  description: string
+  occurredAt: string | Date
+  reversalOfTransactionId?: string
+  reversedByTransactionId?: string
+  createdAt: string | Date
 }
 
 export interface User {

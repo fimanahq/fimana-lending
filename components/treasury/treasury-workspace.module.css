@@ -1,0 +1,195 @@
+.bankTile {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 10.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 253, 248, 0.12);
+  border-radius: 8px;
+  padding: 1.35rem 1.4rem;
+  background: #052f2f;
+  box-shadow: var(--shadow);
+  color: var(--accent-contrast);
+}
+
+.bankTileContent {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.balanceLabel,
+.bankMetaGrid dt {
+  display: block;
+  color: rgba(255, 253, 248, 0.68);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.balanceValue {
+  display: block;
+  margin-top: 0.25rem;
+  font-family: var(--font-heading);
+  font-size: 2.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bankMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(5rem, max-content));
+  gap: 1.5rem;
+  margin: 1.65rem 0 0;
+}
+
+.bankMetaGrid dd {
+  margin-top: 0.25rem;
+  margin-left: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.bankActions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.bankTile .bankButtonPrimary,
+.bankTile .bankButtonSecondary {
+  border-radius: 4px;
+  min-height: 2.5rem;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.bankTile .bankButtonPrimary {
+  background: var(--accent-strong);
+  color: var(--accent-contrast);
+}
+
+.bankTile .bankButtonSecondary {
+  border-color: rgba(255, 253, 248, 0.08);
+  background: rgba(255, 253, 248, 0.12);
+  color: var(--accent-contrast);
+}
+
+.bankDecoration {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  opacity: 0.12;
+}
+
+.bankDecoration span {
+  display: block;
+  width: 1rem;
+  height: 3.5rem;
+  background: var(--accent-contrast);
+}
+
+.bankDecoration span:first-child {
+  height: 0.55rem;
+  width: 8.5rem;
+}
+
+.formActions {
+  justify-content: flex-start;
+}
+
+.iconButton {
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+}
+
+.amountColumn {
+  text-align: right;
+}
+
+.movementDescription {
+  font-weight: 600;
+}
+
+.positiveAmount,
+.negativeAmount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.positiveAmount {
+  color: var(--success);
+}
+
+.negativeAmount {
+  color: var(--danger);
+}
+
+.statusText {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusText::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #052f2f;
+}
+
+.modalActions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 860px) {
+  .bankTile {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .balanceValue {
+    font-size: 2rem;
+  }
+
+  .bankMetaGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .bankActions {
+    width: 100%;
+  }
+
+  .bankTile .bankButtonPrimary,
+  .bankTile .bankButtonSecondary {
+    flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .bankActions {
+    flex-direction: column;
+  }
+
+  .bankTile .bankButtonPrimary,
+  .bankTile .bankButtonSecondary {
+    width: 100%;
+  }
+}

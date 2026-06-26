@@ -4,6 +4,7 @@ export * from './loan-applications'
 export * from './loans'
 export * from './payments'
 export * from './settings'
+export * from './treasury'
 export {
   deleteLoanAdjustment,
   deleteLoanPayment,

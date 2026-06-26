@@ -13,6 +13,7 @@ import {
   CreditCard,
   FileText,
   HandCoins,
+  Landmark,
   LayoutDashboard,
   Menu,
   PanelLeftClose,
@@ -33,6 +34,7 @@ type IconName =
   | 'applications'
   | 'loans'
   | 'settings'
+  | 'treasury'
   | 'menu'
   | 'panel-left-close'
   | 'panel-left-open'
@@ -53,6 +55,7 @@ const navItems: NavItem[] = [
   { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
   { href: '/collections', label: 'Collections', icon: 'collections' },
+  { href: '/treasury', label: 'Treasury', icon: 'treasury' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
@@ -69,6 +72,7 @@ const pathLabels: Record<string, string> = {
   rules: 'Rules',
   schedule: 'Schedule',
   settings: 'Settings',
+  treasury: 'Treasury',
 }
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
@@ -78,6 +82,7 @@ const icons = {
   borrowers: UsersRound,
   applications: FileText,
   loans: HandCoins,
+  treasury: Landmark,
   payments: CreditCard,
   collections: ReceiptText,
   calculator: Calculator,
@@ -138,6 +143,10 @@ function getPageTitle(pathname: string) {
 
   const exactMatch = navItems.find((item) => item.href === pathname || item.aliases?.includes(pathname))
   if (exactMatch) {
+    if (exactMatch.href === '/treasury') {
+      return 'Lending Treasury'
+    }
+
     return exactMatch.label
   }
 
