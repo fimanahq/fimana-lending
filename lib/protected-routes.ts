@@ -2,7 +2,6 @@ const protectedPaths = [
   '/active-loans',
   '/borrowers',
   '/calculator',
-  '/collections',
   '/dashboard',
   '/loan-applications',
   '/loans',

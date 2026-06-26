@@ -19,7 +19,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
-  ReceiptText,
   Settings,
   UsersRound,
   X,
@@ -28,7 +27,6 @@ import {
 type IconName =
   | 'borrowers'
   | 'calculator'
-  | 'collections'
   | 'overview'
   | 'payments'
   | 'applications'
@@ -54,7 +52,6 @@ const navItems: NavItem[] = [
   { href: '/loan-applications', label: 'Loan Applications', icon: 'applications' },
   { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
-  { href: '/collections', label: 'Collections', icon: 'collections' },
   { href: '/treasury', label: 'Treasury', icon: 'treasury' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
@@ -63,7 +60,6 @@ const pathLabels: Record<string, string> = {
   'active-loans': 'Loans',
   borrowers: 'Borrowers',
   calculator: 'Calculator',
-  collections: 'Collections',
   dashboard: 'Dashboard',
   'loan-applications': 'Loan Applications',
   loans: 'Loans',
@@ -84,7 +80,6 @@ const icons = {
   loans: HandCoins,
   treasury: Landmark,
   payments: CreditCard,
-  collections: ReceiptText,
   calculator: Calculator,
   settings: Settings,
   menu: Menu,
