@@ -81,9 +81,9 @@
   width: 2.55rem;
   height: 1.45rem;
   margin-top: 0.05rem;
-  border: 1px solid var(--border);
+  border: 1px solid #9ca3af;
   border-radius: 999px;
-  background: var(--surface-strong);
+  background: #9ca3af;
   transition: background-color 160ms ease, border-color 160ms ease;
 }
 
@@ -94,7 +94,7 @@
   width: 0.95rem;
   height: 0.95rem;
   border-radius: 50%;
-  background: var(--muted);
+  background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   transition: background-color 160ms ease, transform 160ms ease;
 }
