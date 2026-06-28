@@ -503,7 +503,9 @@ export function DashboardCutoffReceivables({
     })
     : []
   const loansStillToCollect = selectedCutoffLoans.filter((loan) => loan.remainingMinor > 0)
-  const loansPaidForCutoff = selectedCutoffLoans.filter((loan) => loan.remainingMinor <= 0)
+  const loansPaidForCutoff = selectedCutoff?.status === 'overdue'
+    ? []
+    : selectedCutoffLoans.filter((loan) => loan.remainingMinor <= 0)
 
   const closeCutoffDialog = () => {
     setSelectedCutoffDate(null)
