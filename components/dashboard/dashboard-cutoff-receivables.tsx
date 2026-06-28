@@ -3,11 +3,13 @@
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { DashboardCutoffInterestChart, type DashboardInterestMonthlyRow } from '@/components/dashboard/dashboard-cutoff-interest-chart'
+import { DashboardProfitByMonthChart } from '@/components/dashboard/dashboard-profit-by-month-chart'
 import { LoanPaymentDialog } from '@/components/payments'
 import { Dialog, ProtectedLink as Link, Select } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { buildLoanDetailPath } from '@/lib/loan-navigation'
-import type { DashboardCutoffReceivable, DashboardInterestByCutoff } from '@/lib/types/lending'
+import type { DashboardCutoffReceivable, DashboardInterestByCutoff, DashboardMonthlyProfitResponse, DashboardMonthlyProfitRow } from '@/lib/types/lending'
+import { getDashboardMonthlyProfit } from '@/services/dashboard'
 import { PaymentIcon, ViewIcon } from '../shared/table-icons'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -98,6 +100,26 @@ function getCollectedAverageMonthCount(yearKey: string | null, rows: DashboardIn
   }
 
   return lastCollectedMonthCount
+}
+
+function getProfitAverageMonthCount(yearKey: string | null, rows: DashboardMonthlyProfitRow[]) {
+  if (!yearKey) {
+    return 0
+  }
+
+  const lastProfitMonthCount = rows.reduce((latestMonthCount, row) => {
+    if (row.totalProfitMinor <= 0) {
+      return latestMonthCount
+    }
+
+    return Math.max(latestMonthCount, Number(row.monthKey.slice(5, 7)))
+  }, 0)
+
+  if (yearKey === getCurrentYearKey()) {
+    return Math.max(1, Math.min(getCurrentMonthCount(), 12))
+  }
+
+  return lastProfitMonthCount
 }
 
 function getReceivableStatusLabel(status: DashboardCutoffReceivable['status']) {
@@ -421,7 +443,10 @@ export function DashboardCutoffReceivables({
   const [isRefreshingCutoff, startCutoffRefresh] = useTransition()
   const [selectedCutoffDate, setSelectedCutoffDate] = useState<string | null>(null)
   const yearOptions = useMemo(() => Array.from(
-    new Set(interestByCutoff.map((entry) => getYearKey(entry.cutoffDate))),
+    new Set([
+      getCurrentYearKey(),
+      ...interestByCutoff.map((entry) => getYearKey(entry.cutoffDate)),
+    ]),
   ).sort(), [interestByCutoff])
   const [selectedYear, setSelectedYear] = useState(() => {
     const currentYear = getCurrentYearKey()
@@ -431,6 +456,9 @@ export function DashboardCutoffReceivables({
     loanId: string
     label: string
   } | null>(null)
+  const [monthlyProfit, setMonthlyProfit] = useState<DashboardMonthlyProfitResponse | null>(null)
+  const [monthlyProfitError, setMonthlyProfitError] = useState<string | null>(null)
+  const [isMonthlyProfitLoading, setIsMonthlyProfitLoading] = useState(true)
 
   const activeYear = yearOptions.length > 0 ? selectedYear : null
   const selectedYearLabel = activeYear ?? 'selected year'
@@ -449,6 +477,54 @@ export function DashboardCutoffReceivables({
   const averageInterestCollectedMeta = collectedAverageMonthCount > 0
     ? `Through ${collectedAverageMonthCount} mo.`
     : 'No collections yet'
+  const monthlyProfitRows = useMemo<DashboardMonthlyProfitRow[]>(() => (
+    monthlyProfit?.rows.map((row) => {
+      const monthIndex = Number(row.monthKey.slice(5, 7)) - 1
+      return {
+        ...row,
+        monthLabel: formatMonthShortLabel(monthlyProfit.year, monthIndex),
+      }
+    }) ?? []
+  ), [monthlyProfit])
+  const hasMonthlyProfit = monthlyProfitRows.some((row) => row.totalProfitMinor !== 0)
+  const yearCollectedProfitMinor = monthlyProfitRows.reduce((sum, row) => sum + row.totalProfitMinor, 0)
+  const profitAverageMonthCount = getProfitAverageMonthCount(activeYear, monthlyProfitRows)
+  const averageMonthlyProfitMinor = profitAverageMonthCount > 0
+    ? yearCollectedProfitMinor / profitAverageMonthCount
+    : 0
+  const averageMonthlyProfitMeta = profitAverageMonthCount > 0
+    ? `Through ${profitAverageMonthCount} mo.`
+    : 'No collections yet'
+
+  useEffect(() => {
+    let isActive = true
+
+    setIsMonthlyProfitLoading(true)
+    setMonthlyProfitError(null)
+    setMonthlyProfit(null)
+
+    void getDashboardMonthlyProfit(Number(selectedYear))
+      .then((response) => {
+        if (isActive) {
+          setMonthlyProfit(response)
+        }
+      })
+      .catch((error: unknown) => {
+        if (isActive) {
+          setMonthlyProfitError(error instanceof Error ? error.message : 'Unable to load monthly profit')
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsMonthlyProfitLoading(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [selectedYear])
+
   useEffect(() => {
     if (yearOptions.length === 0 || yearOptions.includes(selectedYear)) {
       return
@@ -837,6 +913,63 @@ export function DashboardCutoffReceivables({
               <div>
                 <strong>No cutoff interest for this year</strong>
                 <p>Scheduled interest will appear here when a cutoff exists in the selected year.</p>
+              </div>
+            </div>
+          )}
+        </section>
+      </section>
+
+      <section className={dashboardClass('dashboard-overview__operator')}>
+        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
+          <div>
+            <h2 className="section-title title-offset">Profit by Month</h2>
+            <p className="muted">Realized monthly profit from collected interest and collected penalties.</p>
+          </div>
+        </div>
+
+        <section className={dashboardClass('dashboard-overview__interestCard')} aria-busy={isMonthlyProfitLoading}>
+          <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
+            <div>
+              <h3>Monthly realized profit</h3>
+              <p>Collected interest and penalties across {selectedYearLabel}.</p>
+            </div>
+            {hasMonthlyProfit && monthlyProfit ? (
+              <div className={dashboardClass('dashboard-overview__interestAverageGroup')} aria-label="Monthly profit summary">
+                <article className={dashboardClass('dashboard-overview__interestAverage')}>
+                  <span>Collected profit</span>
+                  <strong>{formatMinorCurrency(yearCollectedProfitMinor, monthlyProfit.currency)}</strong>
+                </article>
+                <article className={dashboardClass('dashboard-overview__interestAverage', 'dashboard-overview__interestAverage--collected')}>
+                  <span>Avg monthly profit</span>
+                  <strong>{formatMinorCurrency(averageMonthlyProfitMinor, monthlyProfit.currency)}</strong>
+                  <small>{averageMonthlyProfitMeta}</small>
+                </article>
+              </div>
+            ) : null}
+          </div>
+          {isMonthlyProfitLoading ? (
+            <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')} role="status" aria-live="polite">
+              <div>
+                <strong>Loading monthly profit</strong>
+                <p>Collecting posted payment totals for {selectedYearLabel}.</p>
+              </div>
+            </div>
+          ) : monthlyProfitError ? (
+            <div className="notice" role="alert">
+              {monthlyProfitError}
+            </div>
+          ) : hasMonthlyProfit && monthlyProfit ? (
+            <DashboardProfitByMonthChart
+              averageMonthlyProfitMinor={averageMonthlyProfitMinor}
+              currency={monthlyProfit.currency}
+              rows={monthlyProfitRows}
+            />
+          ) : (
+            <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+              <span className={dashboardClass('dashboard-overview__emptyIcon', 'dashboard-overview__emptyIcon--text')}>+</span>
+              <div>
+                <strong>No realized profit for this year</strong>
+                <p>Collected interest and penalties will appear here when payments are posted.</p>
               </div>
             </div>
           )}

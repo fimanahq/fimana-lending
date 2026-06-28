@@ -422,6 +422,25 @@ export interface DashboardInterestByCutoff {
   status: DashboardReceivableStatus
 }
 
+export interface DashboardMonthlyProfitSource {
+  monthKey: string
+  interestCollectedMinor: number
+  penaltyCollectedMinor: number
+  totalProfitMinor: number
+  paymentCount: number
+}
+
+export interface DashboardMonthlyProfitResponse {
+  year: number
+  currency: SettingsCurrency
+  timezone: string
+  rows: DashboardMonthlyProfitSource[]
+}
+
+export interface DashboardMonthlyProfitRow extends DashboardMonthlyProfitSource {
+  monthLabel: string
+}
+
 export interface LoanDashboardSummary {
   currency: SettingsCurrency
   startingCapitalMinor: number
