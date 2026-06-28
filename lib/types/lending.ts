@@ -384,6 +384,7 @@ export interface DashboardCutoffReceivableLoan {
   borrowerId: string
   borrowerDisplayName: string
   borrowerNumber: string
+  loanStatus: Extract<LoanStatus, 'active' | 'completed'>
   principalDueMinor: number
   interestDueMinor: number
   penaltyDueMinor: number

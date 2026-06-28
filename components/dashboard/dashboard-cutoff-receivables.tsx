@@ -151,13 +151,19 @@ function getLoanCollectionStatusSortOrder(status: ReturnType<typeof getLoanColle
   return 2
 }
 
+function getLoanStatusLabel(status: DashboardCutoffReceivable['loans'][number]['loanStatus']) {
+  return status === 'completed' ? 'Completed' : 'Active'
+}
+
 function getCutoffDialogDescription(cutoff: DashboardCutoffReceivable, currency: string) {
-  const loanLabel = `${cutoff.loanCount.toLocaleString('en-PH')} loan${cutoff.loanCount === 1 ? '' : 's'}`
+  const loansStillToCollect = cutoff.loans.filter((loan) => loan.remainingMinor > 0).length
+  const loansPaidForCutoff = cutoff.loans.length - loansStillToCollect
+  const loanLabel = `${cutoff.loanCount.toLocaleString('en-PH')} loan${cutoff.loanCount === 1 ? '' : 's'} in this cutoff`
   if (cutoff.remainingMinor <= 0) {
-    return `${loanLabel} in this cutoff already fully collected.`
+    return `${loanLabel}, already fully collected.`
   }
 
-  return `${loanLabel} with ${formatMinorCurrency(cutoff.remainingMinor, currency)} remaining to collect.`
+  return `${loanLabel}: ${loansStillToCollect.toLocaleString('en-PH')} outstanding with ${formatMinorCurrency(cutoff.remainingMinor, currency)} remaining; ${loansPaidForCutoff.toLocaleString('en-PH')} paid for this cutoff.`
 }
 
 function MiniMetric({
@@ -175,6 +181,111 @@ function MiniMetric({
       <strong className={dashboardClass('dashboard-overview__miniValue')}>{value}</strong>
       <span className={dashboardClass('dashboard-overview__miniMeta')}>{meta}</span>
     </article>
+  )
+}
+
+function CutoffLoansTable({
+  currency,
+  description,
+  isRefreshing,
+  loans,
+  onCloseDialog,
+  onSelectPayment,
+  showPaymentAction,
+  title,
+}: {
+  currency: string
+  description: string
+  isRefreshing: boolean
+  loans: DashboardCutoffReceivable['loans']
+  onCloseDialog: () => void
+  onSelectPayment: (loan: DashboardCutoffReceivable['loans'][number]) => void
+  showPaymentAction: boolean
+  title: string
+}) {
+  return (
+    <section className={dashboardClass('dashboard-overview__cutoffDialogTableSection')}>
+      <div className={dashboardClass('dashboard-overview__cutoffDialogTableHeader')}>
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap')}>
+        <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
+          <thead>
+            <tr>
+              <th>Borrower</th>
+              <th>Loan</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Total receivable</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Remaining</th>
+              <th className={dashboardClass('dashboard-overview__tableStatus')}>Cutoff status</th>
+              <th className={dashboardClass('dashboard-overview__tableStatus')}>Loan status</th>
+              {showPaymentAction ? (
+                <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
+              ) : null}
+            </tr>
+          </thead>
+          <tbody>
+            {loans.map((loan) => {
+              const cutoffStatus = getLoanCollectionStatus(loan)
+
+              return (
+                <tr key={loan.loanId}>
+                  <td>
+                    <div className={dashboardClass('dashboard-overview__loanCell')}>
+                      <Link href={`/loans/${loan.loanId}`} className="data-card__titleLink" onClick={onCloseDialog}>
+                        {loan.borrowerDisplayName}
+                      </Link>
+                      <span className="muted micro-copy">{loan.borrowerNumber}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <Link href={`/loans/${loan.loanId}`} className="data-card__titleLink" onClick={onCloseDialog}>
+                      {loan.loanNumber}
+                    </Link>
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(loan.totalReceivableMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(loan.remainingMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableStatus')}>
+                    <span className={dashboardClass(
+                      'dashboard-overview__statusBadge',
+                      `dashboard-overview__loanStatusBadge--${cutoffStatus}`,
+                    )}>
+                      {getLoanCollectionStatusLabel(cutoffStatus)}
+                    </span>
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableStatus')}>
+                    <span className={dashboardClass(
+                      'dashboard-overview__statusBadge',
+                      `dashboard-overview__lifecycleBadge--${loan.loanStatus}`,
+                    )}>
+                      {getLoanStatusLabel(loan.loanStatus)}
+                    </span>
+                  </td>
+                  {showPaymentAction ? (
+                    <td className={dashboardClass('dashboard-overview__tableActions')}>
+                      <button
+                        type="button"
+                        className="button-ghost table-action-icon"
+                        aria-label={`Post payment for ${loan.borrowerDisplayName} ${loan.loanNumber}`}
+                        title="Post payment"
+                        disabled={isRefreshing || loan.remainingMinor <= 0}
+                        onClick={() => onSelectPayment(loan)}
+                      >
+                        <PaymentIcon />
+                      </button>
+                    </td>
+                  ) : null}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
 
@@ -391,6 +502,8 @@ export function DashboardCutoffReceivables({
       return left.loanNumber.localeCompare(right.loanNumber)
     })
     : []
+  const loansStillToCollect = selectedCutoffLoans.filter((loan) => loan.remainingMinor > 0)
+  const loansPaidForCutoff = selectedCutoffLoans.filter((loan) => loan.remainingMinor <= 0)
 
   const closeCutoffDialog = () => {
     setSelectedCutoffDate(null)
@@ -584,97 +697,32 @@ export function DashboardCutoffReceivables({
               />
             </div>
 
-            <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap')}>
-              <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
-                <thead>
-                  <tr>
-                    <th>Borrower</th>
-                    <th>Loan</th>
-                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                      Total receivable
-                    </th>
-                    <th className={dashboardClass('dashboard-overview__tableAmount')}>
-                      Remaining
-                    </th>
-                    <th className={dashboardClass('dashboard-overview__tableStatus')}>
-                      Status
-                    </th>
-                    <th className={dashboardClass('dashboard-overview__tableActions')}>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedCutoffLoans.map((loan) => {
-                    const loanStatus = getLoanCollectionStatus(loan)
+            <CutoffLoansTable
+              currency={currency}
+              description="Unpaid and partially paid balances requiring collection."
+              isRefreshing={isRefreshingCutoff}
+              loans={loansStillToCollect}
+              onCloseDialog={closeCutoffDialog}
+              onSelectPayment={(loan) => setSelectedLoanForPayment({
+                loanId: loan.loanId,
+                label: `${loan.borrowerDisplayName} · ${loan.loanNumber}`,
+              })}
+              showPaymentAction
+              title="Outstanding for this cutoff"
+            />
 
-                    return (
-                      <tr key={loan.loanId}>
-                        <td>
-                          <div className={dashboardClass('dashboard-overview__loanCell')}>
-                            <Link
-                              href={`/loans/${loan.loanId}`}
-                              className="data-card__titleLink"
-                              onClick={closeCutoffDialog}
-                            >
-                              {loan.borrowerDisplayName}
-                            </Link>
-                            <span className="muted micro-copy">
-                              {loan.borrowerNumber}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <Link
-                            href={`/loans/${loan.loanId}`}
-                            className="data-card__titleLink"
-                            onClick={closeCutoffDialog}
-                          >
-                            {loan.loanNumber}
-                          </Link>
-                        </td>
-                        <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                          {formatMinorCurrency(
-                            loan.totalReceivableMinor,
-                            currency,
-                          )}
-                        </td>
-                        <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                          {formatMinorCurrency(loan.remainingMinor, currency)}
-                        </td>
-                        <td className={dashboardClass('dashboard-overview__tableStatus')}>
-                          <span
-                            className={dashboardClass(
-                              'dashboard-overview__statusBadge',
-                              `dashboard-overview__loanStatusBadge--${loanStatus}`,
-                            )}
-                          >
-                            {getLoanCollectionStatusLabel(loanStatus)}
-                          </span>
-                        </td>
-                        <td className={dashboardClass('dashboard-overview__tableActions')}>
-                          <button
-                            type="button"
-                            className="button-ghost table-action-icon"
-                            aria-label={`Post payment for ${loan.borrowerDisplayName} ${loan.loanNumber}`}
-                            title="Post payment"
-                            disabled={isRefreshingCutoff || loan.remainingMinor <= 0}
-                            onClick={() => {
-                              setSelectedLoanForPayment({
-                                loanId: loan.loanId,
-                                label: `${loan.borrowerDisplayName} · ${loan.loanNumber}`,
-                              })
-                            }}
-                          >
-                            <PaymentIcon />
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
+            {loansPaidForCutoff.length > 0 ? (
+              <CutoffLoansTable
+                currency={currency}
+                description="Cutoff balances already collected, including active and completed loans."
+                isRefreshing={isRefreshingCutoff}
+                loans={loansPaidForCutoff}
+                onCloseDialog={closeCutoffDialog}
+                onSelectPayment={() => undefined}
+                showPaymentAction={false}
+                title="Paid for this cutoff"
+              />
+            ) : null}
           </div>
         ) : selectedCutoffDate ? (
           <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>

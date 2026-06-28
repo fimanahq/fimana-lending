@@ -1053,6 +1053,16 @@
   color: #9f3826;
 }
 
+.dashboard-overview__lifecycleBadge--active {
+  background: rgba(58, 103, 83, 0.1);
+  color: var(--success);
+}
+
+.dashboard-overview__lifecycleBadge--completed {
+  background: rgba(91, 82, 126, 0.12);
+  color: #51466f;
+}
+
 .dashboard-overview__emptyIcon--text {
   display: inline-flex;
   width: 3rem;
@@ -1066,8 +1076,10 @@
   font-weight: 700;
 }
 
-.dashboard-overview__cutoffDialog {
-  width: min(70rem, 100%);
+.dashboard-overview__cutoffDialog[role="dialog"] {
+  width: min(96rem, 100%);
+  height: calc(100dvh - 2rem);
+  max-height: calc(100dvh - 2rem);
 }
 
 .dashboard-overview__cutoffDialogContent {
@@ -1087,6 +1099,26 @@
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.68);
   border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__cutoffDialogTableSection {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dashboard-overview__cutoffDialogTableHeader h3,
+.dashboard-overview__cutoffDialogTableHeader p {
+  margin: 0;
+}
+
+.dashboard-overview__cutoffDialogTableHeader {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.dashboard-overview__cutoffDialogTableHeader p {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .dashboard-overview__table--compact th,
