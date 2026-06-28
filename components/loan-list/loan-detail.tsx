@@ -23,6 +23,7 @@ import {
   useToast,
 } from '@/components/shared'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import type { LoanDetailBackNavigation } from '@/lib/loan-navigation'
 import { getStatusClassName } from '@/lib/status'
 import type { Borrower, LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
 import { getSettings, listLoanBorrowers } from '@/services'
@@ -40,6 +41,7 @@ import styles from './loan-list.module.css'
 
 interface LoanDetailProps {
   loanId: string
+  backNavigation: LoanDetailBackNavigation
 }
 
 const PAYMENT_TOLERANCE_MINOR = 500
@@ -151,7 +153,7 @@ const paymentMethodOptions: Array<{ value: LoanPaymentMethod; label: string }> =
   { value: 'internal_offset', label: 'Internal offset' },
 ]
 
-export function LoanDetail({ loanId }: LoanDetailProps) {
+export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
   const { dismiss, loading: showLoading, update } = useToast()
   const [loan, setLoan] = useState<LoanRecord | null>(null)
   const [loading, setLoading] = useState(true)
@@ -237,7 +239,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       <ErrorState
         title="Unable to load loan"
         description={error}
-        action={<Link href="/loan-applications" className="button-secondary">Back to applications</Link>}
+        action={<Link href={backNavigation.href} replace className="button-secondary">{backNavigation.label}</Link>}
       />
     )
   }
@@ -247,7 +249,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
       <EmptyState
         title="Loan not found"
         description="The loan record could not be found."
-        action={<Link href="/loan-applications" className="button-secondary">Back to applications</Link>}
+        action={<Link href={backNavigation.href} replace className="button-secondary">{backNavigation.label}</Link>}
       />
     )
   }
@@ -693,7 +695,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
           <Button variant="secondary" onClick={() => setStatusAction('reopen')}>Reopen Loan</Button>
         ) : null}
         <Link href={`/loan-applications/${loan.loanApplicationId}`} className="button-secondary">View application</Link>
-        <Link href="/loan-applications" className="button-ghost">Back to applications</Link>
+        <Link href={backNavigation.href} replace className="button-ghost">{backNavigation.label}</Link>
       </div>
 
       {error ? (

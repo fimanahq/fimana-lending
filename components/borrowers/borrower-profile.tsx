@@ -15,6 +15,7 @@ import {
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
 import { EditIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import { getStatusClassName } from '@/lib/status'
 import type { Borrower, LoanRecord, LoanStatus } from '@/lib/types/lending'
 import { getBorrower, listLoansByBorrowerId } from '@/services'
@@ -281,7 +282,12 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                   {borrowerLoans.map((loan, index) => (
                     <tr key={`${loan.id ?? loan.loanNumber ?? 'loan'}-${loan.createdAt}-${index}`}>
                       <td>
-                        <Link href={`/loans/${loan.id}`} className="data-card__titleLink">{loan.loanNumber}</Link>
+                        <Link
+                          href={buildLoanDetailPath(loan.id, `/borrowers/${borrowerId}`)}
+                          className="data-card__titleLink"
+                        >
+                          {loan.loanNumber}
+                        </Link>
                         <div className="muted micro-copy">Issued {formatDate(loan.createdAt)}</div>
                       </td>
                       <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>

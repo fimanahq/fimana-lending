@@ -1,11 +1,17 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import {
+  buildLoanDetailPath,
+  buildLoanListPath,
+  type LoanListFilter,
+  type LoanListState,
+} from '@/lib/loan-navigation'
 import { getStatusClassName } from '@/lib/status'
 import type { LoanRecord, LoanStatus } from '@/lib/types/lending'
 import { deleteLoan, listLoanRecords } from '@/services'
@@ -13,13 +19,10 @@ import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 import styles from './loan-list.module.css'
 
-type LoanListFilter = 'all' | 'active' | 'completed' | 'pending_disbursement' | 'defaulted'
-
 const PAGE_SIZE = 20
 
 const STATUS_FILTERS: Array<{ label: string; value: LoanListFilter }> = [
   { label: 'Active', value: 'active' },
-  { label: 'Pending', value: 'pending_disbursement' },
   { label: 'Completed', value: 'completed' },
   { label: 'Defaulted', value: 'defaulted' },
   { label: 'All', value: 'all' },
@@ -54,53 +57,109 @@ function formatLoanNextDue(loan: LoanRecord) {
   return 'Not scheduled'
 }
 
-export function LoansList() {
+interface LoansListProps {
+  listState: LoanListState
+}
+
+export function LoansList({ listState }: LoansListProps) {
   const router = useRouter()
   const { dismiss, loading: showLoading, update } = useToast()
   const [loans, setLoans] = useState<LoanRecord[]>([])
-  const [activeFilter, setActiveFilter] = useState<LoanListFilter>('active')
-  const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [page, setPage] = useState(1)
+  const [query, setQuery] = useState(listState.search)
   const [totalPages, setTotalPages] = useState(1)
   const [totalLoans, setTotalLoans] = useState(0)
+  const { page, status: activeFilter, search } = listState
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [paymentLoanId, setPaymentLoanId] = useState('')
   const [deleteLoanId, setDeleteLoanId] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const searchNavigationTimeoutRef = useRef<number | null>(null)
+  const loanRequestSequenceRef = useRef(0)
+
+  const cancelPendingSearchNavigation = useCallback(() => {
+    if (searchNavigationTimeoutRef.current === null) {
+      return
+    }
+
+    window.clearTimeout(searchNavigationTimeoutRef.current)
+    searchNavigationTimeoutRef.current = null
+  }, [])
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedQuery(query.trim())
-      setPage(1)
-    }, 300)
+    setQuery(search)
+  }, [search])
 
-    return () => window.clearTimeout(timeoutId)
-  }, [query])
+  useEffect(() => {
+    cancelPendingSearchNavigation()
+
+    const normalizedQuery = query.trim()
+    if (normalizedQuery === search) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      searchNavigationTimeoutRef.current = null
+      router.replace(buildLoanListPath({
+        page: 1,
+        status: activeFilter,
+        search: normalizedQuery,
+      }), { scroll: false })
+    }, 300)
+    searchNavigationTimeoutRef.current = timeoutId
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      if (searchNavigationTimeoutRef.current === timeoutId) {
+        searchNavigationTimeoutRef.current = null
+      }
+    }
+  }, [activeFilter, cancelPendingSearchNavigation, page, query, router, search])
 
   const loadLoans = useCallback(async () => {
+    const requestSequence = ++loanRequestSequenceRef.current
     setLoading(true)
     setError('')
 
     try {
       const response = await listLoanRecords({
         status: activeFilter === 'all' ? undefined : activeFilter,
-        search: debouncedQuery,
+        search,
         page,
         itemsPerPage: PAGE_SIZE,
       })
 
+      if (requestSequence !== loanRequestSequenceRef.current) {
+        return
+      }
+
+      const nextTotalPages = Math.max(response.totalPages, 1)
+      if (page > nextTotalPages) {
+        cancelPendingSearchNavigation()
+        router.replace(buildLoanListPath({
+          page: nextTotalPages,
+          status: activeFilter,
+          search,
+        }), { scroll: false })
+        return
+      }
+
       setLoans(response.items)
       setTotalLoans(response.total)
-      setTotalPages(Math.max(response.totalPages, 1))
+      setTotalPages(nextTotalPages)
     } catch (caughtError) {
+      if (requestSequence !== loanRequestSequenceRef.current) {
+        return
+      }
+
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load loans')
     } finally {
-      setLoading(false)
+      if (requestSequence === loanRequestSequenceRef.current) {
+        setLoading(false)
+      }
     }
-  }, [activeFilter, debouncedQuery, page])
+  }, [activeFilter, cancelPendingSearchNavigation, page, router, search])
 
   const handleDeleteLoan = async () => {
     if (!deleteLoanId) return
@@ -114,7 +173,12 @@ export function LoansList() {
       update(toastId, 'Loan deleted.', { tone: 'success', title: 'Success' })
 
       if (loans.length === 1 && page > 1) {
-        setPage((current) => Math.max(current - 1, 1))
+        cancelPendingSearchNavigation()
+        router.replace(buildLoanListPath({
+          page: page - 1,
+          status: activeFilter,
+          search,
+        }), { scroll: false })
       } else {
         await loadLoans()
       }
@@ -128,13 +192,19 @@ export function LoansList() {
 
   useEffect(() => {
     void loadLoans()
+
+    return () => {
+      loanRequestSequenceRef.current += 1
+    }
   }, [loadLoans])
 
   const selectedPaymentLoan = loans.find((loan) => loan.id === paymentLoanId) || null
   const selectedDeleteLoan = loans.find((loan) => loan.id === deleteLoanId) || null
+  const currentListPath = buildLoanListPath(listState)
 
   const openLoan = (loanId: string) => {
-    router.push(`/loans/${loanId}`)
+    cancelPendingSearchNavigation()
+    router.push(buildLoanDetailPath(loanId, currentListPath))
   }
 
   const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, loanId: string) => {
@@ -144,8 +214,18 @@ export function LoansList() {
     }
   }
 
+  const handleLinkNavigationCapture = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return
+    }
+
+    if ((event.target as Element).closest('a[href]')) {
+      cancelPendingSearchNavigation()
+    }
+  }
+
   return (
-    <div className="stack">
+    <div className="stack" onClickCapture={handleLinkNavigationCapture}>
       <div className={classNames('card panel', toolbarStyles.toolbar)}>
         <Input
           id="loan-borrower-search"
@@ -163,8 +243,12 @@ export function LoansList() {
             type="button"
             className={activeFilter === status.value ? 'is-active' : ''}
             onClick={() => {
-              setActiveFilter(status.value)
-              setPage(1)
+              cancelPendingSearchNavigation()
+              router.push(buildLoanListPath({
+                page: 1,
+                status: status.value,
+                search: query,
+              }), { scroll: false })
             }}
           >
             {status.label}
@@ -249,7 +333,7 @@ export function LoansList() {
                     <td>
                       <div className={styles.actions}>
                         <Link
-                          href={`/loans/${loan.id}`}
+                          href={buildLoanDetailPath(loan.id, currentListPath)}
                           className={classNames('button-ghost table-action-icon', styles.iconAction)}
                           aria-label={`View details for ${loan.loanNumber}`}
                           title="View details"
@@ -298,7 +382,11 @@ export function LoansList() {
             totalItems={totalLoans}
             itemLabel="loans"
             loading={loading}
-            onPageChange={setPage}
+            getPageHref={(nextPage) => buildLoanListPath({
+              page: nextPage,
+              status: activeFilter,
+              search,
+            })}
           />
         </>
       ) : null}

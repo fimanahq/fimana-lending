@@ -6,6 +6,7 @@ import { DashboardCutoffInterestChart, type DashboardInterestMonthlyRow } from '
 import { LoanPaymentDialog } from '@/components/payments'
 import { Dialog, ProtectedLink as Link, Select } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import type { DashboardCutoffReceivable, DashboardInterestByCutoff } from '@/lib/types/lending'
 import { PaymentIcon, ViewIcon } from '../shared/table-icons'
 import dashboardStyles from './dashboard.module.css'
@@ -232,14 +233,14 @@ function CutoffLoansTable({
                 <tr key={loan.loanId}>
                   <td>
                     <div className={dashboardClass('dashboard-overview__loanCell')}>
-                      <Link href={`/loans/${loan.loanId}`} className="data-card__titleLink" onClick={onCloseDialog}>
+                      <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onCloseDialog}>
                         {loan.borrowerDisplayName}
                       </Link>
                       <span className="muted micro-copy">{loan.borrowerNumber}</span>
                     </div>
                   </td>
                   <td>
-                    <Link href={`/loans/${loan.loanId}`} className="data-card__titleLink" onClick={onCloseDialog}>
+                    <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onCloseDialog}>
                       {loan.loanNumber}
                     </Link>
                   </td>

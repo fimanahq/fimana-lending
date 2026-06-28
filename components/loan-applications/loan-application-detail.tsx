@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { LoanApplicationRiskMeter } from '@/components/loan-applications/loan-application-risk-meter'
 import { calculateApplicationPreviewMonthlyPayment } from '@/lib/borrower-risk'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
+import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
 import { getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
@@ -136,7 +137,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
       setApprovalReferralRewardAmount(updated.referral?.rewardAmountMinor ? String(updated.referral.rewardAmountMinor / 100) : '')
       if (status === 'approved' && updated.loanId) {
         update(toastId, 'Application approved.', { tone: 'success', title: 'Success' })
-        router.push(`/loans/${updated.loanId}`)
+        router.push(buildLoanDetailPath(updated.loanId, `/loan-applications/${application.id}`))
         return
       }
 
@@ -230,7 +231,14 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   return (
     <div className="stack">
       <div className="inline-actions">
-        {application.loanId ? <Link href={`/loans/${application.loanId}`} className="button">Open loan</Link> : null}
+        {application.loanId ? (
+          <Link
+            href={buildLoanDetailPath(application.loanId, `/loan-applications/${application.id}`)}
+            className="button"
+          >
+            Open loan
+          </Link>
+        ) : null}
         <Link href="/loan-applications" className="button-secondary">Back</Link>
       </div>
       {error ? <ErrorState title="Unable to update application" description={error} /> : null}

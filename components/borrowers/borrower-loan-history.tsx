@@ -1,8 +1,10 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { Card, EmptyState, ProtectedLink as Link, TableShell } from '@/components/shared'
 import { OpenLoanIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
+import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import { getStatusClassName } from '@/lib/status'
 import type { Loan, LoanStatus } from '@/lib/types/lending'
 import borrowerStyles from './borrowers.module.css'
@@ -38,6 +40,8 @@ function formatLoanNextDue(loan: Loan) {
 }
 
 export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistoryProps) {
+  const pathname = usePathname()
+
   const activeLoans = loans.filter((loan) => loan.status === 'active')
   const defaultedLoans = loans.filter((loan) => loan.status === 'defaulted')
   const completedLoans = loans.filter((loan) => loan.status === 'completed')
@@ -109,7 +113,7 @@ export function BorrowerLoanHistory({ borrowerName, loans }: BorrowerLoanHistory
                     <td><span className={getStatusClassName(loan.status)}>{formatLoanStatus(loan.status)}</span></td>
                     <td>
                       <Link
-                        href={`/loans/${loan._id}`}
+                        href={buildLoanDetailPath(loan._id, pathname || '/borrowers')}
                         className="button-ghost table-action-icon"
                         aria-label={`Open loan ${loan._id.slice(-6)}`}
                         title="Open loan"
