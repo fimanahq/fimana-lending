@@ -149,10 +149,10 @@ export function LoansList() {
       <div className={classNames('card panel', toolbarStyles.toolbar)}>
         <Input
           id="loan-borrower-search"
-          label="Search borrowers"
+          label="Search loans"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, borrower number, mobile, or email"
+          placeholder="Loan number, borrower name, mobile, or email"
         />
       </div>
 
