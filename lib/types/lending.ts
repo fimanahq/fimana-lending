@@ -424,6 +424,7 @@ export interface DashboardInterestByCutoff {
 
 export interface DashboardMonthlyProfitSource {
   monthKey: string
+  interestDueMinor: number
   interestCollectedMinor: number
   penaltyCollectedMinor: number
   totalProfitMinor: number

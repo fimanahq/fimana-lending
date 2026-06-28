@@ -486,7 +486,9 @@ export function DashboardCutoffReceivables({
       }
     }) ?? []
   ), [monthlyProfit])
-  const hasMonthlyProfit = monthlyProfitRows.some((row) => row.totalProfitMinor !== 0)
+  const hasMonthlyProfit = monthlyProfitRows.some((row) => (
+    row.interestDueMinor !== 0 || row.totalProfitMinor !== 0
+  ))
   const yearCollectedProfitMinor = monthlyProfitRows.reduce((sum, row) => sum + row.totalProfitMinor, 0)
   const profitAverageMonthCount = getProfitAverageMonthCount(activeYear, monthlyProfitRows)
   const averageMonthlyProfitMinor = profitAverageMonthCount > 0
@@ -931,7 +933,7 @@ export function DashboardCutoffReceivables({
           <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
             <div>
               <h3>Monthly realized profit</h3>
-              <p>Collected interest and penalties across {selectedYearLabel}.</p>
+              <p>Scheduled interest due, collected interest, and penalties across {selectedYearLabel}.</p>
             </div>
             {hasMonthlyProfit && monthlyProfit ? (
               <div className={dashboardClass('dashboard-overview__interestAverageGroup')} aria-label="Monthly profit summary">

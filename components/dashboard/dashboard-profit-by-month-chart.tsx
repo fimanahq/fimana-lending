@@ -50,7 +50,7 @@ export function DashboardProfitByMonthChart({
   rows: DashboardMonthlyProfitRow[]
 }) {
   const ariaLabel = rows.map((row) => (
-    `${row.monthLabel}: ${formatMinorCurrency(row.interestCollectedMinor, currency)} interest, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
+    `${row.monthLabel}: ${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
   )).join('. ')
 
   return (
@@ -105,6 +105,17 @@ export function DashboardProfitByMonthChart({
             fill="#b96d2a"
             stackId="profit"
             radius={[8, 8, 0, 0]}
+            isAnimationActive={false}
+          />
+          <Line
+            dataKey="interestDueMinor"
+            name="Interest due"
+            type="monotone"
+            stroke="#7f5a2f"
+            strokeDasharray="6 4"
+            strokeWidth={2}
+            dot={{ fill: '#7f5a2f', r: 3 }}
+            activeDot={{ r: 5 }}
             isAnimationActive={false}
           />
           <Line
