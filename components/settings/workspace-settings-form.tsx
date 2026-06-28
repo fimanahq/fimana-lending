@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Button, CardWrapper, Checkbox, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect, useToast } from '@/components/shared'
+import { Button, CardWrapper, Checkbox, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect, Switch, useToast } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types/shared'
 import { getSettings, updateSettings } from '@/services'
@@ -13,6 +13,7 @@ interface SettingsFormState {
   publicLoanRequestSlug: string
   ownerLoanMobileNumber: string
   excludeOwnerLoanInterestFromProfit: boolean
+  includeLoanPaymentsInTreasuryByDefault: boolean
 }
 
 type SettingsFormErrors = Partial<Record<keyof SettingsFormState, string>>
@@ -25,6 +26,7 @@ function buildFormState(settings: Settings): SettingsFormState {
     publicLoanRequestSlug: settings.publicLoanRequestSlug ?? '',
     ownerLoanMobileNumber: settings.ownerLoanMobileNumber ?? '+63',
     excludeOwnerLoanInterestFromProfit: settings.excludeOwnerLoanInterestFromProfit ?? false,
+    includeLoanPaymentsInTreasuryByDefault: settings.includeLoanPaymentsInTreasuryByDefault ?? true,
   }
 }
 
@@ -223,6 +225,7 @@ export function WorkspaceSettingsForm() {
     || form.publicLoanRequestSlug !== initialForm.publicLoanRequestSlug
     || form.ownerLoanMobileNumber !== initialForm.ownerLoanMobileNumber
     || form.excludeOwnerLoanInterestFromProfit !== initialForm.excludeOwnerLoanInterestFromProfit
+    || form.includeLoanPaymentsInTreasuryByDefault !== initialForm.includeLoanPaymentsInTreasuryByDefault
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -246,6 +249,7 @@ export function WorkspaceSettingsForm() {
         publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
         ownerLoanMobileNumber: ownerLoanMobileNumber && ownerLoanMobileNumber !== '+63' ? ownerLoanMobileNumber : null,
         excludeOwnerLoanInterestFromProfit: form.excludeOwnerLoanInterestFromProfit,
+        includeLoanPaymentsInTreasuryByDefault: form.includeLoanPaymentsInTreasuryByDefault,
       })
 
       setSettings(nextSettings)
@@ -372,6 +376,16 @@ export function WorkspaceSettingsForm() {
                 onChange={(event) => updateField('excludeOwnerLoanInterestFromProfit', event.target.checked)}
               />
             </div>
+          </CardWrapper>
+
+          <CardWrapper title="Treasury payment defaults">
+            <Switch
+              id="workspace-include-loan-payments-in-treasury"
+              label="Include posted payments in Treasury by default"
+              description="When enabled, new payment forms start with Treasury inclusion selected. You can override this for each payment before posting."
+              checked={form.includeLoanPaymentsInTreasuryByDefault}
+              onChange={(event) => updateField('includeLoanPaymentsInTreasuryByDefault', event.target.checked)}
+            />
           </CardWrapper>
         </div>
 

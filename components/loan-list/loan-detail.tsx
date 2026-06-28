@@ -17,6 +17,7 @@ import {
   LoadingState,
   ProtectedLink as Link,
   SearchableSelect,
+  Switch,
   TableShell,
   Textarea,
   useToast,
@@ -173,6 +174,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<LoanPaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentIncludeInTreasury, setPaymentIncludeInTreasury] = useState(true)
   const [adjustmentDate, setAdjustmentDate] = useState('')
   const [adjustmentAmount, setAdjustmentAmount] = useState('')
   const [adjustmentReason, setAdjustmentReason] = useState('')
@@ -395,6 +397,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
     setPaymentAmount((payment.amountMinor / 100).toFixed(2))
     setPaymentMethod(payment.method)
     setPaymentReference(payment.referenceNo)
+    setPaymentIncludeInTreasury(Boolean(payment.accountId && payment.transactionId))
     setPaymentActionError('')
   }
 
@@ -435,6 +438,7 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
         amountMinor,
         method: paymentMethod,
         referenceNo: paymentReference.trim() || undefined,
+        includeInTreasury: paymentIncludeInTreasury,
       })
       setLoan(response.loan)
       setPayments(response.payments)
@@ -1323,6 +1327,13 @@ export function LoanDetail({ loanId }: LoanDetailProps) {
               placeholder="Optional"
             />
           </div>
+          <Switch
+            id="edit-payment-include-in-treasury"
+            label="Record payment in Treasury"
+            checked={paymentIncludeInTreasury}
+            onChange={(event) => setPaymentIncludeInTreasury(event.target.checked)}
+            disabled={submittingPaymentEdit}
+          />
           {editPaymentPreviewMessage ? (
             <div className={hasLargeEditPaymentOverpayment ? 'notice danger' : 'notice'}>
               {editPaymentPreviewMessage}

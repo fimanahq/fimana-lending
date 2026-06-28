@@ -58,6 +58,8 @@ export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement
   error?: string
 }
 
+export type SwitchProps = CheckboxProps
+
 function getButtonClassName(variant: ButtonVariant, size: ButtonSize, fullWidth?: boolean, className?: string) {
   const variantClassName = {
     danger: 'button-secondary ui-button--danger',
@@ -212,6 +214,39 @@ export function Checkbox({
         {description ? <small id={`${id}-details`}>{description}</small> : null}
         {error && !description ? <small id={`${id}-details`} className={styles.fieldError}>{error}</small> : null}
         {error && description ? <small className={styles.fieldError}>{error}</small> : null}
+      </label>
+    </div>
+  )
+}
+
+export function Switch({
+  className,
+  description,
+  error,
+  id,
+  label,
+  ...props
+}: SwitchProps) {
+  return (
+    <div className={classNames(styles.switch, className)}>
+      <input
+        id={id}
+        type="checkbox"
+        role="switch"
+        aria-describedby={description || error ? `${id}-details` : undefined}
+        aria-invalid={error ? true : undefined}
+        {...props}
+      />
+      <label htmlFor={id}>
+        <span className={styles.switchTrack} aria-hidden="true">
+          <span className={styles.switchThumb} />
+        </span>
+        <span className={styles.switchCopy}>
+          <span>{label}</span>
+          {description ? <small id={`${id}-details`}>{description}</small> : null}
+          {error && !description ? <small id={`${id}-details`} className={styles.fieldError}>{error}</small> : null}
+          {error && description ? <small className={styles.fieldError}>{error}</small> : null}
+        </span>
       </label>
     </div>
   )

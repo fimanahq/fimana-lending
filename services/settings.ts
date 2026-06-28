@@ -8,6 +8,7 @@ export interface UpdateSettingsInput {
   publicLoanRequestSlug?: string | null
   ownerLoanMobileNumber?: string | null
   excludeOwnerLoanInterestFromProfit?: boolean
+  includeLoanPaymentsInTreasuryByDefault?: boolean
 }
 
 export function getSettings() {

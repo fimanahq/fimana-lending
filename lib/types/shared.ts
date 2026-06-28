@@ -19,6 +19,7 @@ export interface Settings {
   publicLoanRequestSlug: string | null
   ownerLoanMobileNumber?: string | null
   excludeOwnerLoanInterestFromProfit?: boolean
+  includeLoanPaymentsInTreasuryByDefault: boolean
   treasuryAccountId: string | null
   createdAt: string | Date
   updatedAt?: string | Date

@@ -276,6 +276,7 @@ export interface PostLoanPaymentInput {
   amountMinor: number
   method: LoanPaymentMethod
   referenceNo?: string
+  includeInTreasury?: boolean
 }
 
 export interface UpdateLoanPaymentInput {
@@ -283,6 +284,7 @@ export interface UpdateLoanPaymentInput {
   amountMinor: number
   method: LoanPaymentMethod
   referenceNo?: string
+  includeInTreasury?: boolean
 }
 
 export interface LoanPaymentPostResponse {

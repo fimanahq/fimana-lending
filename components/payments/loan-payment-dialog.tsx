@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, TableShell, useToast } from '@/components/shared'
+import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, Switch, TableShell, useToast } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type {
@@ -10,7 +10,7 @@ import type {
   LoanPaymentMethod,
   LoanRecord,
 } from '@/lib/types/lending'
-import { getLoanPaymentDetail, postLoanPayment } from '@/services'
+import { getLoanPaymentDetail, getSettings, postLoanPayment } from '@/services'
 import styles from './loan-dialogs.module.css'
 
 const PAYMENT_TOLERANCE_MINOR = 500
@@ -48,6 +48,11 @@ function toAmountMinor(amount: string) {
   }
 
   return Math.round(parsed * 100)
+}
+
+function getCurrentCutoffOutstandingValue(loan: LoanRecord) {
+  const currentCutoff = (loan.schedule ?? []).find((row) => row.outstandingTotalAmountMinor > 0)
+  return currentCutoff ? (currentCutoff.outstandingTotalAmountMinor / 100).toFixed(2) : ''
 }
 
 function LoanSummary({ loan }: { loan: LoanRecord }) {
@@ -156,6 +161,7 @@ export function LoanPaymentDialog({
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<LoanPaymentMethod>('cash')
   const [referenceNo, setReferenceNo] = useState('')
+  const [includeInTreasury, setIncludeInTreasury] = useState(true)
 
   const loadDetail = useCallback(async () => {
     if (!loanId) {
@@ -167,7 +173,13 @@ export function LoanPaymentDialog({
     setDetailError('')
 
     try {
-      setDetail(await getLoanPaymentDetail(loanId))
+      const [nextDetail, settings] = await Promise.all([
+        getLoanPaymentDetail(loanId),
+        getSettings(),
+      ])
+      setDetail(nextDetail)
+      setAmount(getCurrentCutoffOutstandingValue(nextDetail.loan))
+      setIncludeInTreasury(settings.includeLoanPaymentsInTreasuryByDefault ?? true)
     } catch (caughtError) {
       setDetailError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan payment detail')
     } finally {
@@ -189,6 +201,7 @@ export function LoanPaymentDialog({
       setAmount('')
       setMethod('cash')
       setReferenceNo('')
+      setIncludeInTreasury(true)
       setSubmitError('')
     }
   }, [open])
@@ -222,13 +235,14 @@ export function LoanPaymentDialog({
         amountMinor,
         method,
         referenceNo: referenceNo.trim() || undefined,
+        includeInTreasury,
       })
 
       setDetail({
         loan: response.loan,
         payments: response.payments,
       })
-      setAmount('')
+      setAmount(getCurrentCutoffOutstandingValue(response.loan))
       setReferenceNo('')
       setSubmitError('')
       await onPaymentPosted?.(response.loan)
@@ -340,6 +354,13 @@ export function LoanPaymentDialog({
                   placeholder="Optional"
                 />
               </div>
+
+              <Switch
+                id="payment-include-in-treasury"
+                label="Record payment in Treasury"
+                checked={includeInTreasury}
+                onChange={(event) => setIncludeInTreasury(event.target.checked)}
+              />
 
               {paymentPreviewMessage ? (
                 <div className={hasLargeOverpayment ? 'notice danger' : 'notice'}>
