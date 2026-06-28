@@ -167,8 +167,14 @@ function derivePaymentDaysFromStartDate(startDate: string, paymentType: LoanAppl
     return [firstDay]
   }
 
+  const lastDayOfMonth = new Date(Date.UTC(parts.year, parts.month, 0, 12)).getUTCDate()
+
   if (parts.day === 15) {
     return [firstDay, 'month_end']
+  }
+
+  if (parts.day === lastDayOfMonth) {
+    return ['15', 'month_end']
   }
 
   const startDateValue = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12))
