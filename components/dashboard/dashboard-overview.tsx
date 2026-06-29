@@ -25,24 +25,6 @@ const DashboardPortfolioChart = dynamic(
   },
 )
 
-const DashboardCutoffReceivables = dynamic(
-  () => import('@/components/dashboard/dashboard-cutoff-receivables').then((module) => module.DashboardCutoffReceivables),
-  {
-    loading: () => (
-      <section className={dashboardClass('dashboard-overview__operator')}>
-        <div className={dashboardClass('dashboard-overview__tableCard', 'dashboard-overview__deferredBlock')}>
-          <div className="ui-skeleton" aria-hidden="true">
-            <span className="ui-skeleton__line" />
-            <span className="ui-skeleton__line" />
-            <span className="ui-skeleton__line" />
-            <span className="ui-skeleton__line" />
-          </div>
-        </div>
-      </section>
-    ),
-  },
-)
-
 const DashboardProfitGrowth = dynamic(
   () => import('@/components/dashboard/dashboard-profit-growth').then((module) => module.DashboardProfitGrowth),
   {
@@ -630,12 +612,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             summary={summary}
           />
         </div>
-
-        <DashboardCutoffReceivables
-          currency={dashboardCurrency}
-          currentCutoffReceivable={summary.currentCutoffReceivable}
-          receivableByCutoff={summary.receivableByCutoff}
-        />
 
         <DashboardProfitGrowth
           data={profitGrowth}

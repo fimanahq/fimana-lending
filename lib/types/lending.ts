@@ -412,6 +412,51 @@ export interface DashboardCutoffReceivable {
   loans: DashboardCutoffReceivableLoan[]
 }
 
+export interface CollectionsSummaryTotals {
+  dueNowMinor: number
+  upcomingMinor: number
+  overdueMinor: number
+  remainingToCollectMinor: number
+}
+
+export interface CollectionsDefaultedLoan {
+  loanId: string
+  loanNumber: string
+  borrowerId: string
+  borrowerDisplayName: string
+  borrowerNumber: string
+  defaultedAt: string | null
+  writtenOffPrincipalMinor: number
+  collectedProfitMinor: number
+  netDefaultLossMinor: number
+}
+
+export type CollectionsSection = 'current-upcoming' | 'overdue' | 'closed' | 'defaulted'
+
+export interface CollectionsPagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface CollectionsSummary {
+  currency: string
+  availableCurrencies: string[]
+  section: CollectionsSection
+  sectionCounts: Record<CollectionsSection, number>
+  pagination: CollectionsPagination
+  currentCutoffDate: string | null
+  summary: CollectionsSummaryTotals
+  receivableByCutoff: DashboardCutoffReceivable[]
+  exceptions: CollectionsDefaultedLoan[]
+}
+
+export interface CollectionCutoffDetailResponse {
+  currency: string
+  cutoff: DashboardCutoffReceivable
+}
+
 export interface DashboardInterestByCutoff {
   cutoffDate: string
   interestDueMinor: number

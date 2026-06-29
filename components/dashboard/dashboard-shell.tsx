@@ -46,11 +46,12 @@ interface NavItem {
   aliases?: string[]
 }
 
-const navItems: NavItem[] = [
+export const navItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'overview' },
   { href: '/borrowers', label: 'Borrowers', icon: 'borrowers' },
   { href: '/loan-applications', label: 'Loan Applications', icon: 'applications' },
   { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
+  { href: '/collections', label: 'Collections', icon: 'payments' },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
   { href: '/treasury', label: 'Treasury', icon: 'treasury' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
@@ -60,6 +61,7 @@ const pathLabels: Record<string, string> = {
   'active-loans': 'Loans',
   borrowers: 'Borrowers',
   calculator: 'Calculator',
+  collections: 'Collections',
   dashboard: 'Dashboard',
   'loan-applications': 'Loan Applications',
   loans: 'Loans',
@@ -163,6 +165,10 @@ function getPageTitle(pathname: string) {
 
   if (lastSegment === 'schedule') {
     return 'Schedule'
+  }
+
+  if (previousSegment === 'collections' && /^\d{4}-\d{2}-\d{2}$/.test(lastSegment)) {
+    return 'Cutoff Detail'
   }
 
   if (isDynamicSegment(lastSegment)) {

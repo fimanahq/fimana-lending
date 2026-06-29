@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, Switch, TableShell, useToast } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
@@ -162,6 +162,7 @@ export function LoanPaymentDialog({
   const [method, setMethod] = useState<LoanPaymentMethod>('cash')
   const [referenceNo, setReferenceNo] = useState('')
   const [includeInTreasury, setIncludeInTreasury] = useState(true)
+  const submitLockRef = useRef(false)
 
   const loadDetail = useCallback(async () => {
     if (!loanId) {
@@ -189,6 +190,7 @@ export function LoanPaymentDialog({
 
   useEffect(() => {
     if (!open) {
+      submitLockRef.current = false
       return
     }
 
@@ -207,6 +209,10 @@ export function LoanPaymentDialog({
   }, [open])
 
   const handleSubmit = async () => {
+    if (submitLockRef.current) {
+      return
+    }
+
     if (!detail?.loan || detail.loan.status !== 'active' || detail.loan.balances.totalOutstandingAmountMinor <= 0) {
       setSubmitError('Loan has no outstanding balance to post')
       return
@@ -225,6 +231,7 @@ export function LoanPaymentDialog({
       return
     }
 
+    submitLockRef.current = true
     setSubmitting(true)
     setSubmitError('')
     const toastId = showLoading('Posting payment...')
@@ -251,6 +258,7 @@ export function LoanPaymentDialog({
       dismiss(toastId)
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to post payment')
     } finally {
+      submitLockRef.current = false
       setSubmitting(false)
     }
   }
