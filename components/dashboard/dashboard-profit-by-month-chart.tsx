@@ -44,13 +44,15 @@ export function DashboardProfitByMonthChart({
   averageMonthlyProfitMinor,
   currency,
   rows,
+  showInterestDue = true,
 }: {
   averageMonthlyProfitMinor?: number
   currency: string
   rows: DashboardMonthlyProfitRow[]
+  showInterestDue?: boolean
 }) {
   const ariaLabel = rows.map((row) => (
-    `${row.monthLabel}: ${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
+    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
   )).join('. ')
 
   return (
@@ -107,17 +109,19 @@ export function DashboardProfitByMonthChart({
             radius={[8, 8, 0, 0]}
             isAnimationActive={false}
           />
-          <Line
-            dataKey="interestDueMinor"
-            name="Interest due"
-            type="monotone"
-            stroke="#7f5a2f"
-            strokeDasharray="6 4"
-            strokeWidth={2}
-            dot={{ fill: '#7f5a2f', r: 3 }}
-            activeDot={{ r: 5 }}
-            isAnimationActive={false}
-          />
+          {showInterestDue ? (
+            <Line
+              dataKey="interestDueMinor"
+              name="Interest due"
+              type="monotone"
+              stroke="#7f5a2f"
+              strokeDasharray="6 4"
+              strokeWidth={2}
+              dot={{ fill: '#7f5a2f', r: 3 }}
+              activeDot={{ r: 5 }}
+              isAnimationActive={false}
+            />
+          ) : null}
           <Line
             dataKey="totalProfitMinor"
             name="Total profit"

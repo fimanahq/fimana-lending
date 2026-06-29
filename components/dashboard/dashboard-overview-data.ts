@@ -1,10 +1,12 @@
 import type {
+  DashboardMonthlyProfitResponse,
+  DashboardMonthlyProfitRow,
   LoanApplication,
   LoanDashboardSummary,
 } from '@/lib/types/lending'
 import type { SettingsCurrency } from '@/lib/types/shared'
 
-export type DashboardDataSource = 'summary' | 'applications'
+export type DashboardDataSource = 'summary' | 'applications' | 'monthlyProfit'
 
 export interface DashboardSummaryMetrics extends LoanDashboardSummary {
   pendingReviewCount: number
@@ -19,11 +21,33 @@ export interface DashboardProgressSegment {
   tone: 'green' | 'amber' | 'olive' | 'red'
 }
 
+export interface DashboardProfitGrowthData {
+  year: number
+  currency: SettingsCurrency
+  timezone: string
+  rows: DashboardMonthlyProfitRow[]
+  hasCollectedProfit: boolean
+  hasInterestDue: boolean
+  elapsedMonthCount: number
+  scheduledInterestDueMinor: number
+  ytdCollectedProfitMinor: number
+  averageMonthlyProfitMinor: number
+  bestMonth: DashboardMonthlyProfitRow | null
+  monthOverMonth: {
+    currentMonthProfitMinor: number
+    previousMonthProfitMinor: number
+    percentageChange: number | null
+    trend: 'percentage' | 'new_growth' | 'no_change'
+  }
+}
+
 export interface DashboardOverviewData {
   summary: DashboardSummaryMetrics
   activeLoanBalanceSegments: DashboardProgressSegment[]
   capitalPositionSegments: DashboardProgressSegment[]
   interestOutlookSegments: DashboardProgressSegment[]
+  profitGrowth: DashboardProfitGrowthData | null
+  profitGrowthYearOptions: number[]
   recentApplications: LoanApplication[]
   partialFailureNotice: string | null
 }
@@ -31,12 +55,109 @@ export interface DashboardOverviewData {
 interface BuildDashboardOverviewDataInput {
   summary?: LoanDashboardSummary | null
   applications: LoanApplication[]
+  monthlyProfit?: DashboardMonthlyProfitResponse | null
   failedSources?: DashboardDataSource[]
+  now?: Date
 }
 
 const FAILED_SOURCE_LABELS: Record<DashboardDataSource, string> = {
   summary: 'dashboard summary',
   applications: 'loan applications',
+  monthlyProfit: 'monthly profit',
+}
+
+export function getManilaCalendarPeriod(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    month: 'numeric',
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+  }).formatToParts(now)
+
+  return {
+    month: Number(parts.find((part) => part.type === 'month')?.value ?? 1),
+    year: Number(parts.find((part) => part.type === 'year')?.value ?? now.getUTCFullYear()),
+  }
+}
+
+function formatMonthShortLabel(year: number, monthIndex: number) {
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    timeZone: 'Asia/Manila',
+  }).format(new Date(Date.UTC(year, monthIndex, 1, 12)))
+}
+
+export function buildDashboardProfitGrowthData(
+  monthlyProfit: DashboardMonthlyProfitResponse,
+  now = new Date(),
+): DashboardProfitGrowthData {
+  const rowsByMonth = new Map(monthlyProfit.rows.map((row) => [row.monthKey, row]))
+  const rows = Array.from({ length: 12 }, (_, monthIndex): DashboardMonthlyProfitRow => {
+    const monthKey = `${monthlyProfit.year}-${String(monthIndex + 1).padStart(2, '0')}`
+    const source = rowsByMonth.get(monthKey)
+
+    return {
+      monthKey,
+      monthLabel: formatMonthShortLabel(monthlyProfit.year, monthIndex),
+      interestDueMinor: source?.interestDueMinor ?? 0,
+      interestCollectedMinor: source?.interestCollectedMinor ?? 0,
+      penaltyCollectedMinor: source?.penaltyCollectedMinor ?? 0,
+      totalProfitMinor: source?.totalProfitMinor ?? 0,
+      paymentCount: source?.paymentCount ?? 0,
+    }
+  })
+  const currentPeriod = getManilaCalendarPeriod(now)
+  const elapsedMonthCount = monthlyProfit.year < currentPeriod.year
+    ? 12
+    : monthlyProfit.year === currentPeriod.year
+      ? currentPeriod.month
+      : 0
+  const elapsedRows = rows.slice(0, elapsedMonthCount)
+  const scheduledInterestDueMinor = rows.reduce((sum, row) => sum + row.interestDueMinor, 0)
+  const ytdCollectedProfitMinor = elapsedRows.reduce((sum, row) => sum + row.totalProfitMinor, 0)
+  const averageMonthlyProfitMinor = elapsedMonthCount > 0
+    ? ytdCollectedProfitMinor / elapsedMonthCount
+    : 0
+  const bestMonth = elapsedRows.reduce<DashboardMonthlyProfitRow | null>((best, row) => {
+    if (row.totalProfitMinor <= 0 || (best && row.totalProfitMinor <= best.totalProfitMinor)) {
+      return best
+    }
+
+    return row
+  }, null)
+  const currentMonthProfitMinor = elapsedRows.at(-1)?.totalProfitMinor ?? 0
+  const previousMonthProfitMinor = elapsedRows.at(-2)?.totalProfitMinor ?? 0
+  const percentageChange = previousMonthProfitMinor > 0
+    ? ((currentMonthProfitMinor - previousMonthProfitMinor) / previousMonthProfitMinor) * 100
+    : null
+  const trend = percentageChange !== null
+    ? 'percentage' as const
+    : currentMonthProfitMinor > 0
+      ? 'new_growth' as const
+      : 'no_change' as const
+
+  return {
+    year: monthlyProfit.year,
+    currency: monthlyProfit.currency,
+    timezone: monthlyProfit.timezone,
+    rows,
+    hasCollectedProfit: rows.some((row) => (
+      row.interestCollectedMinor !== 0
+      || row.penaltyCollectedMinor !== 0
+      || row.totalProfitMinor !== 0
+    )),
+    hasInterestDue: rows.some((row) => row.interestDueMinor !== 0),
+    elapsedMonthCount,
+    scheduledInterestDueMinor,
+    ytdCollectedProfitMinor,
+    averageMonthlyProfitMinor,
+    bestMonth,
+    monthOverMonth: {
+      currentMonthProfitMinor,
+      previousMonthProfitMinor,
+      percentageChange,
+      trend,
+    },
+  }
 }
 
 function formatFailedSources(failedSources: DashboardDataSource[]) {
@@ -116,7 +237,9 @@ function getDefaultSummary(): DashboardSummaryMetrics {
 export function buildDashboardOverviewData({
   summary,
   applications,
+  monthlyProfit,
   failedSources = [],
+  now = new Date(),
 }: BuildDashboardOverviewDataInput): DashboardOverviewData {
   const mergedSummary: DashboardSummaryMetrics = {
     ...getDefaultSummary(),
@@ -136,6 +259,14 @@ export function buildDashboardOverviewData({
   mergedSummary.profitOutlookTotalProjectedProfitMinor = mergedSummary.profitOutlookTotalProjectedProfitMinor ?? mergedSummary.totalProjectedProfitMinor
   mergedSummary.profitOutlookCollectedProfitVsCapitalBps = mergedSummary.profitOutlookCollectedProfitVsCapitalBps ?? mergedSummary.collectedProfitVsCapitalBps
   mergedSummary.profitOutlookProjectedProfitVsCapitalBps = mergedSummary.profitOutlookProjectedProfitVsCapitalBps ?? mergedSummary.projectedProfitVsCapitalBps
+  const currentYear = getManilaCalendarPeriod(now).year
+  const profitGrowthYearOptions = Array.from(new Set([
+    currentYear,
+    monthlyProfit?.year,
+    ...mergedSummary.interestByCutoff.map((entry) => Number(entry.cutoffDate.slice(0, 4))),
+  ]))
+    .filter((year): year is number => typeof year === 'number' && Number.isInteger(year))
+    .sort((left, right) => right - left)
 
   const capitalPositionBaseMinor = Math.max(0, mergedSummary.cashOnHandMinor) + mergedSummary.moneyWithBorrowersMinor
   const activeLoanBalanceBaseMinor = Math.max(
@@ -216,6 +347,8 @@ export function buildDashboardOverviewData({
     activeLoanBalanceSegments,
     capitalPositionSegments,
     interestOutlookSegments,
+    profitGrowth: monthlyProfit ? buildDashboardProfitGrowthData(monthlyProfit, now) : null,
+    profitGrowthYearOptions,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }

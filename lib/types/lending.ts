@@ -438,6 +438,49 @@ export interface DashboardMonthlyProfitResponse {
   rows: DashboardMonthlyProfitSource[]
 }
 
+export interface DashboardMonthlyProfitDetailSummary {
+  interestDueMinor: number
+  interestCollectedMinor: number
+  penaltyCollectedMinor: number
+  totalProfitMinor: number
+  paymentCount: number
+}
+
+export interface DashboardMonthlyInterestDueLoan {
+  loanId: string
+  loanNumber: string
+  borrowerDisplayName: string
+  borrowerNumber: string
+  loanStatus: LoanStatus
+  cutoffCount: number
+  interestDueMinor: number
+}
+
+export interface DashboardMonthlyRealizedPayment {
+  paymentId: string
+  receiptNumber: string
+  paymentDate: string
+  loanId: string
+  loanNumber: string
+  borrowerDisplayName: string
+  borrowerNumber: string
+  loanStatus: LoanStatus
+  interestCollectedMinor: number
+  penaltyCollectedMinor: number
+  totalProfitMinor: number
+}
+
+export interface DashboardMonthlyProfitDetailResponse {
+  year: number
+  month: number
+  monthKey: string
+  currency: SettingsCurrency
+  timezone: string
+  summary: DashboardMonthlyProfitDetailSummary
+  interestDueLoans: DashboardMonthlyInterestDueLoan[]
+  realizedPayments: DashboardMonthlyRealizedPayment[]
+}
+
 export interface DashboardMonthlyProfitRow extends DashboardMonthlyProfitSource {
   monthLabel: string
 }

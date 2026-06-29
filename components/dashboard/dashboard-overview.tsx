@@ -43,6 +43,30 @@ const DashboardCutoffReceivables = dynamic(
   },
 )
 
+const DashboardProfitGrowth = dynamic(
+  () => import('@/components/dashboard/dashboard-profit-growth').then((module) => module.DashboardProfitGrowth),
+  {
+    loading: () => (
+      <section className={dashboardClass('dashboard-overview__operator')} aria-busy="true" aria-live="polite">
+        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
+          <div>
+            <h2 className="section-title title-offset">Profit Growth</h2>
+            <p className="muted">Loading monthly collected profit and growth trends.</p>
+          </div>
+        </div>
+        <div className={dashboardClass('dashboard-overview__interestCard', 'dashboard-overview__deferredBlock')}>
+          <div className="ui-skeleton" aria-hidden="true">
+            <span className="ui-skeleton__line" />
+            <span className="ui-skeleton__line" />
+            <span className="ui-skeleton__line" />
+            <span className="ui-skeleton__line" />
+          </div>
+        </div>
+      </section>
+    ),
+  },
+)
+
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)
 }
@@ -477,6 +501,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     activeLoanBalanceSegments,
     capitalPositionSegments,
     interestOutlookSegments,
+    profitGrowth,
+    profitGrowthYearOptions,
     recentApplications,
     partialFailureNotice,
   } = data
@@ -608,8 +634,13 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         <DashboardCutoffReceivables
           currency={dashboardCurrency}
           currentCutoffReceivable={summary.currentCutoffReceivable}
-          interestByCutoff={summary.interestByCutoff}
           receivableByCutoff={summary.receivableByCutoff}
+        />
+
+        <DashboardProfitGrowth
+          data={profitGrowth}
+          fallbackCurrency={dashboardCurrency}
+          yearOptions={profitGrowthYearOptions}
         />
 
         <section className="grid two">
