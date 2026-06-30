@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
+import { authorizedBackendRequest, backendErrorResponse, jsonError } from '@/lib/server/backend'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types/lending'
 
 function getActionPath(status: LoanApplicationStatus) {
@@ -78,7 +78,6 @@ export async function PATCH(
     const updated = await authorizedBackendRequest<LoanApplication>(`/loan-applications/${id}/${actionPath}`, init)
     return NextResponse.json(updated)
   } catch (caughtError) {
-    const message = caughtError instanceof Error ? caughtError.message : 'Unable to update application'
-    return jsonError(message, message === 'Loan application not found' ? 404 : 400)
+    return backendErrorResponse(caughtError, 'Unable to update application')
   }
 }

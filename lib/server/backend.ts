@@ -19,6 +19,13 @@ interface BackendEnvelope<T> {
   data: T
 }
 
+interface BackendErrorPayload {
+  message?: string
+  errorCode?: string
+  availableAmountMinor?: number
+  requiredAmountMinor?: number
+}
+
 interface AuthPayload {
   accessToken: string
   refreshToken: string
@@ -41,11 +48,13 @@ const refreshInFlight = new Map<string, Promise<RefreshResult>>()
 
 export class BackendRequestError extends Error {
   status: number
+  payload: BackendErrorPayload | null
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, payload: BackendErrorPayload | null = null) {
     super(message)
     this.name = 'BackendRequestError'
     this.status = status
+    this.payload = payload
   }
 }
 
@@ -74,10 +83,10 @@ function getErrorMessage(payload: unknown, fallback: string) {
 }
 
 async function parseBackendResponse<T>(response: Response): Promise<T> {
-  const payload = (await response.json().catch(() => null)) as BackendEnvelope<T> | null
+  const payload = (await response.json().catch(() => null)) as (BackendEnvelope<T> & BackendErrorPayload) | null
 
   if (!response.ok) {
-    throw new BackendRequestError(getErrorMessage(payload, 'Request failed'), response.status)
+    throw new BackendRequestError(getErrorMessage(payload, 'Request failed'), response.status, payload)
   }
 
   return payload?.data ?? (payload as unknown as T)
@@ -365,4 +374,22 @@ export function jsonError(message: string, status = 400) {
       : status
 
   return NextResponse.json({ message }, { status: resolvedStatus })
+}
+
+export function backendErrorResponse(error: unknown, fallbackMessage: string, fallbackStatus = 400) {
+  if (error instanceof BackendRequestError) {
+    return NextResponse.json({
+      message: error.message,
+      ...(error.payload?.errorCode && { errorCode: error.payload.errorCode }),
+      ...(error.payload?.availableAmountMinor !== undefined && {
+        availableAmountMinor: error.payload.availableAmountMinor,
+      }),
+      ...(error.payload?.requiredAmountMinor !== undefined && {
+        requiredAmountMinor: error.payload.requiredAmountMinor,
+      }),
+    }, { status: error.status })
+  }
+
+  const message = error instanceof Error ? error.message : fallbackMessage
+  return jsonError(message, fallbackStatus)
 }

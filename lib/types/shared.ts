@@ -5,6 +5,9 @@ export type PaymentFrequency = 'monthly' | 'semi_monthly'
 
 export interface ApiErrorPayload {
   message: string
+  errorCode?: string
+  availableAmountMinor?: number
+  requiredAmountMinor?: number
 }
 
 export interface Settings {

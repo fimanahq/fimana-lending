@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { LoanApplicationRiskMeter } from '@/components/loan-applications/loan-application-risk-meter'
 import { calculateApplicationPreviewMonthlyPayment } from '@/lib/borrower-risk'
+import { ApiRequestError } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
@@ -144,7 +145,27 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
       update(toastId, `Application marked ${formatLoanApplicationStatus(updated.status)}.`, { tone: 'success', title: 'Success' })
     } catch (caughtError) {
       dismiss(toastId)
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to update application')
+      if (
+        status === 'approved'
+        && caughtError instanceof ApiRequestError
+        && caughtError.payload?.errorCode === 'INSUFFICIENT_TREASURY_FUNDS'
+      ) {
+        const available = formatCurrency(
+          (caughtError.payload.availableAmountMinor ?? 0) / 100,
+          application.loanProduct?.currency,
+        )
+        const required = formatCurrency(
+          (caughtError.payload.requiredAmountMinor ?? 0) / 100,
+          application.loanProduct?.currency,
+        )
+        const message = caughtError.payload.message || caughtError.message
+        await loadApplication()
+        setError(`${message} Available: ${available}; required: ${required}.`)
+      } else if (status === 'approved') {
+        setError('Unable to approve application. No changes were made.')
+      } else {
+        setError(caughtError instanceof Error ? caughtError.message : 'Unable to update application')
+      }
     } finally {
       setSavingStatus(null)
     }
