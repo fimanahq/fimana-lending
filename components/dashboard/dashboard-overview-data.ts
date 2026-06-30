@@ -30,6 +30,7 @@ export interface DashboardProfitGrowthData {
   hasInterestDue: boolean
   elapsedMonthCount: number
   scheduledInterestDueMinor: number
+  averageMonthlyInterestDueMinor: number
   ytdCollectedProfitMinor: number
   averageMonthlyProfitMinor: number
   bestMonth: DashboardMonthlyProfitRow | null
@@ -113,6 +114,7 @@ export function buildDashboardProfitGrowthData(
       : 0
   const elapsedRows = rows.slice(0, elapsedMonthCount)
   const scheduledInterestDueMinor = rows.reduce((sum, row) => sum + row.interestDueMinor, 0)
+  const averageMonthlyInterestDueMinor = scheduledInterestDueMinor / 12
   const ytdCollectedProfitMinor = elapsedRows.reduce((sum, row) => sum + row.totalProfitMinor, 0)
   const averageMonthlyProfitMinor = elapsedMonthCount > 0
     ? ytdCollectedProfitMinor / elapsedMonthCount
@@ -148,6 +150,7 @@ export function buildDashboardProfitGrowthData(
     hasInterestDue: rows.some((row) => row.interestDueMinor !== 0),
     elapsedMonthCount,
     scheduledInterestDueMinor,
+    averageMonthlyInterestDueMinor,
     ytdCollectedProfitMinor,
     averageMonthlyProfitMinor,
     bestMonth,

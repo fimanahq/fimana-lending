@@ -217,7 +217,7 @@ export function DashboardProfitGrowth({
               meta={isFutureYear ? 'No collections yet' : `Interest and penalties through ${currentMonth?.monthLabel ?? activeData.year}`}
             />
             <GrowthMetric
-              label="Average Monthly Profit"
+              label="Avg Monthly Collected Profit"
               value={formatMinorCurrency(activeData.averageMonthlyProfitMinor, currency)}
               meta={activeData.elapsedMonthCount > 0
                 ? `Across ${activeData.elapsedMonthCount.toLocaleString('en-PH')} month${activeData.elapsedMonthCount === 1 ? '' : 's'}`
@@ -226,7 +226,7 @@ export function DashboardProfitGrowth({
             <GrowthMetric
               label="Scheduled Interest Due"
               value={formatMinorCurrency(activeData.scheduledInterestDueMinor, currency)}
-              meta="Full-year schedule; not collected profit"
+              meta={`Avg monthly expected: ${formatMinorCurrency(activeData.averageMonthlyInterestDueMinor, currency)}`}
             />
             <GrowthMetric
               label="Best Month"
