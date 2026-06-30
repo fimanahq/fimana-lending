@@ -34,7 +34,7 @@ describe('collections data', () => {
 
     expect(grouped.all).toHaveLength(5)
     expect(grouped.currentUpcoming.map((entry) => entry.cutoffDate)).toEqual(['2026-06-15', '2026-06-30'])
-    expect(grouped.overdue.map((entry) => entry.cutoffDate)).toEqual(['2026-05-15', '2026-05-31'])
+    expect(grouped.overdue.map((entry) => entry.cutoffDate)).toEqual(['2026-05-31', '2026-05-15'])
     expect(grouped.closed.map((entry) => entry.cutoffDate)).toEqual(['2026-04-30'])
   })
 

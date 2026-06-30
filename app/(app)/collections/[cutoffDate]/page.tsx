@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { CollectionCutoffDetail } from '@/components/collections/collection-cutoff-detail'
 import { parseCollectionSection } from '@/components/collections/collections-data'
 import { authorizedBackendRequestWithCurrentAccess } from '@/lib/server/backend'
@@ -16,15 +17,14 @@ export default async function CollectionCutoffPage({
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 1 ? requestedPage : 1
   const returnQuery = new URLSearchParams({ section })
   if (page > 1) returnQuery.set('page', String(page))
-  if (query.currency) returnQuery.set('currency', query.currency)
   const returnPath = `/collections?${returnQuery.toString()}`
   const detailQuery = new URLSearchParams(returnQuery)
   const detailPath = `/collections/${encodeURIComponent(cutoffDate)}?${detailQuery.toString()}`
 
+  if (query.currency !== undefined) redirect(detailPath)
+
   try {
-    const apiQuery = new URLSearchParams()
-    if (query.currency) apiQuery.set('currency', query.currency)
-    const endpoint = `/loans/collections-summary/cutoffs/${encodeURIComponent(cutoffDate)}${apiQuery.size ? `?${apiQuery.toString()}` : ''}`
+    const endpoint = `/loans/collections-summary/cutoffs/${encodeURIComponent(cutoffDate)}`
     const data = await authorizedBackendRequestWithCurrentAccess<CollectionCutoffDetailResponse>(endpoint)
     return <CollectionCutoffDetail currency={data.currency} cutoff={data.cutoff} detailPath={detailPath} returnPath={returnPath} />
   } catch (error) {

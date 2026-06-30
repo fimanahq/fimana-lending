@@ -10,7 +10,6 @@ import {
   PageContainer,
   Pagination,
   ProtectedLink as Link,
-  Select,
   TableShell,
   Tabs,
 } from '@/components/shared'
@@ -109,15 +108,15 @@ export function CollectionsWorkspace({
   const activeSection = data?.section ?? initialSection
   const page = data?.pagination.page ?? initialPage
 
-  const buildCollectionsPath = useCallback((section: CollectionSection, nextPage: number, currency: string | undefined = data?.currency) => {
+  const buildCollectionsPath = useCallback((section: CollectionSection, nextPage: number) => {
     const searchParams = new URLSearchParams({ section })
     if (nextPage > 1) searchParams.set('page', String(nextPage))
-    if (currency) searchParams.set('currency', currency)
     return `${pathname}?${searchParams.toString()}`
-  }, [data?.currency, pathname])
+  }, [pathname])
 
   useEffect(() => {
     if (!data || data.pagination.page === initialPage) return
+
     router.replace(buildCollectionsPath(data.section, data.pagination.page), { scroll: false })
   }, [buildCollectionsPath, data, initialPage, router])
 
@@ -142,14 +141,9 @@ export function CollectionsWorkspace({
     router.replace(buildCollectionsPath(activeSection, nextPage), { scroll: false })
   }
 
-  const handleCurrencyChange = (currency: string) => {
-    router.replace(buildCollectionsPath(activeSection, 1, currency), { scroll: false })
-  }
-
   const openCutoff = (cutoffDate: string) => {
     const searchParams = new URLSearchParams({ section: activeSection })
     if (page > 1) searchParams.set('page', String(page))
-    searchParams.set('currency', data.currency)
     router.push(`/collections/${encodeURIComponent(cutoffDate)}?${searchParams.toString()}`)
   }
 
@@ -223,18 +217,6 @@ export function CollectionsWorkspace({
 
   return (
     <PageContainer className={styles.page}>
-      {data.availableCurrencies.length > 1 ? (
-        <div className={styles.currencyFilter}>
-          <Select
-            id="collections-currency"
-            label="Currency"
-            value={data.currency}
-            onChange={(event) => handleCurrencyChange(event.target.value)}
-          >
-            {data.availableCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-          </Select>
-        </div>
-      ) : null}
       <section className={styles.summaryGrid} aria-label="Collections summary">
         <SummaryCard label="Next cutoff receivable" value={formatMinorCurrency(data.summary.dueNowMinor, data.currency)} meta={data.currentCutoffDate ? formatDate(data.currentCutoffDate) : 'No current cutoff'} />
         <SummaryCard label="Upcoming" value={formatMinorCurrency(data.summary.upcomingMinor, data.currency)} meta="Later open cutoff schedules" />

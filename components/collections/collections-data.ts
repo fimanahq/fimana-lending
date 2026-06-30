@@ -58,7 +58,7 @@ export function groupCutoffReceivables(receivables: DashboardCutoffReceivable[])
     currentUpcoming: deduplicated
       .filter((entry) => entry.status === 'current' || entry.status === 'upcoming')
       .sort(byDate),
-    overdue: deduplicated.filter((entry) => entry.status === 'overdue').sort(byDate),
+    overdue: deduplicated.filter((entry) => entry.status === 'overdue').sort((left, right) => -byDate(left, right)),
     closed: deduplicated.filter((entry) => entry.status === 'paid').sort((left, right) => -byDate(left, right)),
     all: deduplicated,
   }

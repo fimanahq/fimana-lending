@@ -86,7 +86,6 @@ function collectionsData(section: CollectionsSummary['section'] = 'current-upcom
 
   return {
     currency: 'PHP',
-    availableCurrencies: ['PHP'],
     section,
     sectionCounts: { 'current-upcoming': 2, overdue: 1, closed: 1, defaulted: 1 },
     pagination: { page: 1, limit: 20, total, totalPages: 1 },
@@ -116,22 +115,22 @@ describe('CollectionsWorkspace', () => {
     expect(screen.getByRole('tab', { name: /Current & Upcoming/ })).toHaveAttribute('aria-selected', 'true')
 
     fireEvent.click(screen.getByRole('tab', { name: /Defaulted/ }))
-    expect(replace).toHaveBeenCalledWith('/collections?section=defaulted&currency=PHP', { scroll: false })
+    expect(replace).toHaveBeenCalledWith('/collections?section=defaulted', { scroll: false })
     rerender(<CollectionsWorkspace data={collectionsData('defaulted')} initialSection="defaulted" />)
     expect(screen.getByText('Defaulted Borrower')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('tab', { name: /Closed/ }))
-    expect(replace).toHaveBeenCalledWith('/collections?section=closed&currency=PHP', { scroll: false })
+    expect(replace).toHaveBeenCalledWith('/collections?section=closed', { scroll: false })
     rerender(<CollectionsWorkspace data={collectionsData('closed')} initialSection="closed" />)
     fireEvent.click(screen.getByRole('button', { name: 'View loans in cutoff on May 15, 2026' }))
-    expect(push).toHaveBeenCalledWith('/collections/2026-05-15?section=closed&currency=PHP')
+    expect(push).toHaveBeenCalledWith('/collections/2026-05-15?section=closed')
   })
 
   it('preserves the selected section when navigating to detail', () => {
     render(<CollectionsWorkspace data={collectionsData('overdue')} initialSection="overdue" />)
 
     fireEvent.click(screen.getByRole('button', { name: 'View loans in cutoff on May 31, 2026' }))
-    expect(push).toHaveBeenCalledWith('/collections/2026-05-31?section=overdue&currency=PHP')
+    expect(push).toHaveBeenCalledWith('/collections/2026-05-31?section=overdue')
   })
 
   it('renders empty and error states', () => {
@@ -161,7 +160,7 @@ describe('CollectionsWorkspace', () => {
 
     expect(screen.getByText('21 total cutoffs')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Go to next page' }))
-    expect(replace).toHaveBeenCalledWith('/collections?section=current-upcoming&page=2&currency=PHP', { scroll: false })
+    expect(replace).toHaveBeenCalledWith('/collections?section=current-upcoming&page=2', { scroll: false })
     rerender(
       <CollectionsWorkspace
         data={{ ...data, receivableByCutoff: receivables.slice(20), pagination: { ...data.pagination, page: 2 } }}
@@ -177,7 +176,7 @@ describe('CollectionsWorkspace', () => {
       <CollectionCutoffDetail
         currency="PHP"
         cutoff={cutoff('2026-06-30', 'current')}
-        detailPath="/collections/2026-06-30?section=current-upcoming&currency=PHP"
+        detailPath="/collections/2026-06-30?section=current-upcoming"
         returnPath="/collections?section=current-upcoming"
       />,
     )
@@ -191,19 +190,16 @@ describe('CollectionsWorkspace', () => {
       <CollectionCutoffDetail
         currency="PHP"
         cutoff={cutoff('2026-05-15', 'paid', 'completed')}
-        detailPath="/collections/2026-05-15?section=closed&currency=PHP"
+        detailPath="/collections/2026-05-15?section=closed"
         returnPath="/collections?section=closed"
       />,
     )
     expect(screen.getByRole('button', { name: /Post payment for paid Borrower/ })).toBeDisabled()
   })
 
-  it('switches currencies without mixing totals and preserves the selected section', () => {
-    const data: CollectionsSummary = { ...collectionsData('overdue'), availableCurrencies: ['PHP', 'GBP'] }
+  it('does not expose a currency override', () => {
+    render(<CollectionsWorkspace data={collectionsData('overdue')} initialSection="overdue" />)
 
-    render(<CollectionsWorkspace data={data} initialSection="overdue" initialPage={2} />)
-    fireEvent.change(screen.getByLabelText('Currency'), { target: { value: 'GBP' } })
-
-    expect(replace).toHaveBeenCalledWith('/collections?section=overdue&currency=GBP', { scroll: false })
+    expect(screen.queryByLabelText('Currency')).not.toBeInTheDocument()
   })
 })

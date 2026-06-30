@@ -8,15 +8,6 @@
   gap: 1rem;
 }
 
-.currencyFilter {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.currencyFilter > * {
-  width: min(100%, 12rem);
-}
-
 .summaryCard {
   display: grid;
   gap: 0.35rem;

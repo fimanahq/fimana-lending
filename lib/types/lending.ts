@@ -442,7 +442,6 @@ export interface CollectionsPagination {
 
 export interface CollectionsSummary {
   currency: string
-  availableCurrencies: string[]
   section: CollectionsSection
   sectionCounts: Record<CollectionsSection, number>
   pagination: CollectionsPagination

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { CollectionsWorkspace } from '@/components/collections/collections-workspace'
 import { parseCollectionSection } from '@/components/collections/collections-data'
 import { authorizedBackendRequestWithCurrentAccess } from '@/lib/server/backend'
@@ -13,15 +14,26 @@ export default async function CollectionsPage({
   const requestedPage = Number(page)
   const initialPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
 
+  if (currency !== undefined) {
+    const cleanQuery = new URLSearchParams({ section: initialSection })
+    if (initialPage > 1) cleanQuery.set('page', String(initialPage))
+    redirect(`/collections?${cleanQuery.toString()}`)
+  }
+
   try {
     const apiQuery = new URLSearchParams()
-    if (currency) apiQuery.set('currency', currency)
     apiQuery.set('section', initialSection)
     apiQuery.set('page', String(initialPage))
     apiQuery.set('itemsPerPage', '20')
     const endpoint = `/loans/collections-summary${apiQuery.size ? `?${apiQuery.toString()}` : ''}`
     const data = await authorizedBackendRequestWithCurrentAccess<CollectionsSummary>(endpoint)
-    return <CollectionsWorkspace data={data} initialPage={initialPage} initialSection={initialSection} />
+    return (
+      <CollectionsWorkspace
+        data={data}
+        initialPage={initialPage}
+        initialSection={initialSection}
+      />
+    )
   } catch (error) {
     return (
       <CollectionsWorkspace
