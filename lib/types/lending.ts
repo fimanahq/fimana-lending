@@ -263,6 +263,7 @@ export interface LoanPaymentHistory {
   allocationStatus: LoanPaymentAllocationStatus
   allocations: LoanPaymentAllocation[]
   unallocatedAmountMinor: number
+  excessProfitAmountMinor: number
   status: LoanPaymentStatus
 }
 
@@ -277,6 +278,7 @@ export interface PostLoanPaymentInput {
   method: LoanPaymentMethod
   referenceNo?: string
   includeInTreasury?: boolean
+  treatExcessAsProfit?: boolean
 }
 
 export interface UpdateLoanPaymentInput {
@@ -285,6 +287,7 @@ export interface UpdateLoanPaymentInput {
   method: LoanPaymentMethod
   referenceNo?: string
   includeInTreasury?: boolean
+  treatExcessAsProfit?: boolean
 }
 
 export interface LoanPaymentPostResponse {
@@ -471,6 +474,8 @@ export interface DashboardMonthlyProfitSource {
   interestDueMinor: number
   interestCollectedMinor: number
   penaltyCollectedMinor: number
+  excessProfitMinor?: number
+  treasuryInterestEarnedMinor?: number
   totalProfitMinor: number
   paymentCount: number
 }
@@ -486,6 +491,8 @@ export interface DashboardMonthlyProfitDetailSummary {
   interestDueMinor: number
   interestCollectedMinor: number
   penaltyCollectedMinor: number
+  excessProfitMinor: number
+  treasuryInterestEarnedMinor: number
   totalProfitMinor: number
   paymentCount: number
 }
@@ -511,6 +518,7 @@ export interface DashboardMonthlyRealizedPayment {
   loanStatus: LoanStatus
   interestCollectedMinor: number
   penaltyCollectedMinor: number
+  excessProfitMinor: number
   totalProfitMinor: number
 }
 
@@ -535,6 +543,8 @@ export interface LoanDashboardSummary {
   collectedInterestMinor: number
   collectedPenaltyMinor: number
   collectedProfitMinor: number
+  collectedExcessProfitMinor: number
+  treasuryInterestEarnedMinor: number
   activeCollectedInterestMinor: number
   activeCollectedPenaltyMinor: number
   activeCollectedProfitMinor: number
@@ -542,6 +552,13 @@ export interface LoanDashboardSummary {
   projectedProfitVsCapitalBps: number
   currentCapitalBasisMinor: number
   cashOnHandMinor: number
+  calculatedCashOnHandMinor: number
+  treasuryCashOnHandMinor: number | null
+  cashReconciliationDifferenceMinor: number | null
+  cashReconciliationStatus: 'balanced' | 'variance' | 'treasury_unconfigured'
+  projectedNetWorthMinor: number
+  historicalUnallocatedAmountMinor: number
+  historicalUnallocatedPaymentCount: number
   outstandingPrincipalMinor: number
   moneyWithBorrowersMinor: number
   defaultedLoanCount: number

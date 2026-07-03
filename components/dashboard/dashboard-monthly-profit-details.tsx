@@ -63,6 +63,8 @@ export function DashboardMonthlyProfitTable({
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest due</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest collected</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Penalty collected</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Excess profit</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Treasury interest</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Realized profit</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Payments</th>
               <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
@@ -73,6 +75,8 @@ export function DashboardMonthlyProfitTable({
               const hasDetails = row.interestDueMinor !== 0
                 || row.interestCollectedMinor !== 0
                 || row.penaltyCollectedMinor !== 0
+                || (row.excessProfitMinor ?? 0) !== 0
+                || (row.treasuryInterestEarnedMinor ?? 0) !== 0
                 || row.paymentCount !== 0
 
               return (
@@ -86,6 +90,12 @@ export function DashboardMonthlyProfitTable({
                   </td>
                   <td className={dashboardClass('dashboard-overview__tableAmount')}>
                     {formatMinorCurrency(row.penaltyCollectedMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(row.excessProfitMinor ?? 0, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)}
                   </td>
                   <td className={dashboardClass('dashboard-overview__tableAmount')}>
                     {formatMinorCurrency(row.totalProfitMinor, currency)}
@@ -151,7 +161,9 @@ export function DashboardMonthlyProfitDetailDialog({
             <ProfitMetric label="Interest due" value={formatMinorCurrency(summary.interestDueMinor, currency)} meta="Scheduled in this month" />
             <ProfitMetric label="Interest collected" value={formatMinorCurrency(summary.interestCollectedMinor, currency)} meta="Posted in this month" />
             <ProfitMetric label="Penalty collected" value={formatMinorCurrency(summary.penaltyCollectedMinor, currency)} meta="Posted in this month" />
-            <ProfitMetric label="Realized profit" value={formatMinorCurrency(summary.totalProfitMinor, currency)} meta="Interest plus penalties" />
+            <ProfitMetric label="Excess profit" value={formatMinorCurrency(summary.excessProfitMinor ?? 0, currency)} meta="Confirmed non-refundable excess" />
+            <ProfitMetric label="Treasury interest" value={formatMinorCurrency(summary.treasuryInterestEarnedMinor ?? 0, currency)} meta="Earned by the Treasury account" />
+            <ProfitMetric label="Realized profit" value={formatMinorCurrency(summary.totalProfitMinor, currency)} meta="All recognized profit sources" />
             <ProfitMetric label="Payments" value={summary.paymentCount.toLocaleString('en-PH')} meta="Posted payment records" />
           </div>
         ) : null}
@@ -224,6 +236,7 @@ export function DashboardMonthlyProfitDetailDialog({
                         <th>Status</th>
                         <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest</th>
                         <th className={dashboardClass('dashboard-overview__tableAmount')}>Penalty</th>
+                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Excess profit</th>
                         <th className={dashboardClass('dashboard-overview__tableAmount')}>Realized profit</th>
                       </tr>
                     </thead>
@@ -244,6 +257,7 @@ export function DashboardMonthlyProfitDetailDialog({
                           <td><span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(payment.loanStatus)}</span></td>
                           <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.interestCollectedMinor, currency)}</td>
                           <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.penaltyCollectedMinor, currency)}</td>
+                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.excessProfitMinor, currency)}</td>
                           <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.totalProfitMinor, currency)}</td>
                         </tr>
                       ))}

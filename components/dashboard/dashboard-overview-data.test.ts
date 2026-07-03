@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { DashboardMonthlyProfitResponse, DashboardMonthlyProfitSource } from '@/lib/types/lending'
-import { buildDashboardProfitGrowthData } from './dashboard-overview-data'
+import type { DashboardMonthlyProfitResponse, DashboardMonthlyProfitSource, LoanDashboardSummary } from '@/lib/types/lending'
+import { buildDashboardOverviewData, buildDashboardProfitGrowthData } from './dashboard-overview-data'
 
 function monthlyProfit(
   year: number,
@@ -52,6 +52,25 @@ describe('buildDashboardProfitGrowthData', () => {
     expect(data.averageMonthlyProfitMinor).toBe(10_000)
   })
 
+  it('preserves excess profit and Treasury interest for graph breakdowns', () => {
+    const data = buildDashboardProfitGrowthData(monthlyProfit(2026, [
+      row('2026-03', {
+        interestCollectedMinor: 10_000,
+        penaltyCollectedMinor: 2_000,
+        excessProfitMinor: 3_000,
+        treasuryInterestEarnedMinor: 500,
+        totalProfitMinor: 15_500,
+      }),
+    ]), new Date('2026-03-15T12:00:00Z'))
+
+    expect(data.rows[2]).toEqual(expect.objectContaining({
+      excessProfitMinor: 3_000,
+      treasuryInterestEarnedMinor: 500,
+      totalProfitMinor: 15_500,
+    }))
+    expect(data.ytdCollectedProfitMinor).toBe(15_500)
+  })
+
   it('returns zero expected average when scheduled interest is zero', () => {
     const data = buildDashboardProfitGrowthData(
       monthlyProfit(2026, []),
@@ -88,5 +107,32 @@ describe('buildDashboardProfitGrowthData', () => {
     expect(withoutPenalty.averageMonthlyInterestDueMinor).toBe(10_000)
     expect(withPenalty.averageMonthlyInterestDueMinor).toBe(10_000)
     expect(withPenalty.averageMonthlyProfitMinor).toBe(60_000)
+  })
+})
+
+describe('buildDashboardOverviewData', () => {
+  it('keeps collected active-loan profit outside the current receivable mix', () => {
+    const data = buildDashboardOverviewData({
+      applications: [],
+      summary: {
+        moneyWithBorrowersMinor: 300_000,
+        activeCollectedProfitMinor: 50_000,
+        remainingProjectedProfitMinor: 30_000,
+      } as LoanDashboardSummary,
+    })
+
+    expect(data.activeLoanBalanceSegments).toEqual([
+      expect.objectContaining({
+        key: 'capital_in_active_loans',
+        valueMinor: 300_000,
+        percentage: (300_000 / 330_000) * 100,
+      }),
+      expect.objectContaining({
+        key: 'incoming_interest',
+        valueMinor: 30_000,
+        percentage: (30_000 / 330_000) * 100,
+      }),
+    ])
+    expect(data.activeLoanBalanceSegments).toHaveLength(2)
   })
 })

@@ -177,6 +177,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
   const [paymentMethod, setPaymentMethod] = useState<LoanPaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
   const [paymentIncludeInTreasury, setPaymentIncludeInTreasury] = useState(true)
+  const [paymentConfirmExcessProfit, setPaymentConfirmExcessProfit] = useState(false)
   const [adjustmentDate, setAdjustmentDate] = useState('')
   const [adjustmentAmount, setAdjustmentAmount] = useState('')
   const [adjustmentReason, setAdjustmentReason] = useState('')
@@ -315,7 +316,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
       : 0
   const hasLargeEditPaymentOverpayment = editPaymentOverpaymentMinor > PAYMENT_TOLERANCE_MINOR
   const editPaymentPreviewMessage = hasLargeEditPaymentOverpayment
-    ? `Payment exceeds remaining balance by ${formatMinorCurrency(editPaymentOverpaymentMinor, currency)}. Please enter ${formatMinorCurrency(editPaymentEffectiveRemainingBalanceMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`
+    ? `${formatMinorCurrency(editPaymentOverpaymentMinor, currency)} exceeds the receivable and will be permanent, non-refundable profit if confirmed.`
     : editPaymentOverpaymentMinor > 0
       ? `${formatMinorCurrency(editPaymentOverpaymentMinor, currency)} excess will be recorded as rounding income.`
       : editPaymentShortagePreviewMinor > 0
@@ -400,6 +401,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
     setPaymentMethod(payment.method)
     setPaymentReference(payment.referenceNo)
     setPaymentIncludeInTreasury(Boolean(payment.accountId && payment.transactionId))
+    setPaymentConfirmExcessProfit(false)
     setPaymentActionError('')
   }
 
@@ -426,8 +428,8 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
         )
         .reduce((sum, adjustment) => sum + adjustment.amountMinor, 0)
     const overpaymentMinor = amountMinor - effectiveRemainingBalanceMinor
-    if (overpaymentMinor > PAYMENT_TOLERANCE_MINOR) {
-      setPaymentActionError(`Payment exceeds remaining balance by ${formatMinorCurrency(overpaymentMinor, currency)}. Please enter ${formatMinorCurrency(effectiveRemainingBalanceMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`)
+    if (overpaymentMinor > PAYMENT_TOLERANCE_MINOR && !paymentConfirmExcessProfit) {
+      setPaymentActionError('Confirm that the excess amount is non-refundable profit before saving.')
       return
     }
 
@@ -441,6 +443,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
         method: paymentMethod,
         referenceNo: paymentReference.trim() || undefined,
         includeInTreasury: paymentIncludeInTreasury,
+        treatExcessAsProfit: paymentConfirmExcessProfit,
       })
       setLoan(response.loan)
       setPayments(response.payments)
@@ -1336,13 +1339,27 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
             onChange={(event) => setPaymentIncludeInTreasury(event.target.checked)}
             disabled={submittingPaymentEdit}
           />
+          {!paymentIncludeInTreasury ? (
+            <div className="notice danger">
+              This edit will update the loan but not Treasury, creating a cash reconciliation variance.
+            </div>
+          ) : null}
+          {hasLargeEditPaymentOverpayment ? (
+            <Switch
+              id="edit-payment-confirm-excess-profit"
+              label={`Confirm ${formatMinorCurrency(editPaymentOverpaymentMinor, currency)} as non-refundable profit`}
+              checked={paymentConfirmExcessProfit}
+              onChange={(event) => setPaymentConfirmExcessProfit(event.target.checked)}
+              disabled={submittingPaymentEdit}
+            />
+          ) : null}
           {editPaymentPreviewMessage ? (
             <div className={hasLargeEditPaymentOverpayment ? 'notice danger' : 'notice'}>
               {editPaymentPreviewMessage}
             </div>
           ) : null}
           <div className="inline-actions">
-            <Button onClick={() => void handlePaymentEdit()} disabled={submittingPaymentEdit || hasLargeEditPaymentOverpayment}>
+            <Button onClick={() => void handlePaymentEdit()} disabled={submittingPaymentEdit || (hasLargeEditPaymentOverpayment && !paymentConfirmExcessProfit)}>
               {submittingPaymentEdit ? 'Saving…' : 'Save changes'}
             </Button>
             <Button variant="secondary" onClick={() => setSelectedPayment(null)} disabled={submittingPaymentEdit}>

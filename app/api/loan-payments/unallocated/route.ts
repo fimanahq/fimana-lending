@@ -4,9 +4,8 @@ import { authorizedBackendRequest, jsonError } from '@/lib/server/backend'
 export async function GET(request: Request) {
   try {
     const { search } = new URL(request.url)
-    const movements = await authorizedBackendRequest(`/treasury/movements${search}`)
-    return NextResponse.json(movements)
+    return NextResponse.json(await authorizedBackendRequest(`/loan-payments/unallocated${search}`))
   } catch (caughtError) {
-    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load Treasury movements', 400)
+    return jsonError(caughtError instanceof Error ? caughtError.message : 'Unable to load unallocated payments', 400)
   }
 }

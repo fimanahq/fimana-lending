@@ -52,7 +52,7 @@ export function DashboardProfitByMonthChart({
   showInterestDue?: boolean
 }) {
   const ariaLabel = rows.map((row) => (
-    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
+    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
   )).join('. ')
 
   return (
@@ -105,6 +105,20 @@ export function DashboardProfitByMonthChart({
             dataKey="penaltyCollectedMinor"
             name="Penalty collected"
             fill="#b96d2a"
+            stackId="profit"
+            isAnimationActive={false}
+          />
+          <Bar
+            dataKey="excessProfitMinor"
+            name="Excess profit"
+            fill="#76518f"
+            stackId="profit"
+            isAnimationActive={false}
+          />
+          <Bar
+            dataKey="treasuryInterestEarnedMinor"
+            name="Treasury interest"
+            fill="#3f7f8c"
             stackId="profit"
             radius={[8, 8, 0, 0]}
             isAnimationActive={false}

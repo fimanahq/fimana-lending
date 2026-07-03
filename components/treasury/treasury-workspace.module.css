@@ -70,6 +70,15 @@
   white-space: nowrap;
 }
 
+.iconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  padding: 0;
+  text-decoration: none;
+}
+
 .bankTile .bankButtonPrimary {
   background: var(--accent-strong);
   color: var(--accent-contrast);
@@ -123,7 +132,8 @@
 }
 
 .positiveAmount,
-.negativeAmount {
+.negativeAmount,
+.neutralAmount {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -136,6 +146,10 @@
 
 .negativeAmount {
   color: var(--danger);
+}
+
+.neutralAmount {
+  color: var(--text-muted);
 }
 
 .statusText {

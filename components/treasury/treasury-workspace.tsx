@@ -1,6 +1,6 @@
 'use client'
 
-import { CircleDollarSign, PlusCircle, RefreshCw, Save, SquarePen, X } from 'lucide-react'
+import { CircleDollarSign, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SquarePen, X } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import {
   Badge,
@@ -13,13 +13,23 @@ import {
   Input,
   LoadingState,
   PageContainer,
+  Pagination,
+  ProtectedLink,
+  SearchableSelect,
   TableShell,
   Textarea,
   useToast,
 } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { Treasury, TreasuryMovement } from '@/lib/types/shared'
-import { createTreasuryPosting, getTreasury, getTreasuryMovements, updateTreasury } from '@/services/treasury'
+import {
+  createTreasuryAdjustment,
+  createTreasuryPosting,
+  getTreasury,
+  getTreasuryMovements,
+  reverseTreasuryInterest,
+  updateTreasury,
+} from '@/services/treasury'
 import styles from './treasury-workspace.module.css'
 
 interface TreasuryFormState {
@@ -31,6 +41,13 @@ interface InterestFormState {
   amount: string
   occurredAt: string
   description: string
+}
+
+interface AdjustmentFormState {
+  direction: 'credit' | 'debit'
+  amount: string
+  occurredAt: string
+  reason: string
 }
 
 function buildInitialForm(treasury: Treasury | null): TreasuryFormState {
@@ -46,6 +63,10 @@ function buildInitialInterestForm(): InterestFormState {
     occurredAt: toDateInputValue(new Date()),
     description: '',
   }
+}
+
+function buildInitialAdjustmentForm(): AdjustmentFormState {
+  return { direction: 'credit', amount: '', occurredAt: toDateInputValue(new Date()), reason: '' }
 }
 
 function toDateInputValue(date: Date) {
@@ -71,19 +92,19 @@ function parseAmount(value: string) {
   return { value: Number(parsed.toFixed(2)) }
 }
 
-function parsePositiveAmount(value: string) {
+function parsePositiveAmount(value: string, label = 'Interest amount') {
   const trimmed = value.trim()
   if (!trimmed) {
-    return { error: 'Interest amount is required.' }
+    return { error: `${label} is required.` }
   }
 
   const parsed = Number(trimmed)
   if (!Number.isFinite(parsed)) {
-    return { error: 'Enter a valid interest amount.' }
+    return { error: `Enter a valid ${label.toLowerCase()}.` }
   }
 
   if (parsed <= 0) {
-    return { error: 'Interest amount must be greater than zero.' }
+    return { error: `${label} must be greater than zero.` }
   }
 
   return { value: Number(parsed.toFixed(2)) }
@@ -103,6 +124,11 @@ function parsePostingDate(value: string) {
 }
 
 function formatMovementType(movement: TreasuryMovement) {
+  if (movement.type === 'treasury_profit_reclassification') {
+    return movement.reversalOfTransactionId
+      ? 'Excess profit reversal'
+      : 'Excess profit reclassification'
+  }
   if (movement.type === 'lending_disbursement') {
     return 'Loan disbursement'
   }
@@ -113,6 +139,14 @@ function formatMovementType(movement: TreasuryMovement) {
 
   if (movement.type === 'lending_payment') {
     return 'Loan payment'
+  }
+
+  if (movement.type === 'treasury_adjustment') {
+    return movement.adjustmentDirection === 'debit' ? 'Reconciliation debit' : 'Reconciliation credit'
+  }
+
+  if (movement.type === 'treasury_interest_earned' && movement.reversalOfTransactionId) {
+    return 'Interest reversal'
   }
 
   return 'Interest earned'
@@ -127,6 +161,11 @@ function formatSignedCurrency(value: number, currency: string) {
 }
 
 function getMovementStatus(movement: TreasuryMovement) {
+  if (movement.type === 'treasury_profit_reclassification') {
+    if (movement.reversalOfTransactionId) return 'Reversal posted'
+    if (movement.reversedByTransactionId) return 'Reversed'
+    return 'Reclassified'
+  }
   if (movement.type === 'lending_disbursement') {
     return 'Completed'
   }
@@ -139,23 +178,48 @@ function getMovementStatus(movement: TreasuryMovement) {
     return 'Settled'
   }
 
+  if (movement.type === 'treasury_interest_earned' && movement.reversalOfTransactionId) {
+    return 'Reversal posted'
+  }
+
+  if (movement.type === 'treasury_interest_earned' && movement.reversedByTransactionId) {
+    return 'Reversed'
+  }
+
   return 'Posted'
+}
+
+function canReverseInterest(movement: TreasuryMovement) {
+  return movement.type === 'treasury_interest_earned'
+    && !movement.reversalOfTransactionId
+    && !movement.reversedByTransactionId
 }
 
 export function TreasuryWorkspace() {
   const { dismiss, loading: showLoading, update } = useToast()
   const [treasury, setTreasury] = useState<Treasury | null>(null)
   const [movements, setMovements] = useState<TreasuryMovement[]>([])
+  const [movementPage, setMovementPage] = useState(1)
+  const [movementTotal, setMovementTotal] = useState(0)
+  const [movementTotalPages, setMovementTotalPages] = useState(0)
   const [form, setForm] = useState<TreasuryFormState>(() => buildInitialForm(null))
   const [interestForm, setInterestForm] = useState<InterestFormState>(() => buildInitialInterestForm())
+  const [adjustmentForm, setAdjustmentForm] = useState<AdjustmentFormState>(() => buildInitialAdjustmentForm())
+  const [selectedInterest, setSelectedInterest] = useState<TreasuryMovement | null>(null)
+  const [reversalReason, setReversalReason] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [posting, setPosting] = useState(false)
+  const [adjusting, setAdjusting] = useState(false)
+  const [reversing, setReversing] = useState(false)
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [postInterestOpen, setPostInterestOpen] = useState(false)
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [postingError, setPostingError] = useState('')
+  const [adjustmentError, setAdjustmentError] = useState('')
+  const [reversalError, setReversalError] = useState('')
   const [nameError, setNameError] = useState('')
   const [openingBalanceError, setOpeningBalanceError] = useState('')
   const [interestAmountError, setInterestAmountError] = useState('')
@@ -164,16 +228,18 @@ export function TreasuryWorkspace() {
 
   const loadTreasuryData = useCallback(async () => {
     const nextTreasury = await getTreasury()
-    const nextMovements = nextTreasury.isConfigured && nextTreasury.account
-      ? await getTreasuryMovements()
-      : []
+    const movementResult = nextTreasury.isConfigured && nextTreasury.account
+      ? await getTreasuryMovements(movementPage)
+      : { items: [], total: 0, totalPages: 0 }
 
     setTreasury(nextTreasury)
-    setMovements(nextMovements)
+    setMovements(movementResult.items)
+    setMovementTotal(movementResult.total)
+    setMovementTotalPages(movementResult.totalPages)
     setForm(buildInitialForm(nextTreasury))
     setNameError('')
     setOpeningBalanceError('')
-  }, [])
+  }, [movementPage])
 
   useEffect(() => {
     let cancelled = false
@@ -301,6 +367,86 @@ export function TreasuryWorkspace() {
     }
   }
 
+  const handleAdjustment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const parsedAmount = parsePositiveAmount(adjustmentForm.amount, 'Adjustment amount')
+    const parsedDate = parsePostingDate(adjustmentForm.occurredAt)
+    if (parsedAmount.error || parsedDate.error || !adjustmentForm.reason.trim()) {
+      setAdjustmentError(parsedAmount.error || parsedDate.error || 'Adjustment reason is required.')
+      return
+    }
+    setAdjusting(true)
+    setAdjustmentError('')
+    const toastId = showLoading('Posting reconciliation adjustment...')
+    try {
+      await createTreasuryAdjustment({
+        direction: adjustmentForm.direction,
+        amount: parsedAmount.value!,
+        occurredAt: parsedDate.value!,
+        reason: adjustmentForm.reason.trim(),
+      })
+      await loadTreasuryData()
+      setAdjustmentForm(buildInitialAdjustmentForm())
+      setAdjustmentOpen(false)
+      update(toastId, 'Reconciliation adjustment posted.', { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setAdjustmentError(caughtError instanceof Error ? caughtError.message : 'Unable to post adjustment.')
+    } finally {
+      setAdjusting(false)
+    }
+  }
+
+  const openAdjustment = () => {
+    setAdjustmentForm(buildInitialAdjustmentForm())
+    setAdjustmentError('')
+    setAdjustmentOpen(true)
+  }
+
+  const closeAdjustment = () => {
+    if (!adjusting) setAdjustmentOpen(false)
+  }
+
+  const openInterestReversal = (movement: TreasuryMovement) => {
+    setSelectedInterest(movement)
+    setReversalReason('')
+    setReversalError('')
+  }
+
+  const closeInterestReversal = () => {
+    if (!reversing) {
+      setSelectedInterest(null)
+      setReversalReason('')
+      setReversalError('')
+    }
+  }
+
+  const handleInterestReversal = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!selectedInterest) return
+    const reason = reversalReason.trim()
+    if (!reason) {
+      setReversalError('Reversal reason is required.')
+      return
+    }
+
+    setReversing(true)
+    setReversalError('')
+    const toastId = showLoading('Reversing Treasury interest...')
+    try {
+      await reverseTreasuryInterest(selectedInterest.id, reason)
+      await loadTreasuryData()
+      setSelectedInterest(null)
+      setReversalReason('')
+      update(toastId, 'Treasury interest reversed.', { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setReversalError(caughtError instanceof Error ? caughtError.message : 'Unable to reverse Treasury interest.')
+    } finally {
+      setReversing(false)
+    }
+  }
+
   const openPostInterest = () => {
     setInterestForm(buildInitialInterestForm())
     setPostingError('')
@@ -408,6 +554,22 @@ export function TreasuryWorkspace() {
             >
               <CircleDollarSign aria-hidden="true" size={16} />
             </Button>
+            <Button
+              className={`${styles.bankButtonSecondary} ${styles.iconButton}`}
+              onClick={openAdjustment}
+              aria-label="Reconciliation adjustment"
+              title="Reconciliation adjustment"
+            >
+              <Scale aria-hidden="true" size={16} />
+            </Button>
+            <ProtectedLink
+              href="/treasury/historical-excess"
+              className={`button-secondary ui-button ${styles.bankButtonSecondary} ${styles.iconLink}`}
+              aria-label="Historical excess review"
+              title="Historical excess review"
+            >
+              <ListChecks aria-hidden="true" size={16} />
+            </ProtectedLink>
           </div>
 
           <div className={styles.bankDecoration} aria-hidden="true">
@@ -481,6 +643,7 @@ export function TreasuryWorkspace() {
                     <th>Type</th>
                     <th className={styles.amountColumn}>Amount</th>
                     <th>Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -496,21 +659,37 @@ export function TreasuryWorkspace() {
                         ) : null}
                       </td>
                       <td>
-                        <Badge tone={movement.direction === 'in' ? 'success' : 'warning'}>
+                        <Badge tone={movement.direction === 'neutral' ? 'neutral' : movement.direction === 'in' ? 'success' : 'warning'}>
                           {formatMovementType(movement)}
                         </Badge>
                       </td>
                       <td
                         className={
-                          movement.direction === 'in'
-                            ? styles.positiveAmount
-                            : styles.negativeAmount
+                          movement.direction === 'neutral'
+                            ? styles.neutralAmount
+                            : movement.direction === 'in' ? styles.positiveAmount : styles.negativeAmount
                         }
                       >
-                        {formatSignedCurrency(movement.signedAmount, account.currency)}
+                        {movement.direction === 'neutral'
+                          ? formatCurrency(movement.amount, account.currency)
+                          : formatSignedCurrency(movement.signedAmount, account.currency)}
                       </td>
                       <td>
                         <span className={styles.statusText}>{getMovementStatus(movement)}</span>
+                      </td>
+                      <td>
+                        {canReverseInterest(movement) ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => openInterestReversal(movement)}
+                            aria-label={`Reverse ${movement.description || 'interest posting'}`}
+                            title="Reverse interest posting"
+                          >
+                            <RotateCcw aria-hidden="true" size={15} />
+                          </Button>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -518,6 +697,94 @@ export function TreasuryWorkspace() {
               </table>
             </TableShell>
           )}
+
+          {movementTotal > 0 ? (
+            <Pagination
+              page={movementPage}
+              totalPages={movementTotalPages}
+              totalItems={movementTotal}
+              itemLabel="movements"
+              loading={loading}
+              onPageChange={setMovementPage}
+            />
+          ) : null}
+
+          <Dialog
+            id="treasury-interest-reversal-dialog"
+            open={Boolean(selectedInterest)}
+            title="Reverse interest posting?"
+            description="This debits Treasury and removes the selected amount from recognized interest profit."
+            onClose={closeInterestReversal}
+          >
+            <form className="stack" onSubmit={(event) => void handleInterestReversal(event)}>
+              {reversalError ? <ErrorBanner title="Interest reversal failed" message={reversalError} /> : null}
+              {selectedInterest ? (
+                <div className="notice danger">
+                  {formatCurrency(selectedInterest.amount, account.currency)} will be reversed with a linked audit entry.
+                </div>
+              ) : null}
+              <Textarea
+                id="treasury-interest-reversal-reason"
+                label="Required reason"
+                rows={3}
+                value={reversalReason}
+                onChange={(event) => setReversalReason(event.target.value)}
+              />
+              <div className={`ui-card__actions ${styles.modalActions}`}>
+                <Button type="button" variant="secondary" disabled={reversing} onClick={closeInterestReversal}>Cancel</Button>
+                <Button type="submit" disabled={reversing}>{reversing ? 'Reversing…' : 'Reverse interest'}</Button>
+              </div>
+            </form>
+          </Dialog>
+
+          <Dialog
+            id="treasury-reconciliation-adjustment-dialog"
+            open={adjustmentOpen}
+            title="Reconciliation adjustment"
+            description="Post an audited correction after verifying the real Treasury balance."
+            onClose={closeAdjustment}
+          >
+            <form className="stack" onSubmit={(event) => void handleAdjustment(event)}>
+              {adjustmentError ? <ErrorBanner title="Reconciliation action failed" message={adjustmentError} /> : null}
+              <div className="grid two">
+                <SearchableSelect
+                  id="treasury-adjustment-direction"
+                  label="Direction"
+                  options={[{ value: 'credit', label: 'Credit Treasury' }, { value: 'debit', label: 'Debit Treasury' }]}
+                  value={adjustmentForm.direction}
+                  onChange={(value) => setAdjustmentForm((current) => ({ ...current, direction: value as 'credit' | 'debit' }))}
+                />
+                <Input
+                  id="treasury-adjustment-amount"
+                  label="Amount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  value={adjustmentForm.amount}
+                  onChange={(event) => setAdjustmentForm((current) => ({ ...current, amount: event.target.value }))}
+                />
+                <Input
+                  id="treasury-adjustment-date"
+                  label="Posting date"
+                  type="date"
+                  value={adjustmentForm.occurredAt}
+                  onChange={(event) => setAdjustmentForm((current) => ({ ...current, occurredAt: event.target.value }))}
+                />
+              </div>
+              <Textarea
+                id="treasury-adjustment-reason"
+                label="Required reason"
+                rows={3}
+                value={adjustmentForm.reason}
+                onChange={(event) => setAdjustmentForm((current) => ({ ...current, reason: event.target.value }))}
+              />
+              <div className={`ui-card__actions ${styles.modalActions}`}>
+                <Button type="button" variant="secondary" disabled={adjusting} onClick={closeAdjustment}>Cancel</Button>
+                <Button type="submit" disabled={adjusting}>{adjusting ? 'Posting…' : 'Post adjustment'}</Button>
+              </div>
+            </form>
+          </Dialog>
 
           <Dialog
             id="treasury-edit-account-dialog"

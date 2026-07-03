@@ -162,6 +162,7 @@ export function LoanPaymentDialog({
   const [method, setMethod] = useState<LoanPaymentMethod>('cash')
   const [referenceNo, setReferenceNo] = useState('')
   const [includeInTreasury, setIncludeInTreasury] = useState(true)
+  const [confirmExcessProfit, setConfirmExcessProfit] = useState(false)
   const submitLockRef = useRef(false)
 
   const loadDetail = useCallback(async () => {
@@ -204,6 +205,7 @@ export function LoanPaymentDialog({
       setMethod('cash')
       setReferenceNo('')
       setIncludeInTreasury(true)
+      setConfirmExcessProfit(false)
       setSubmitError('')
     }
   }, [open])
@@ -225,9 +227,8 @@ export function LoanPaymentDialog({
     }
 
     const overpaymentMinor = amountMinor - detail.loan.balances.totalOutstandingAmountMinor
-    if (overpaymentMinor > PAYMENT_TOLERANCE_MINOR) {
-      const currency = detail.loan.loanProduct.currency || 'PHP'
-      setSubmitError(`Payment exceeds remaining balance by ${formatMinorCurrency(overpaymentMinor, currency)}. Please enter ${formatMinorCurrency(detail.loan.balances.totalOutstandingAmountMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`)
+    if (overpaymentMinor > PAYMENT_TOLERANCE_MINOR && !confirmExcessProfit) {
+      setSubmitError('Confirm that the excess amount is non-refundable profit before posting.')
       return
     }
 
@@ -243,6 +244,7 @@ export function LoanPaymentDialog({
         method,
         referenceNo: referenceNo.trim() || undefined,
         includeInTreasury,
+        treatExcessAsProfit: confirmExcessProfit,
       })
 
       setDetail({
@@ -251,6 +253,7 @@ export function LoanPaymentDialog({
       })
       setAmount(getCurrentCutoffOutstandingValue(response.loan))
       setReferenceNo('')
+      setConfirmExcessProfit(false)
       setSubmitError('')
       await onPaymentPosted?.(response.loan)
       update(toastId, 'Payment posted.', { tone: 'success', title: 'Success' })
@@ -283,7 +286,7 @@ export function LoanPaymentDialog({
       : 0
   const hasLargeOverpayment = overpaymentMinor > PAYMENT_TOLERANCE_MINOR
   const paymentPreviewMessage = hasLargeOverpayment
-    ? `Payment exceeds remaining balance by ${formatMinorCurrency(overpaymentMinor, currency)}. Please enter ${formatMinorCurrency(remainingBalanceMinor + PAYMENT_TOLERANCE_MINOR, currency)} or less.`
+    ? `${formatMinorCurrency(overpaymentMinor, currency)} exceeds the receivable and will be permanent, non-refundable profit if confirmed.`
     : overpaymentMinor > 0
       ? `${formatMinorCurrency(overpaymentMinor, currency)} excess will be recorded as rounding income.`
       : shortagePreviewMinor > 0
@@ -370,6 +373,21 @@ export function LoanPaymentDialog({
                 onChange={(event) => setIncludeInTreasury(event.target.checked)}
               />
 
+              {!includeInTreasury ? (
+                <div className="notice danger">
+                  This payment will update the loan but not Treasury, creating a cash reconciliation variance.
+                </div>
+              ) : null}
+
+              {hasLargeOverpayment ? (
+                <Switch
+                  id="payment-confirm-excess-profit"
+                  label={`Confirm ${formatMinorCurrency(overpaymentMinor, currency)} as non-refundable profit`}
+                  checked={confirmExcessProfit}
+                  onChange={(event) => setConfirmExcessProfit(event.target.checked)}
+                />
+              ) : null}
+
               {paymentPreviewMessage ? (
                 <div className={hasLargeOverpayment ? 'notice danger' : 'notice'}>
                   {paymentPreviewMessage}
@@ -377,7 +395,7 @@ export function LoanPaymentDialog({
               ) : null}
 
               <div className={`ui-card__actions ${styles.formActions}`}>
-                <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostPayment || hasLargeOverpayment}>
+                <Button onClick={() => void handleSubmit()} disabled={submitting || !canPostPayment || (hasLargeOverpayment && !confirmExcessProfit)}>
                   {submitting ? 'Posting…' : 'Post payment'}
                 </Button>
               </div>

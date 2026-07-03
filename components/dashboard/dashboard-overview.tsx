@@ -339,12 +339,8 @@ function ActiveLoansPanel({
   summary: DashboardOverviewData['summary']
 }) {
   const hasActiveLoanMix = summary.moneyWithBorrowersMinor > 0
-    || summary.activeCollectedProfitMinor > 0
     || summary.remainingProjectedProfitMinor > 0
   const totalActiveReceivableMinor = summary.moneyWithBorrowersMinor + summary.remainingProjectedProfitMinor
-  const totalActiveBalanceMixMinor = summary.moneyWithBorrowersMinor
-    + summary.activeCollectedProfitMinor
-    + summary.remainingProjectedProfitMinor
   const overdueMeta = summary.overdueLoanCount > 0
     ? `${summary.overdueLoanCount.toLocaleString('en-PH')} overdue loan${summary.overdueLoanCount === 1 ? '' : 's'}`
     : 'No overdue loans right now'
@@ -358,7 +354,7 @@ function ActiveLoansPanel({
         <div className={dashboardClass('dashboard-overview__activeLoansTitleGroup')}>
           <span className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</span>
           <h2>Active loan position</h2>
-          <p>See deployed principal, realized profit, and expected profit from active schedules in one operating view.</p>
+          <p>See deployed principal, expected profit, and profit already collected from active schedules in one operating view.</p>
         </div>
         <div className={dashboardClass('dashboard-overview__activeLoansSummary')}>
           <span className={dashboardClass('dashboard-overview__progressSummaryLabel')}>Total active receivable</span>
@@ -372,15 +368,21 @@ function ActiveLoansPanel({
           <section className={dashboardClass('dashboard-overview__activeLoansMain')} aria-label="Active loan balance mix">
             <div className={dashboardClass('dashboard-overview__activeLoansMix')}>
               <DashboardPortfolioChart
-                caption="Capital, realized profit, and expected profit within active loans."
+                caption="Principal and expected profit still receivable from active loans."
                 centerKicker="Active loan mix"
                 centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
-                centerValueMinor={totalActiveBalanceMixMinor}
+                centerValueMinor={totalActiveReceivableMinor}
                 currency={currency}
                 segments={segments}
               />
 
               <ProgressSegmentLedger ariaLabel="Active loan balance ledger" currency={currency} segments={segments} />
+
+              <MixContext
+                label="Collected profit from active loans"
+                meta="Interest and penalties already collected; excluded from the current receivable total"
+                value={formatMinorCurrency(summary.activeCollectedProfitMinor, currency)}
+              />
             </div>
           </section>
 
@@ -393,7 +395,7 @@ function ActiveLoansPanel({
             </section>
             <section className={dashboardClass('dashboard-overview__activeLoansNote')}>
               <span className={dashboardClass('dashboard-overview__statLabel')}>Portfolio note</span>
-              <p>Active balance includes deployed principal, realized profit, and expected profit from active schedules.</p>
+              <p>Active balance includes deployed principal and expected profit still receivable. Collected profit is shown separately.</p>
             </section>
           </aside>
         </div>
@@ -492,15 +494,33 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const hasPrincipalWriteOff = summary.writtenOffPrincipalMinor > 0
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
-  const projectedNetWorthAfterWriteOffMinor = summary.currentCapitalBasisMinor - summary.writtenOffPrincipalMinor + summary.remainingProjectedProfitMinor
+  const projectedNetWorthAfterWriteOffMinor = summary.projectedNetWorthMinor
   const projectedNetWorthMeta = summary.ownerLoanInterestExcluded
-    ? 'Current capital basis plus raw projected unpaid profit, net of write-offs. Owner loan interest is excluded only from Profit Outlook.'
-    : 'Current capital basis plus projected unpaid profit, net of write-offs'
+    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Owner loan interest is excluded only from Profit Outlook.'
+    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit'
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
       <section className={dashboardClass('dashboard-overview__executive')}>
         {partialFailureNotice ? <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>{partialFailureNotice}</div> : null}
+        {summary.cashReconciliationStatus === 'variance' && summary.cashReconciliationDifferenceMinor !== null ? (
+          <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>
+            Treasury differs from calculated lending cash by {formatMinorCurrency(Math.abs(summary.cashReconciliationDifferenceMinor), dashboardCurrency)}
+            {' '}({summary.cashReconciliationDifferenceMinor < 0 ? 'Treasury is lower' : 'Treasury is higher'}).{' '}
+            <Link href="/treasury">Review Treasury reconciliation</Link>.
+          </div>
+        ) : null}
+        {summary.cashReconciliationStatus === 'treasury_unconfigured' ? (
+          <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>
+            Treasury is not configured. Cash on hand is using the calculated lending balance. <Link href="/treasury">Set up Treasury</Link>.
+          </div>
+        ) : null}
+        {summary.historicalUnallocatedPaymentCount > 0 ? (
+          <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>
+            {summary.historicalUnallocatedPaymentCount.toLocaleString('en-PH')} historical payment{summary.historicalUnallocatedPaymentCount === 1 ? '' : 's'} contain{' '}
+            {formatMinorCurrency(summary.historicalUnallocatedAmountMinor, dashboardCurrency)} awaiting excess-profit review. <Link href="/treasury/historical-excess">Review payments</Link>.
+          </div>
+        ) : null}
 
         <section className={dashboardClass('dashboard-overview__kpiGrid', 'dashboard-overview__kpiGrid--six')}>
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--plain')}>
@@ -522,9 +542,13 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Available to lend again</span>
+            <span className={dashboardClass('dashboard-overview__statMeta')}>
+              {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury' : 'Calculated amount available to lend'}
+            </span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              Current capital basis less active principal and write-offs
+              {summary.treasuryCashOnHandMinor !== null
+                ? `Calculated lending cash: ${formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency)}`
+                : 'Current capital basis less active principal and write-offs'}
             </span>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="shield" />

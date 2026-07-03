@@ -44,15 +44,17 @@ export interface Treasury {
   account: TreasuryAccount | null
 }
 
-export type TreasuryMovementDirection = 'in' | 'out'
+export type TreasuryMovementDirection = 'in' | 'out' | 'neutral'
 
-export type TreasuryMovementType = 'lending_disbursement' | 'lending_payment' | 'treasury_interest_earned'
+export type TreasuryMovementType = 'lending_disbursement' | 'lending_payment' | 'treasury_interest_earned' | 'treasury_adjustment' | 'treasury_profit_reclassification'
 
 export interface TreasuryMovement {
   id: string
   accountId: string
   type: TreasuryMovementType
   direction: TreasuryMovementDirection
+  adjustmentDirection?: 'credit' | 'debit'
+  reclassificationCashEffect?: 'credit' | 'debit' | 'neutral'
   amount: number
   amountMinor: number
   signedAmount: number
@@ -62,6 +64,14 @@ export interface TreasuryMovement {
   reversalOfTransactionId?: string
   reversedByTransactionId?: string
   createdAt: string | Date
+}
+
+export interface TreasuryMovementsPage {
+  items: TreasuryMovement[]
+  total: number
+  page: number
+  itemsPerPage: number
+  totalPages: number
 }
 
 export interface User {

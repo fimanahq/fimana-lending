@@ -102,6 +102,8 @@ export function buildDashboardProfitGrowthData(
       interestDueMinor: source?.interestDueMinor ?? 0,
       interestCollectedMinor: source?.interestCollectedMinor ?? 0,
       penaltyCollectedMinor: source?.penaltyCollectedMinor ?? 0,
+      excessProfitMinor: source?.excessProfitMinor ?? 0,
+      treasuryInterestEarnedMinor: source?.treasuryInterestEarnedMinor ?? 0,
       totalProfitMinor: source?.totalProfitMinor ?? 0,
       paymentCount: source?.paymentCount ?? 0,
     }
@@ -145,6 +147,8 @@ export function buildDashboardProfitGrowthData(
     hasCollectedProfit: rows.some((row) => (
       row.interestCollectedMinor !== 0
       || row.penaltyCollectedMinor !== 0
+      || row.excessProfitMinor !== 0
+      || row.treasuryInterestEarnedMinor !== 0
       || row.totalProfitMinor !== 0
     )),
     hasInterestDue: rows.some((row) => row.interestDueMinor !== 0),
@@ -189,6 +193,8 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     collectedInterestMinor: 0,
     collectedPenaltyMinor: 0,
     collectedProfitMinor: 0,
+    collectedExcessProfitMinor: 0,
+    treasuryInterestEarnedMinor: 0,
     activeCollectedInterestMinor: 0,
     activeCollectedPenaltyMinor: 0,
     activeCollectedProfitMinor: 0,
@@ -196,6 +202,13 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     projectedProfitVsCapitalBps: 0,
     currentCapitalBasisMinor: 0,
     cashOnHandMinor: 0,
+    calculatedCashOnHandMinor: 0,
+    treasuryCashOnHandMinor: null,
+    cashReconciliationDifferenceMinor: null,
+    cashReconciliationStatus: 'treasury_unconfigured',
+    projectedNetWorthMinor: 0,
+    historicalUnallocatedAmountMinor: 0,
+    historicalUnallocatedPaymentCount: 0,
     outstandingPrincipalMinor: 0,
     moneyWithBorrowersMinor: 0,
     defaultedLoanCount: 0,
@@ -274,7 +287,7 @@ export function buildDashboardOverviewData({
   const capitalPositionBaseMinor = Math.max(0, mergedSummary.cashOnHandMinor) + mergedSummary.moneyWithBorrowersMinor
   const activeLoanBalanceBaseMinor = Math.max(
     0,
-    mergedSummary.moneyWithBorrowersMinor + mergedSummary.activeCollectedProfitMinor + mergedSummary.remainingProjectedProfitMinor,
+    mergedSummary.moneyWithBorrowersMinor + mergedSummary.remainingProjectedProfitMinor,
   )
   const activeLoanBalanceSegments: DashboardProgressSegment[] = [
     {
@@ -284,14 +297,6 @@ export function buildDashboardOverviewData({
       valueMinor: mergedSummary.moneyWithBorrowersMinor,
       percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.moneyWithBorrowersMinor / activeLoanBalanceBaseMinor) * 100 : 0,
       tone: 'amber',
-    },
-    {
-      key: 'collected_interest',
-      label: 'Collected profit',
-      description: 'Interest and penalties already collected and realized.',
-      valueMinor: mergedSummary.activeCollectedProfitMinor,
-      percentage: activeLoanBalanceBaseMinor > 0 ? (mergedSummary.activeCollectedProfitMinor / activeLoanBalanceBaseMinor) * 100 : 0,
-      tone: 'green',
     },
     {
       key: 'incoming_interest',
