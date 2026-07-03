@@ -174,6 +174,13 @@ function ProfitOutlookPanel({
             meta={`${formatBasisPointsPercentage(collectedProfitVsCapitalBps)} collected vs capital`}
             value={formatMinorCurrency(collectedProfitMinor, currency)}
           />
+          {summary.collectedExcessProfitMinor > 0 ? (
+            <MixContext
+              label="Excess-payment profit"
+              meta="Realized profit included in collected profit above"
+              value={formatMinorCurrency(summary.collectedExcessProfitMinor, currency)}
+            />
+          ) : null}
         </div>
       ) : (
         <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
@@ -528,7 +535,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + collected profit</span>
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + realized profit − capital losses</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} profit vs capital
             </span>
