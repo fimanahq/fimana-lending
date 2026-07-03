@@ -1,14 +1,17 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState, type WheelEvent } from 'react'
 import { SearchableSelect, type SearchableSelectOption } from '@/components/shared'
 import {
   applyRateBasis,
   calculateReducingBalanceLoan,
   getAutoRate,
+} from '@/components/loan-calculator/loan-calculator-utils'
+import {
   rateReductionOptions,
   type RateBasis,
-} from '@/components/loan-calculator/loan-calculator-utils'
+} from '@/content/calculator-pricing'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
   buildLoanDueDates,
@@ -512,6 +515,38 @@ export function LoanCalculator() {
           )}
         </section>
       </div>
+
+      {form.interestMode === 'rules' ? (
+        <section className="card panel stack">
+          <div className="section-title">Rate reduction guide</div>
+          <div className="table-wrap">
+            <table className="rule-table">
+              <thead>
+                <tr>
+                  <th>Rate basis</th>
+                  <th>Reduction</th>
+                  <th>Suggested basis</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rateReductionOptions.map((option) => (
+                  <tr key={option.value}>
+                    <td>{option.label}</td>
+                    <td>{option.reduction > 0 ? `-${option.reduction}%` : 'None'}</td>
+                    <td>{option.guidance}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="notice">
+            Reductions are percentage points from the table rate. The final rate cannot go below 5%.
+          </div>
+          <div className="inline-actions">
+            <Link href="/rules" className="button-secondary">View full pricing guide</Link>
+          </div>
+        </section>
+      ) : null}
 
       <section className="summary-grid">
         <div className="card summary-stat">

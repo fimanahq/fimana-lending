@@ -9,6 +9,7 @@ import { classNames } from '@/utils/class-names'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 import {
+  BookOpenText,
   Calculator,
   CreditCard,
   FileText,
@@ -29,6 +30,7 @@ type IconName =
   | 'calculator'
   | 'overview'
   | 'payments'
+  | 'rules'
   | 'applications'
   | 'loans'
   | 'settings'
@@ -53,6 +55,7 @@ export const navItems: NavItem[] = [
   { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
   { href: '/collections', label: 'Collections', icon: 'payments' },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
+  { href: '/rules', label: 'Pricing Guide', icon: 'rules' },
   { href: '/treasury', label: 'Treasury', icon: 'treasury' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
@@ -67,7 +70,7 @@ const pathLabels: Record<string, string> = {
   loans: 'Loans',
   new: 'New Application',
   payments: 'Payments',
-  rules: 'Rules',
+  rules: 'Pricing Guide',
   schedule: 'Schedule',
   settings: 'Settings',
   treasury: 'Treasury',
@@ -83,6 +86,7 @@ const icons = {
   treasury: Landmark,
   payments: CreditCard,
   calculator: Calculator,
+  rules: BookOpenText,
   settings: Settings,
   menu: Menu,
   'panel-left-close': PanelLeftClose,
