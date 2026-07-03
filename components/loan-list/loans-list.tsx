@@ -289,6 +289,7 @@ export function LoansList({ listState }: LoansListProps) {
                   <th>Borrower</th>
                   <th>Loan</th>
                   <th>Principal</th>
+                  <th>Installments</th>
                   <th>Total interest</th>
                   <th>Outstanding</th>
                   <th>Next due</th>
@@ -322,6 +323,7 @@ export function LoansList({ listState }: LoansListProps) {
                       <div className="muted micro-copy">{formatLoanSchedule(loan)}</div>
                     </td>
                     <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
+                    <td>{loan.installmentCount}</td>
                     <td>{formatMinorCurrency(loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatLoanNextDue(loan)}</td>
