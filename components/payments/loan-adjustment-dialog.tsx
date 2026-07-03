@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, TableShell, useToast } from '@/components/shared'
+import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, Select, TableShell, useToast } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { LoanAdjustmentDetail, LoanAdjustmentRecord, LoanRecord } from '@/lib/types/lending'
 import { getLoanAdjustmentDetail, postLoanAdjustment } from '@/services'
@@ -69,6 +69,7 @@ export function LoanAdjustmentDialog({
   const [adjustmentDate, setAdjustmentDate] = useState(todayDateValue())
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
+  const [component, setComponent] = useState<'interest' | 'principal'>('interest')
 
   const loadLoan = useCallback(async () => {
     if (!loanId) {
@@ -101,6 +102,7 @@ export function LoanAdjustmentDialog({
       setAdjustmentDate(todayDateValue())
       setAmount('')
       setReason('')
+      setComponent('interest')
       setSubmitError('')
     }
   }, [open])
@@ -117,6 +119,14 @@ export function LoanAdjustmentDialog({
       return
     }
 
+    const availableAmountMinor = component === 'principal'
+      ? detail?.loan.balances.principalOutstandingAmountMinor ?? 0
+      : detail?.loan.balances.interestOutstandingAmountMinor ?? 0
+    if (amountMinor > availableAmountMinor) {
+      setSubmitError(`Amount cannot exceed the outstanding ${component}`)
+      return
+    }
+
     setSubmitting(true)
     setSubmitError('')
     const toastId = showLoading('Posting adjustment...')
@@ -126,6 +136,9 @@ export function LoanAdjustmentDialog({
         adjustmentDate,
         amountMinor,
         reason: reason.trim(),
+        type: 'balance_adjustment',
+        component,
+        direction: 'decrease',
       })
 
       setDetail((prev) => ({
@@ -173,13 +186,14 @@ export function LoanAdjustmentDialog({
               <th>Applied rows</th>
               <th>Principal</th>
               <th>Interest</th>
+              <th>Capital loss</th>
               <th>Total</th>
             </tr>
           </thead>
           <tbody>
             {adjustments.length === 0 ? (
               <tr>
-                <td colSpan={6} className="muted">No adjustments have been posted yet.</td>
+                <td colSpan={7} className="muted">No adjustments have been posted yet.</td>
               </tr>
             ) : (
               adjustments.map((adjustment) => (
@@ -193,6 +207,7 @@ export function LoanAdjustmentDialog({
                   <td>{adjustment.allocations.map((allocation) => `#${allocation.sequence}`).join(', ') || 'None'}</td>
                   <td>{formatMinorCurrency(adjustment.allocations.reduce((sum, allocation) => sum + allocation.principalAmountMinor, 0), currency)}</td>
                   <td>{formatMinorCurrency(adjustment.allocations.reduce((sum, allocation) => sum + allocation.interestAmountMinor, 0), currency)}</td>
+                  <td>{formatMinorCurrency(adjustment.capitalLossAmountMinor, currency)}</td>
                   <td>{formatMinorCurrency(adjustment.amountMinor, currency)}</td>
                 </tr>
               ))
@@ -258,10 +273,22 @@ export function LoanAdjustmentDialog({
               {submitError ? <ErrorBanner title="Unable to post adjustment" message={submitError} /> : null}
 
               <div className="notice">
-                This is a whole-loan adjustment. The amount is applied automatically to the oldest open rows first, reducing interest before principal. Paid rows are not adjusted.
+                {component === 'interest'
+                  ? 'An interest waiver reduces interest only. It does not move cash or change Treasury.'
+                  : 'A principal write-off reduces principal and records a capital loss. It does not move cash or change Treasury, but projected net worth decreases.'}
               </div>
 
               <div className="grid two">
+                <Select
+                  id="adjustment-component"
+                  label="Adjustment type"
+                  value={component}
+                  onChange={(event) => setComponent(event.target.value as 'interest' | 'principal')}
+                  disabled={submitting || !canPostAdjustment}
+                >
+                  <option value="interest">Interest waiver</option>
+                  <option value="principal">Principal write-off</option>
+                </Select>
                 <Input
                   id="adjustment-date"
                   label="Adjustment date"

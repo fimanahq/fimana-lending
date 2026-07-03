@@ -324,6 +324,7 @@ export interface LoanAdjustmentRecord {
   scheduleRowId?: string | null
   penaltyRateBps?: number | null
   allocations: LoanAdjustmentAllocation[]
+  capitalLossAmountMinor: number
   status: LoanAdjustmentStatus
 }
 
@@ -340,7 +341,7 @@ export interface PostLoanAdjustmentInput {
   scheduleRowId?: string
   penaltyRateBps?: number
   type?: LoanAdjustmentType
-  component?: LoanAdjustmentComponent
+  component: LoanAdjustmentComponent
   direction?: LoanAdjustmentDirection
 }
 
@@ -352,7 +353,7 @@ export interface UpdateLoanAdjustmentInput {
   scheduleRowId?: string
   penaltyRateBps?: number
   type?: LoanAdjustmentType
-  component?: LoanAdjustmentComponent
+  component: LoanAdjustmentComponent
   direction?: LoanAdjustmentDirection
 }
 
@@ -551,6 +552,7 @@ export interface LoanDashboardSummary {
   collectedProfitVsCapitalBps: number
   projectedProfitVsCapitalBps: number
   currentCapitalBasisMinor: number
+  principalWriteOffLossMinor: number
   cashOnHandMinor: number
   calculatedCashOnHandMinor: number
   treasuryCashOnHandMinor: number | null

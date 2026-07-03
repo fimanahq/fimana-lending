@@ -17,6 +17,7 @@ import {
   LoadingState,
   ProtectedLink as Link,
   SearchableSelect,
+  Select,
   Switch,
   TableShell,
   Textarea,
@@ -25,7 +26,7 @@ import {
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import type { LoanDetailBackNavigation } from '@/lib/loan-navigation'
 import { getStatusClassName } from '@/lib/status'
-import type { Borrower, LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
+import type { Borrower, LoanAdjustmentComponent, LoanAdjustmentRecord, LoanPaymentHistory, LoanPaymentMethod, LoanRecord, LoanScheduleRow } from '@/lib/types/lending'
 import { getSettings, listLoanBorrowers } from '@/services'
 import { applyLoanReferral, getLoan, updateLoan } from '@/services/loans'
 import {
@@ -181,6 +182,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
   const [adjustmentDate, setAdjustmentDate] = useState('')
   const [adjustmentAmount, setAdjustmentAmount] = useState('')
   const [adjustmentReason, setAdjustmentReason] = useState('')
+  const [adjustmentComponent, setAdjustmentComponent] = useState<LoanAdjustmentComponent>('interest')
   const [penaltyRate, setPenaltyRate] = useState('')
   const [penaltyAmount, setPenaltyAmount] = useState('')
   const [penaltyReason, setPenaltyReason] = useState('')
@@ -484,7 +486,18 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
   }
 
   const openEditAdjustmentDialog = (adjustment: LoanAdjustmentRecord) => {
+    const principalAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + allocation.principalAmountMinor, 0)
+    const interestAmountMinor = adjustment.allocations.reduce((sum, allocation) => sum + allocation.interestAmountMinor, 0)
+    if (adjustment.component === 'total' && principalAmountMinor > 0 && interestAmountMinor > 0) {
+      setAdjustmentActionError('This legacy adjustment spans principal and interest. Delete and repost it as separate explicit adjustments to change it.')
+      return
+    }
+
+    const editableComponent = adjustment.component === 'total'
+      ? principalAmountMinor > 0 ? 'principal' : 'interest'
+      : adjustment.component
     setSelectedAdjustment(adjustment)
+    setAdjustmentComponent(editableComponent)
     setAdjustmentDate(adjustment.adjustmentDate.slice(0, 10))
     setAdjustmentAmount((adjustment.amountMinor / 100).toFixed(2))
     setAdjustmentReason(adjustment.reason)
@@ -597,6 +610,9 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
         adjustmentDate,
         amountMinor,
         reason: adjustmentReason.trim(),
+        type: selectedAdjustment.component === 'penalty' ? selectedAdjustment.type : 'balance_adjustment',
+        component: adjustmentComponent,
+        direction: adjustmentComponent === 'penalty' ? 'increase' : 'decrease',
       })
       setLoan(response.loan)
       const adjustmentDetail = await getLoanAdjustmentDetail(loanId)
@@ -1079,6 +1095,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
               <th>Principal</th>
               <th>Interest</th>
               <th>Penalty</th>
+              <th>Capital loss</th>
               <th>Total</th>
               <th>Status</th>
               <th>Actions</th>
@@ -1087,7 +1104,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
           <tbody>
             {adjustments.length === 0 ? (
               <tr>
-                <td colSpan={9} className="muted">No adjustments have been posted yet.</td>
+                <td colSpan={10} className="muted">No adjustments have been posted yet.</td>
               </tr>
             ) : (
               adjustments.map((adjustment) => {
@@ -1105,6 +1122,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
                     <td>{formatMinorCurrency(principalAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(interestAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(penaltyAmountMinor, currency)}</td>
+                    <td>{formatMinorCurrency(adjustment.capitalLossAmountMinor, currency)}</td>
                     <td>{formatMinorCurrency(adjustment.amountMinor, currency)}</td>
                     <td><span className={getAdjustmentStatusClassName(adjustment.status)}>{adjustment.status}</span></td>
                     <td>
@@ -1378,6 +1396,17 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
         <div className="stack">
           {adjustmentActionError ? <ErrorBanner title="Unable to update adjustment" message={adjustmentActionError} /> : null}
           <div className="grid two">
+            {adjustmentComponent !== 'penalty' ? (
+              <Select
+                id="edit-adjustment-component"
+                label="Adjustment type"
+                value={adjustmentComponent}
+                onChange={(event) => setAdjustmentComponent(event.target.value as 'interest' | 'principal')}
+              >
+                <option value="interest">Interest waiver</option>
+                <option value="principal">Principal write-off</option>
+              </Select>
+            ) : null}
             <Input
               id="edit-adjustment-date"
               label="Adjustment date"

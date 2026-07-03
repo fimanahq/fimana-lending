@@ -201,6 +201,7 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     collectedProfitVsCapitalBps: 0,
     projectedProfitVsCapitalBps: 0,
     currentCapitalBasisMinor: 0,
+    principalWriteOffLossMinor: 0,
     cashOnHandMinor: 0,
     calculatedCashOnHandMinor: 0,
     treasuryCashOnHandMinor: null,
