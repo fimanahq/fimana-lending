@@ -62,12 +62,24 @@
   gap: 0.75rem;
 }
 
-.bankTile .bankButtonPrimary,
-.bankTile .bankButtonSecondary {
+.bankActionButton {
   border-radius: 4px;
   min-height: 2.5rem;
   gap: 0.4rem;
   white-space: nowrap;
+  border: 1px solid transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.bankActionButton:hover,
+.bankActionButton:focus-visible {
+  transform: translateY(-1px);
+}
+
+.bankActionEdit {
+  border-color: rgba(255, 248, 231, 0.14);
+  background: rgba(255, 248, 231, 0.16);
+  color: #fff7e2;
 }
 
 .iconLink {
@@ -79,15 +91,22 @@
   text-decoration: none;
 }
 
-.bankTile .bankButtonPrimary {
-  background: var(--accent-strong);
-  color: var(--accent-contrast);
+.bankActionInterest {
+  border-color: rgba(255, 210, 143, 0.16);
+  background: linear-gradient(135deg, #b36018 0%, #d98345 100%);
+  color: #fffdf8;
 }
 
-.bankTile .bankButtonSecondary {
-  border-color: rgba(255, 253, 248, 0.08);
-  background: rgba(255, 253, 248, 0.12);
-  color: var(--accent-contrast);
+.bankActionAdjustment {
+  border-color: rgba(153, 218, 201, 0.14);
+  background: rgba(36, 98, 79, 0.22);
+  color: #dcf7ee;
+}
+
+.bankActionReview {
+  border-color: rgba(188, 220, 255, 0.14);
+  background: rgba(111, 163, 224, 0.22);
+  color: #eaf5ff;
 }
 
 .bankDecoration {
@@ -172,6 +191,58 @@
   justify-content: flex-end;
 }
 
+.postInterestIntro {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(146, 75, 16, 0.12);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 234, 0.92) 0%, rgba(255, 241, 223, 0.72) 100%);
+}
+
+.postInterestBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, #b36018 0%, #d98345 100%);
+  color: #fffdf8;
+  box-shadow: 0 14px 28px rgba(146, 75, 16, 0.2);
+}
+
+.postInterestCopy {
+  min-width: 0;
+}
+
+.postInterestCopy strong {
+  display: block;
+  color: var(--text-soft);
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+}
+
+.postInterestCopy p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.postInterestAction {
+  min-width: 8.5rem;
+  padding-inline: 1rem;
+  border-radius: 999px;
+}
+
+.postInterestActionPrimary {
+  box-shadow: 0 16px 30px rgba(146, 75, 16, 0.18);
+}
+
 @media (max-width: 860px) {
   .bankTile {
     flex-direction: column;
@@ -191,8 +262,7 @@
     width: 100%;
   }
 
-  .bankTile .bankButtonPrimary,
-  .bankTile .bankButtonSecondary {
+  .bankActionButton {
     flex: 1;
   }
 }
@@ -202,8 +272,15 @@
     flex-direction: column;
   }
 
-  .bankTile .bankButtonPrimary,
-  .bankTile .bankButtonSecondary {
+  .bankActionButton {
+    width: 100%;
+  }
+
+  .postInterestIntro {
+    flex-direction: column;
+  }
+
+  .postInterestAction {
     width: 100%;
   }
 }

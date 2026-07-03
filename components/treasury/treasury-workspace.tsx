@@ -1,6 +1,6 @@
 'use client'
 
-import { CircleDollarSign, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SquarePen, X } from 'lucide-react'
+import { HandCoins, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SquarePen, X } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import {
   Badge,
@@ -539,7 +539,7 @@ export function TreasuryWorkspace() {
 
           <div className={styles.bankActions}>
             <Button
-              className={`${styles.bankButtonSecondary} ${styles.iconButton}`}
+              className={`${styles.bankActionButton} ${styles.bankActionEdit} ${styles.iconButton}`}
               onClick={openEditAccount}
               aria-label="Edit account"
               title="Edit account"
@@ -547,15 +547,15 @@ export function TreasuryWorkspace() {
               <SquarePen aria-hidden="true" size={16} />
             </Button>
             <Button
-              className={`${styles.bankButtonPrimary} ${styles.iconButton}`}
+              className={`${styles.bankActionButton} ${styles.bankActionInterest} ${styles.iconButton}`}
               onClick={openPostInterest}
               aria-label="Post interest"
               title="Post interest"
             >
-              <CircleDollarSign aria-hidden="true" size={16} />
+              <HandCoins aria-hidden="true" size={16} />
             </Button>
             <Button
-              className={`${styles.bankButtonSecondary} ${styles.iconButton}`}
+              className={`${styles.bankActionButton} ${styles.bankActionAdjustment} ${styles.iconButton}`}
               onClick={openAdjustment}
               aria-label="Reconciliation adjustment"
               title="Reconciliation adjustment"
@@ -564,7 +564,7 @@ export function TreasuryWorkspace() {
             </Button>
             <ProtectedLink
               href="/treasury/historical-excess"
-              className={`button-secondary ui-button ${styles.bankButtonSecondary} ${styles.iconLink}`}
+              className={`button-secondary ui-button ${styles.bankActionButton} ${styles.bankActionReview} ${styles.iconLink}`}
               aria-label="Historical excess review"
               title="Historical excess review"
             >
@@ -839,6 +839,16 @@ export function TreasuryWorkspace() {
             <form className="stack" onSubmit={(event) => void handlePostInterest(event)}>
               {postingError ? <ErrorBanner title="Unable to post interest" message={postingError} /> : null}
 
+              <div className={styles.postInterestIntro}>
+                <div className={styles.postInterestBadge} aria-hidden="true">
+                  <HandCoins size={18} />
+                </div>
+                <div className={styles.postInterestCopy}>
+                  <strong>Direct Treasury credit</strong>
+                  <p>Use this when the bank account has already earned interest and Treasury needs the matching ledger entry.</p>
+                </div>
+              </div>
+
               <div className="grid two">
                 <Input
                   id="treasury-interest-amount"
@@ -873,22 +883,22 @@ export function TreasuryWorkspace() {
                 <Button
                   type="button"
                   variant="secondary"
-                  className={styles.iconButton}
+                  className={styles.postInterestAction}
                   disabled={posting}
                   onClick={closePostInterest}
-                  aria-label="Cancel"
                   title="Cancel"
                 >
                   <X aria-hidden="true" size={16} />
+                  <span>Cancel</span>
                 </Button>
                 <Button
                   type="submit"
-                  className={styles.iconButton}
+                  className={`${styles.postInterestAction} ${styles.postInterestActionPrimary}`}
                   disabled={posting}
-                  aria-label="Post interest"
                   title="Post interest"
                 >
-                  <CircleDollarSign aria-hidden="true" size={16} />
+                  <HandCoins aria-hidden="true" size={16} />
+                  <span>{posting ? 'Posting…' : 'Save interest'}</span>
                 </Button>
               </div>
             </form>
