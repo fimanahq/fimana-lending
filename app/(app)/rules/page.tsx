@@ -14,12 +14,12 @@ export default function RulesPage() {
   return (
     <div className="stack">
       <section className="card panel stack">
-        <h1 className="display-title">Loan calculator pricing guide</h1>
+        <h1 className="section-title">Loan calculator pricing guide</h1>
         <p className="muted">
-          Reference for the automatic amount tiers, cutoff rates, rate reductions, and reducing-balance calculation used by the calculator.
+          Reference for the automatic amount tiers, cutoff rates, rate reductions, and reducing-balance calculation used by the standalone calculator.
         </p>
         <div className="notice">
-          These rules apply to the frontend calculator preview only. They do not change loan creation, saved loans, backend pricing, or payment posting.
+          The guide currently aligns only with the standalone calculator and not in request application and manual application creation.
         </div>
         <div className="inline-actions">
           <Link href="/calculator" className="button-secondary">Open calculator</Link>
