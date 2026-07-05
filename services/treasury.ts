@@ -55,6 +55,12 @@ export function getTreasuryMovements(page = 1, itemsPerPage = 25) {
   return apiRequest<TreasuryMovementsPage>(`/api/treasury/movements?page=${page}&itemsPerPage=${itemsPerPage}`)
 }
 
+export function deleteTreasuryMovement(transactionId: string) {
+  return apiRequest<{ id: string }>(`/api/treasury/movements/${transactionId}`, {
+    method: 'DELETE',
+  })
+}
+
 export function createTreasuryPosting(input: CreateTreasuryPostingInput) {
   return apiRequest<TreasuryMovement>('/api/treasury/postings', {
     method: 'POST',

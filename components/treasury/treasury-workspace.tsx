@@ -6,6 +6,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmationDialog,
   Dialog,
   EmptyState,
   ErrorBanner,
@@ -20,12 +21,14 @@ import {
   Textarea,
   useToast,
 } from '@/components/shared'
+import { DeleteIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { Treasury, TreasuryMovement } from '@/lib/types/shared'
 import {
   createTreasuryAdjustment,
   createTreasuryCapitalMovement,
   createTreasuryPosting,
+  deleteTreasuryMovement,
   getTreasury,
   getTreasuryMovements,
   reverseTreasuryInterest,
@@ -215,6 +218,12 @@ function canReverseInterest(movement: TreasuryMovement) {
     && !movement.reversedByTransactionId
 }
 
+function canDeleteMovement(movement: TreasuryMovement) {
+  return (movement.type === 'treasury_adjustment' || movement.type === 'treasury_capital_movement')
+    && !movement.reversalOfTransactionId
+    && !movement.reversedByTransactionId
+}
+
 export function TreasuryWorkspace() {
   const { dismiss, loading: showLoading, update } = useToast()
   const [treasury, setTreasury] = useState<Treasury | null>(null)
@@ -227,6 +236,7 @@ export function TreasuryWorkspace() {
   const [adjustmentForm, setAdjustmentForm] = useState<AdjustmentFormState>(() => buildInitialAdjustmentForm())
   const [capitalMovementForm, setCapitalMovementForm] = useState<CapitalMovementFormState>(() => buildInitialCapitalMovementForm())
   const [selectedInterest, setSelectedInterest] = useState<TreasuryMovement | null>(null)
+  const [selectedDeleteMovement, setSelectedDeleteMovement] = useState<TreasuryMovement | null>(null)
   const [reversalReason, setReversalReason] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -234,6 +244,7 @@ export function TreasuryWorkspace() {
   const [adjusting, setAdjusting] = useState(false)
   const [movingCapital, setMovingCapital] = useState(false)
   const [reversing, setReversing] = useState(false)
+  const [deletingMovement, setDeletingMovement] = useState(false)
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [postInterestOpen, setPostInterestOpen] = useState(false)
   const [adjustmentOpen, setAdjustmentOpen] = useState(false)
@@ -513,6 +524,33 @@ export function TreasuryWorkspace() {
     }
   }
 
+  const handleDeleteMovement = async () => {
+    if (!selectedDeleteMovement) return
+
+    setDeletingMovement(true)
+    const toastId = showLoading('Deleting Treasury movement...')
+    try {
+      await deleteTreasuryMovement(selectedDeleteMovement.id)
+      setSelectedDeleteMovement(null)
+
+      if (movements.length === 1 && movementPage > 1) {
+        setMovementPage((current) => Math.max(current - 1, 1))
+      } else {
+        await loadTreasuryData()
+      }
+
+      update(toastId, 'Treasury movement deleted.', { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      update(
+        toastId,
+        caughtError instanceof Error ? caughtError.message : 'Unable to delete Treasury movement.',
+        { tone: 'error', title: 'Delete failed' },
+      )
+    } finally {
+      setDeletingMovement(false)
+    }
+  }
+
   const openPostInterest = () => {
     setInterestForm(buildInitialInterestForm())
     setPostingError('')
@@ -764,6 +802,19 @@ export function TreasuryWorkspace() {
                             <RotateCcw aria-hidden="true" size={15} />
                           </Button>
                         ) : null}
+                        {canDeleteMovement(movement) ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className={`table-action-icon ${styles.deleteIconButton}`}
+                            onClick={() => setSelectedDeleteMovement(movement)}
+                            aria-label={`Delete ${movement.description || formatMovementType(movement)}`}
+                            title="Delete Treasury movement"
+                          >
+                            <DeleteIcon />
+                          </Button>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -810,6 +861,22 @@ export function TreasuryWorkspace() {
               </div>
             </form>
           </Dialog>
+
+          <ConfirmationDialog
+            open={Boolean(selectedDeleteMovement)}
+            title="Delete Treasury movement?"
+            message={selectedDeleteMovement && account
+              ? `Delete ${formatMovementType(selectedDeleteMovement).toLowerCase()} of ${formatCurrency(selectedDeleteMovement.amount, account.currency)}? Its Treasury balance effect will be undone. This action cannot be reversed.`
+              : 'Delete this Treasury movement? Its balance effect will be undone. This action cannot be reversed.'}
+            confirmLabel={deletingMovement ? 'Deleting…' : 'Delete'}
+            cancelLabel="Cancel"
+            destructive
+            confirmDisabled={deletingMovement}
+            onConfirm={() => void handleDeleteMovement()}
+            onClose={() => {
+              if (!deletingMovement) setSelectedDeleteMovement(null)
+            }}
+          />
 
           <Dialog
             id="treasury-capital-movement-dialog"
