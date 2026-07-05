@@ -1,6 +1,6 @@
 'use client'
 
-import { HandCoins, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SquarePen, X } from 'lucide-react'
+import { ArrowLeftRight, HandCoins, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SquarePen, X } from 'lucide-react'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import {
   Badge,
@@ -24,6 +24,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import type { Treasury, TreasuryMovement } from '@/lib/types/shared'
 import {
   createTreasuryAdjustment,
+  createTreasuryCapitalMovement,
   createTreasuryPosting,
   getTreasury,
   getTreasuryMovements,
@@ -50,6 +51,13 @@ interface AdjustmentFormState {
   reason: string
 }
 
+interface CapitalMovementFormState {
+  direction: 'deposit' | 'withdrawal'
+  amount: string
+  occurredAt: string
+  reason: string
+}
+
 function buildInitialForm(treasury: Treasury | null): TreasuryFormState {
   return {
     name: treasury?.account?.name ?? 'FiMana Lending Treasury',
@@ -67,6 +75,10 @@ function buildInitialInterestForm(): InterestFormState {
 
 function buildInitialAdjustmentForm(): AdjustmentFormState {
   return { direction: 'credit', amount: '', occurredAt: toDateInputValue(new Date()), reason: '' }
+}
+
+function buildInitialCapitalMovementForm(): CapitalMovementFormState {
+  return { direction: 'deposit', amount: '', occurredAt: toDateInputValue(new Date()), reason: '' }
 }
 
 function toDateInputValue(date: Date) {
@@ -145,6 +157,10 @@ function formatMovementType(movement: TreasuryMovement) {
     return movement.adjustmentDirection === 'debit' ? 'Reconciliation debit' : 'Reconciliation credit'
   }
 
+  if (movement.type === 'treasury_capital_movement') {
+    return movement.capitalMovementDirection === 'withdrawal' ? 'Capital withdrawal' : 'Capital deposit'
+  }
+
   if (movement.type === 'treasury_interest_earned' && movement.reversalOfTransactionId) {
     return 'Interest reversal'
   }
@@ -178,6 +194,10 @@ function getMovementStatus(movement: TreasuryMovement) {
     return 'Settled'
   }
 
+  if (movement.type === 'treasury_capital_movement') {
+    return movement.capitalMovementDirection === 'withdrawal' ? 'Withdrawn' : 'Deposited'
+  }
+
   if (movement.type === 'treasury_interest_earned' && movement.reversalOfTransactionId) {
     return 'Reversal posted'
   }
@@ -205,20 +225,24 @@ export function TreasuryWorkspace() {
   const [form, setForm] = useState<TreasuryFormState>(() => buildInitialForm(null))
   const [interestForm, setInterestForm] = useState<InterestFormState>(() => buildInitialInterestForm())
   const [adjustmentForm, setAdjustmentForm] = useState<AdjustmentFormState>(() => buildInitialAdjustmentForm())
+  const [capitalMovementForm, setCapitalMovementForm] = useState<CapitalMovementFormState>(() => buildInitialCapitalMovementForm())
   const [selectedInterest, setSelectedInterest] = useState<TreasuryMovement | null>(null)
   const [reversalReason, setReversalReason] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [posting, setPosting] = useState(false)
   const [adjusting, setAdjusting] = useState(false)
+  const [movingCapital, setMovingCapital] = useState(false)
   const [reversing, setReversing] = useState(false)
   const [editAccountOpen, setEditAccountOpen] = useState(false)
   const [postInterestOpen, setPostInterestOpen] = useState(false)
   const [adjustmentOpen, setAdjustmentOpen] = useState(false)
+  const [capitalMovementOpen, setCapitalMovementOpen] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [postingError, setPostingError] = useState('')
   const [adjustmentError, setAdjustmentError] = useState('')
+  const [capitalMovementError, setCapitalMovementError] = useState('')
   const [reversalError, setReversalError] = useState('')
   const [nameError, setNameError] = useState('')
   const [openingBalanceError, setOpeningBalanceError] = useState('')
@@ -397,6 +421,48 @@ export function TreasuryWorkspace() {
     }
   }
 
+  const handleCapitalMovement = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const parsedAmount = parsePositiveAmount(capitalMovementForm.amount, 'Capital movement amount')
+    const parsedDate = parsePostingDate(capitalMovementForm.occurredAt)
+    if (parsedAmount.error || parsedDate.error || !capitalMovementForm.reason.trim()) {
+      setCapitalMovementError(parsedAmount.error || parsedDate.error || 'Capital movement reason is required.')
+      return
+    }
+
+    setMovingCapital(true)
+    setCapitalMovementError('')
+    const action = capitalMovementForm.direction === 'deposit' ? 'deposit' : 'withdrawal'
+    const toastId = showLoading(`Posting capital ${action}...`)
+    try {
+      await createTreasuryCapitalMovement({
+        direction: capitalMovementForm.direction,
+        amount: parsedAmount.value!,
+        occurredAt: parsedDate.value!,
+        reason: capitalMovementForm.reason.trim(),
+      })
+      await loadTreasuryData()
+      setCapitalMovementForm(buildInitialCapitalMovementForm())
+      setCapitalMovementOpen(false)
+      update(toastId, `Capital ${action} posted.`, { tone: 'success', title: 'Success' })
+    } catch (caughtError) {
+      dismiss(toastId)
+      setCapitalMovementError(caughtError instanceof Error ? caughtError.message : 'Unable to post capital movement.')
+    } finally {
+      setMovingCapital(false)
+    }
+  }
+
+  const openCapitalMovement = () => {
+    setCapitalMovementForm(buildInitialCapitalMovementForm())
+    setCapitalMovementError('')
+    setCapitalMovementOpen(true)
+  }
+
+  const closeCapitalMovement = () => {
+    if (!movingCapital) setCapitalMovementOpen(false)
+  }
+
   const openAdjustment = () => {
     setAdjustmentForm(buildInitialAdjustmentForm())
     setAdjustmentError('')
@@ -555,6 +621,14 @@ export function TreasuryWorkspace() {
               <HandCoins aria-hidden="true" size={16} />
             </Button>
             <Button
+              className={`${styles.bankActionButton} ${styles.bankActionCapital} ${styles.iconButton}`}
+              onClick={openCapitalMovement}
+              aria-label="Capital movement"
+              title="Deposit or withdraw capital"
+            >
+              <ArrowLeftRight aria-hidden="true" size={16} />
+            </Button>
+            <Button
               className={`${styles.bankActionButton} ${styles.bankActionAdjustment} ${styles.iconButton}`}
               onClick={openAdjustment}
               aria-label="Reconciliation adjustment"
@@ -631,7 +705,7 @@ export function TreasuryWorkspace() {
           {movements.length === 0 ? (
             <EmptyState
               title="No Treasury movements yet"
-              description="Disbursements, payments, reversals, and earned interest will appear here."
+              description="Disbursements, payments, capital movements, reversals, and earned interest will appear here."
             />
           ) : (
             <TableShell label="Treasury transaction ledger" title="Transaction Ledger">
@@ -738,10 +812,59 @@ export function TreasuryWorkspace() {
           </Dialog>
 
           <Dialog
+            id="treasury-capital-movement-dialog"
+            open={capitalMovementOpen}
+            title="Capital movement"
+            description="Record owner capital entering or leaving the lending fund. This updates calculated lending cash."
+            onClose={closeCapitalMovement}
+          >
+            <form className="stack" onSubmit={(event) => void handleCapitalMovement(event)}>
+              {capitalMovementError ? <ErrorBanner title="Capital movement failed" message={capitalMovementError} /> : null}
+              <div className="grid two">
+                <SearchableSelect
+                  id="treasury-capital-movement-direction"
+                  label="Action"
+                  options={[{ value: 'deposit', label: 'Deposit capital' }, { value: 'withdrawal', label: 'Withdraw capital' }]}
+                  value={capitalMovementForm.direction}
+                  onChange={(value) => setCapitalMovementForm((current) => ({ ...current, direction: value as 'deposit' | 'withdrawal' }))}
+                />
+                <Input
+                  id="treasury-capital-movement-amount"
+                  label="Amount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  value={capitalMovementForm.amount}
+                  onChange={(event) => setCapitalMovementForm((current) => ({ ...current, amount: event.target.value }))}
+                />
+                <Input
+                  id="treasury-capital-movement-date"
+                  label="Posting date"
+                  type="date"
+                  value={capitalMovementForm.occurredAt}
+                  onChange={(event) => setCapitalMovementForm((current) => ({ ...current, occurredAt: event.target.value }))}
+                />
+              </div>
+              <Textarea
+                id="treasury-capital-movement-reason"
+                label="Required reason"
+                rows={3}
+                value={capitalMovementForm.reason}
+                onChange={(event) => setCapitalMovementForm((current) => ({ ...current, reason: event.target.value }))}
+              />
+              <div className={`ui-card__actions ${styles.modalActions}`}>
+                <Button type="button" variant="secondary" disabled={movingCapital} onClick={closeCapitalMovement}>Cancel</Button>
+                <Button type="submit" disabled={movingCapital}>{movingCapital ? 'Posting…' : 'Post capital movement'}</Button>
+              </div>
+            </form>
+          </Dialog>
+
+          <Dialog
             id="treasury-reconciliation-adjustment-dialog"
             open={adjustmentOpen}
             title="Reconciliation adjustment"
-            description="Post an audited correction after verifying the real Treasury balance."
+            description="Correct the recorded balance after verifying Treasury. Do not use this for owner deposits or withdrawals."
             onClose={closeAdjustment}
           >
             <form className="stack" onSubmit={(event) => void handleAdjustment(event)}>

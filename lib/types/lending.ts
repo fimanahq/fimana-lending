@@ -546,6 +546,9 @@ export interface LoanDashboardSummary {
   collectedProfitMinor: number
   collectedExcessProfitMinor: number
   treasuryInterestEarnedMinor: number
+  capitalDepositsMinor: number
+  capitalWithdrawalsMinor: number
+  netCapitalMovementMinor: number
   activeCollectedInterestMinor: number
   activeCollectedPenaltyMinor: number
   activeCollectedProfitMinor: number

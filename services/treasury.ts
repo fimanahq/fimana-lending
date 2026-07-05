@@ -21,6 +21,13 @@ export interface CreateTreasuryAdjustmentInput {
   reason: string
 }
 
+export interface CreateTreasuryCapitalMovementInput {
+  direction: 'deposit' | 'withdrawal'
+  amount: number
+  occurredAt: string
+  reason: string
+}
+
 export interface UnallocatedPaymentReview extends LoanPaymentHistory {
   loanNumber: string
 }
@@ -64,6 +71,13 @@ export function reverseTreasuryInterest(transactionId: string, reason: string) {
 
 export function createTreasuryAdjustment(input: CreateTreasuryAdjustmentInput) {
   return apiRequest<TreasuryMovement>('/api/treasury/adjustments', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function createTreasuryCapitalMovement(input: CreateTreasuryCapitalMovementInput) {
+  return apiRequest<TreasuryMovement>('/api/treasury/capital-movements', {
     method: 'POST',
     body: JSON.stringify(input),
   })

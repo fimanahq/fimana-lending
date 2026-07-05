@@ -535,9 +535,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + realized profit − capital losses</span>
+            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + net capital movements + realized profit − capital losses</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting capital · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} profit vs capital
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)} net movements · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} profit vs capital
             </span>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="money" />
