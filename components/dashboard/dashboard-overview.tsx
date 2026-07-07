@@ -530,7 +530,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         ) : null}
 
         <section className={dashboardClass('dashboard-overview__kpiGrid', 'dashboard-overview__kpiGrid--six')}>
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--plain')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warm')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Current capital basis</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
@@ -594,7 +594,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--plain')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warningSoft')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Overdue receivable</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}

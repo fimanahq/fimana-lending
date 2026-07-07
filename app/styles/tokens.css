@@ -20,7 +20,7 @@
   --accent-soft: rgba(217, 131, 69, 0.14);
   --accent-contrast: #fffdf8;
   --accent-gradient: linear-gradient(135deg, #924b10 0%, #d98345 100%);
-  --hero-gradient: linear-gradient(150deg, rgba(33, 75, 69, 0.97) 0%, rgba(21, 47, 49, 0.96) 55%, rgba(217, 131, 69, 0.86) 100%);
+  --hero-gradient: rgba(30, 49, 48, 0.92);
   --success: #24624f;
   --danger: #8f3326;
   --shadow-sm: 0 10px 26px rgba(84, 63, 27, 0.08);

@@ -6,11 +6,7 @@ html {
   font-size: 90%;
   min-height: 100%;
   scroll-behavior: smooth;
-  background:
-    radial-gradient(circle at top left, rgba(217, 131, 69, 0.2), transparent 28%),
-    radial-gradient(circle at 85% 10%, rgba(36, 98, 79, 0.14), transparent 22%),
-    radial-gradient(circle at bottom right, rgba(36, 98, 79, 0.14), transparent 26%),
-    linear-gradient(180deg, #fff8ec 0%, #f4ead3 100%);
+  background: var(--bg);
 }
 
 @media (max-width: 720px) {
@@ -27,16 +23,6 @@ body {
   font-family: var(--font-body), serif;
   text-rendering: optimizeLegibility;
   background: transparent;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.28), transparent 36%),
-    radial-gradient(circle at bottom left, rgba(234, 219, 182, 0.22), transparent 28%);
-  pointer-events: none;
 }
 
 ::selection {

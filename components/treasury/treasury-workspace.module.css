@@ -208,8 +208,7 @@
   padding: 0.95rem 1rem;
   border: 1px solid rgba(146, 75, 16, 0.12);
   border-radius: 1rem;
-  background:
-    linear-gradient(180deg, rgba(255, 247, 234, 0.92) 0%, rgba(255, 241, 223, 0.72) 100%);
+  background: rgba(255, 247, 234, 0.92);
 }
 
 .postInterestBadge {
