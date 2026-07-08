@@ -411,6 +411,7 @@ export interface DashboardCutoffReceivable {
   totalCollectedMinor: number
   remainingMinor: number
   borrowerCount: number
+  unpaidBorrowerCount: number
   loanCount: number
   status: DashboardReceivableStatus
   loans: DashboardCutoffReceivableLoan[]

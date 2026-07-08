@@ -55,6 +55,7 @@ export function CutoffReceivablesTable({
               <th>Collected</th>
               <th>Remaining</th>
               <th>Borrowers</th>
+              <th>Unpaid borrowers</th>
               <th>Status</th>
               {onSelectCutoff ? <th><span className="ui-sr-only">Actions</span></th> : null}
             </tr>
@@ -77,6 +78,7 @@ export function CutoffReceivablesTable({
                 <td>{formatMinorCurrency(entry.totalCollectedMinor, currency)}</td>
                 <td>{formatMinorCurrency(entry.remainingMinor, currency)}</td>
                 <td>{entry.borrowerCount.toLocaleString('en-PH')}</td>
+                <td>{entry.unpaidBorrowerCount.toLocaleString('en-PH')}</td>
                 <td><span className={`status-pill ${entry.status}`}>{getReceivableStatusLabel(entry.status)}</span></td>
                 {onSelectCutoff ? (
                   <td className={styles.actions}>

@@ -39,6 +39,7 @@ function cutoff(
     totalCollectedMinor: status === 'paid' ? 11_000 : 0,
     remainingMinor,
     borrowerCount: 1,
+    unpaidBorrowerCount: status === 'paid' ? 0 : 1,
     loanCount: 1,
     loans: [{
       loanId: `${status}-loan`,

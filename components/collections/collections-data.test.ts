@@ -16,6 +16,7 @@ function cutoff(cutoffDate: string, status: DashboardCutoffReceivable['status'])
     totalCollectedMinor: 0,
     remainingMinor: status === 'paid' ? 0 : 110,
     borrowerCount: 1,
+    unpaidBorrowerCount: status === 'paid' ? 0 : 1,
     loanCount: 1,
     loans: [],
   }
