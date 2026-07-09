@@ -5,3 +5,7 @@ coverage
 .env.local
 .DS_Store
 *.tsbuildinfo
+
+# Serwist
+public/sw*
+public/swe-worker*
