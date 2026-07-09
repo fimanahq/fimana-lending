@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { classNames } from '@/utils/class-names'
 import styles from './toast.module.css'
 
-type ToastTone = 'success' | 'error'
+type ToastTone = 'success' | 'error' | 'info'
 type ExtendedToastTone = ToastTone | 'loading'
 
 interface ToastRecord {
@@ -28,6 +28,7 @@ const TOAST_DURATION_MS = 4000
 
 const toastTitles: Record<ExtendedToastTone, string> = {
   error: 'Action failed',
+  info: 'Note',
   loading: 'Working',
   success: 'Success',
 }
@@ -54,6 +55,7 @@ function ToastViewport({
             styles.toast,
             toast.tone === 'success' && styles.success,
             toast.tone === 'error' && styles.error,
+            toast.tone === 'info' && styles.info,
             toast.tone === 'loading' && styles.loading,
           )}
           role={toast.tone === 'error' ? 'alert' : 'status'}
@@ -64,6 +66,7 @@ function ToastViewport({
               toast.tone === 'loading' && styles.indicatorLoading,
               toast.tone === 'success' && styles.indicatorSuccess,
               toast.tone === 'error' && styles.indicatorError,
+              toast.tone === 'info' && styles.indicatorInfo,
             )}
             aria-hidden="true"
           />

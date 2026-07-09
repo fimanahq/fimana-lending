@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { InstallAppButton } from '@/components/install-app-button'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
 
@@ -62,6 +63,7 @@ export default function LandingPage() {
                 >
                   Loan application
                 </Link>
+                <InstallAppButton />
               </div>
             </div>
 

@@ -38,6 +38,11 @@
   background: rgba(254, 242, 242, 0.98);
 }
 
+.info {
+  border-color: rgba(146, 75, 16, 0.18);
+  background: rgba(255, 251, 241, 0.98);
+}
+
 .loading {
   border-color: rgba(14, 116, 144, 0.18);
   background: rgba(240, 249, 255, 0.98);
@@ -98,6 +103,24 @@
 
 .indicatorError::after {
   transform: rotate(-45deg);
+}
+
+.indicatorInfo {
+  border: 0;
+  background: rgba(217, 131, 69, 0.16);
+  color: #924b10;
+  position: relative;
+}
+
+.indicatorInfo::before {
+  content: 'i';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .content {
