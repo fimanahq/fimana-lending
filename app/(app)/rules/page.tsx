@@ -37,12 +37,12 @@ export default function RulesPage() {
               </tr>
             </thead>
             <tbody>
-              <tr><td>Give / cutoff</td><td>One scheduled payment slot.</td></tr>
-              <tr><td>Automatic amount</td><td>₱{MIN_AUTO_LOAN_AMOUNT.toLocaleString()} to ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}.</td></tr>
-              <tr><td>Automatic term</td><td>{MIN_AUTO_CUTOFFS} to {MAX_AUTO_CUTOFFS} cutoffs.</td></tr>
-              <tr><td>Above ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}</td><td>Requires manual approval and custom terms.</td></tr>
-              <tr><td>Automatic calculation</td><td>Uses reducing-balance interest and the rate selected from this guide.</td></tr>
-              <tr><td>Manual what-if</td><td>Uses the manually entered rate and selected calculation method instead of these automatic pricing rules.</td></tr>
+              <tr><td data-label="Term">Give / cutoff</td><td data-label="Calculator rule">One scheduled payment slot.</td></tr>
+              <tr><td data-label="Term">Automatic amount</td><td data-label="Calculator rule">₱{MIN_AUTO_LOAN_AMOUNT.toLocaleString()} to ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}.</td></tr>
+              <tr><td data-label="Term">Automatic term</td><td data-label="Calculator rule">{MIN_AUTO_CUTOFFS} to {MAX_AUTO_CUTOFFS} cutoffs.</td></tr>
+              <tr><td data-label="Term">Above ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}</td><td data-label="Calculator rule">Requires manual approval and custom terms.</td></tr>
+              <tr><td data-label="Term">Automatic calculation</td><td data-label="Calculator rule">Uses reducing-balance interest and the rate selected from this guide.</td></tr>
+              <tr><td data-label="Term">Manual what-if</td><td data-label="Calculator rule">Uses the manually entered rate and selected calculation method instead of these automatic pricing rules.</td></tr>
             </tbody>
           </table>
         </div>
@@ -63,10 +63,10 @@ export default function RulesPage() {
             <tbody>
               {loanAmountTiers.map((tier) => (
                 <tr key={tier.value}>
-                  <td>{tier.label}</td>
-                  <td>{tier.rangeLabel}</td>
-                  <td>₱{tier.minAmount.toLocaleString()}</td>
-                  <td>₱{tier.maxAmount.toLocaleString()}</td>
+                  <td data-label="Tier">{tier.label}</td>
+                  <td data-label="Amount range">{tier.rangeLabel}</td>
+                  <td data-label="Minimum">₱{tier.minAmount.toLocaleString()}</td>
+                  <td data-label="Maximum">₱{tier.maxAmount.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -89,9 +89,9 @@ export default function RulesPage() {
             <tbody>
               {autoPricingTable.map((row) => (
                 <tr key={row.cutoffRange}>
-                  <td>{row.cutoffRangeLabel}</td>
+                  <td data-label="Gives / cutoffs">{row.cutoffRangeLabel}</td>
                   {loanAmountTiers.map((tier) => (
-                    <td key={tier.value}>{row.rates[tier.value]}%</td>
+                    <td key={tier.value} data-label={`${tier.label} ${tier.rangeLabel}`}>{row.rates[tier.value]}%</td>
                   ))}
                 </tr>
               ))}
@@ -117,9 +117,9 @@ export default function RulesPage() {
             <tbody>
               {rateReductionOptions.map((option) => (
                 <tr key={option.value}>
-                  <td>{option.label}</td>
-                  <td>{option.reduction > 0 ? `-${option.reduction}%` : 'None'}</td>
-                  <td>{option.guidance}</td>
+                  <td data-label="Rate basis">{option.label}</td>
+                  <td data-label="Reduction">{option.reduction > 0 ? `-${option.reduction}%` : 'None'}</td>
+                  <td data-label="Suggested basis">{option.guidance}</td>
                 </tr>
               ))}
             </tbody>
@@ -141,13 +141,13 @@ export default function RulesPage() {
               </tr>
             </thead>
             <tbody>
-              <tr><td>1</td><td>Determine the amount tier from the principal.</td></tr>
-              <tr><td>2</td><td>Determine the cutoff range from the number of gives.</td></tr>
-              <tr><td>3</td><td>Read the base rate from the rate table.</td></tr>
-              <tr><td>4</td><td>Apply the selected rate-basis reduction, if any.</td></tr>
-              <tr><td>5</td><td>Floor the final rate at {MIN_ADJUSTED_RATE}%.</td></tr>
-              <tr><td>6</td><td>Generate the reducing-balance schedule using the final rate.</td></tr>
-              <tr><td>7</td><td>Sum schedule interest for total interest, then add principal for total payable.</td></tr>
+              <tr><td data-label="Step">1</td><td data-label="Rule">Determine the amount tier from the principal.</td></tr>
+              <tr><td data-label="Step">2</td><td data-label="Rule">Determine the cutoff range from the number of gives.</td></tr>
+              <tr><td data-label="Step">3</td><td data-label="Rule">Read the base rate from the rate table.</td></tr>
+              <tr><td data-label="Step">4</td><td data-label="Rule">Apply the selected rate-basis reduction, if any.</td></tr>
+              <tr><td data-label="Step">5</td><td data-label="Rule">Floor the final rate at {MIN_ADJUSTED_RATE}%.</td></tr>
+              <tr><td data-label="Step">6</td><td data-label="Rule">Generate the reducing-balance schedule using the final rate.</td></tr>
+              <tr><td data-label="Step">7</td><td data-label="Rule">Sum schedule interest for total interest, then add principal for total payable.</td></tr>
             </tbody>
           </table>
         </div>
@@ -178,28 +178,28 @@ paymentPerCutoff = totalPayable / cutoffs`}
             </thead>
             <tbody>
               <tr>
-                <td>₱10,000 / 6 cutoffs</td>
-                <td>7.5%</td>
-                <td>7.5%</td>
-                <td>7%</td>
-                <td>6.5%</td>
-                <td>6%</td>
+                <td data-label="Loan">₱10,000 / 6 cutoffs</td>
+                <td data-label="Base rate">7.5%</td>
+                <td data-label="Standard">7.5%</td>
+                <td data-label="Preferred">7%</td>
+                <td data-label="Low-risk">6.5%</td>
+                <td data-label="Relationship">6%</td>
               </tr>
               <tr>
-                <td>₱20,000 / 10 cutoffs</td>
-                <td>7.5%</td>
-                <td>7.5%</td>
-                <td>7%</td>
-                <td>6.5%</td>
-                <td>6%</td>
+                <td data-label="Loan">₱20,000 / 10 cutoffs</td>
+                <td data-label="Base rate">7.5%</td>
+                <td data-label="Standard">7.5%</td>
+                <td data-label="Preferred">7%</td>
+                <td data-label="Low-risk">6.5%</td>
+                <td data-label="Relationship">6%</td>
               </tr>
               <tr>
-                <td>₱50,000 / 14 cutoffs</td>
-                <td>5%</td>
-                <td>5%</td>
-                <td>5%</td>
-                <td>5%</td>
-                <td>5%</td>
+                <td data-label="Loan">₱50,000 / 14 cutoffs</td>
+                <td data-label="Base rate">5%</td>
+                <td data-label="Standard">5%</td>
+                <td data-label="Preferred">5%</td>
+                <td data-label="Low-risk">5%</td>
+                <td data-label="Relationship">5%</td>
               </tr>
             </tbody>
           </table>

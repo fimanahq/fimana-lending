@@ -850,6 +850,223 @@
   overflow: auto;
 }
 
+.dashboard-overview__monthlyTileList {
+  display: none;
+}
+
+.dashboard-overview__recentApplicationTileList {
+  display: none;
+}
+
+.dashboard-overview__detailTileList {
+  display: none;
+}
+
+.dashboard-overview__recentApplicationsTableDesktop {
+  width: 100%;
+}
+
+.dashboard-overview__monthlyTile {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__recentApplicationTile {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__detailTile {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__monthlyTileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-overview__monthlyTileHeader > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.dashboard-overview__monthlyTileHeader strong {
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.dashboard-overview__recentApplicationTileHeader {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.dashboard-overview__recentApplicationTileHeader:hover,
+.dashboard-overview__recentApplicationTileHeader:focus-visible {
+  color: var(--accent-strong);
+}
+
+.dashboard-overview__detailTileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.dashboard-overview__detailTileHeader .dashboard-overview__statusBadge {
+  flex: 0 0 auto;
+}
+
+.dashboard-overview__monthlyTileMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.dashboard-overview__recentApplicationTileMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.dashboard-overview__detailTileMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.dashboard-overview__monthlyTileMetrics div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dashboard-overview__recentApplicationTileMetrics div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dashboard-overview__detailTileMetrics div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.dashboard-overview__monthlyTileMetrics dt {
+  color: rgba(84, 67, 57, 0.72);
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.dashboard-overview__recentApplicationTileMetrics dt {
+  color: rgba(84, 67, 57, 0.72);
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.dashboard-overview__detailTileMetrics dt {
+  color: rgba(84, 67, 57, 0.72);
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.dashboard-overview__monthlyTileMetrics dd {
+  margin: 0;
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-overview__recentApplicationTileMetrics dd {
+  margin: 0;
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-overview__detailTileMetrics dd {
+  margin: 0;
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-overview__monthlyLoadMore {
+  display: inline-flex;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(97, 84, 62, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-family: 'Manrope', var(--font-body), sans-serif;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.dashboard-overview__monthlyLoadMore:hover {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(146, 75, 16, 0.26);
+  color: #733a0b;
+}
+
+.dashboard-overview__monthlyLoadMore:focus-visible {
+  outline: 3px solid rgba(230, 151, 52, 0.35);
+  outline-offset: 3px;
+}
+
 .dashboard-overview__miniGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1678,6 +1895,37 @@
 
   .dashboard-overview__tableCard {
     overflow-x: auto;
+  }
+
+  .dashboard-overview__monthlyTableDesktop {
+    display: none;
+  }
+
+  .dashboard-overview__recentApplicationsTableDesktop {
+    display: none;
+  }
+
+  .dashboard-overview__detailTableDesktop {
+    display: none;
+  }
+
+  .dashboard-overview__monthlyTileList {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .dashboard-overview__recentApplicationTileList {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .dashboard-overview__detailTileList {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .dashboard-overview__monthlyLoadMore {
+    width: 100%;
   }
 
   .dashboard-overview__interestChart {

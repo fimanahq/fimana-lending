@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Dialog, ProtectedLink as Link } from '@/components/shared'
 import { ViewIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -13,6 +14,7 @@ import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
+const MOBILE_MONTHLY_ROW_BATCH_SIZE = 10
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)
@@ -28,6 +30,15 @@ function formatMonthLabel(year: number, month: number) {
 
 function getLoanStatusLabel(status: LoanStatus) {
   return status.split('_').map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`).join(' ')
+}
+
+function hasMonthlyProfitDetails(row: DashboardMonthlyProfitRow) {
+  return row.interestDueMinor !== 0
+    || row.interestCollectedMinor !== 0
+    || row.penaltyCollectedMinor !== 0
+    || (row.excessProfitMinor ?? 0) !== 0
+    || (row.treasuryInterestEarnedMinor ?? 0) !== 0
+    || row.paymentCount !== 0
 }
 
 function ProfitMetric({ label, meta, value }: { label: string; meta: string; value: string }) {
@@ -49,13 +60,21 @@ export function DashboardMonthlyProfitTable({
   onSelectMonth: (row: DashboardMonthlyProfitRow) => void
   rows: DashboardMonthlyProfitRow[]
 }) {
+  const [visibleMobileRowCount, setVisibleMobileRowCount] = useState(MOBILE_MONTHLY_ROW_BATCH_SIZE)
+  const visibleMobileRows = rows.slice(0, visibleMobileRowCount)
+  const hiddenMobileRowCount = Math.max(rows.length - visibleMobileRowCount, 0)
+
+  useEffect(() => {
+    setVisibleMobileRowCount(MOBILE_MONTHLY_ROW_BATCH_SIZE)
+  }, [rows])
+
   return (
     <section className={dashboardClass('dashboard-overview__cutoffDialogTableSection')}>
       <div className={dashboardClass('dashboard-overview__cutoffDialogTableHeader')}>
         <h3>Monthly breakdown</h3>
         <p>Scheduled interest due and realized collections for every month in the selected year.</p>
       </div>
-      <div className={dashboardClass('dashboard-overview__tableScroll')}>
+      <div className={dashboardClass('dashboard-overview__tableScroll', 'dashboard-overview__monthlyTableDesktop')}>
         <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
           <thead>
             <tr>
@@ -72,12 +91,7 @@ export function DashboardMonthlyProfitTable({
           </thead>
           <tbody>
             {rows.map((row) => {
-              const hasDetails = row.interestDueMinor !== 0
-                || row.interestCollectedMinor !== 0
-                || row.penaltyCollectedMinor !== 0
-                || (row.excessProfitMinor ?? 0) !== 0
-                || (row.treasuryInterestEarnedMinor ?? 0) !== 0
-                || row.paymentCount !== 0
+              const hasDetails = hasMonthlyProfitDetails(row)
 
               return (
                 <tr key={row.monthKey}>
@@ -120,6 +134,78 @@ export function DashboardMonthlyProfitTable({
           </tbody>
         </table>
       </div>
+
+      <div className={dashboardClass('dashboard-overview__monthlyTileList')} aria-label="Monthly breakdown tiles">
+        {visibleMobileRows.map((row) => {
+          const hasDetails = hasMonthlyProfitDetails(row)
+
+          return (
+            <article key={row.monthKey} className={dashboardClass('dashboard-overview__monthlyTile')}>
+              <div className={dashboardClass('dashboard-overview__monthlyTileHeader')}>
+                <div>
+                  <span className={dashboardClass('dashboard-overview__statLabel')}>Month</span>
+                  <strong>{row.monthLabel}</strong>
+                </div>
+                <button
+                  type="button"
+                  className="button-ghost table-action-icon"
+                  aria-label={`View ${row.monthLabel} profit details`}
+                  disabled={!hasDetails}
+                  onClick={() => onSelectMonth(row)}
+                >
+                  <ViewIcon />
+                </button>
+              </div>
+
+              <dl className={dashboardClass('dashboard-overview__monthlyTileMetrics')}>
+                <div>
+                  <dt>Interest due</dt>
+                  <dd>{formatMinorCurrency(row.interestDueMinor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Interest collected</dt>
+                  <dd>{formatMinorCurrency(row.interestCollectedMinor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Penalty collected</dt>
+                  <dd>{formatMinorCurrency(row.penaltyCollectedMinor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Excess profit</dt>
+                  <dd>{formatMinorCurrency(row.excessProfitMinor ?? 0, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Treasury interest</dt>
+                  <dd>{formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Realized profit</dt>
+                  <dd>{formatMinorCurrency(row.totalProfitMinor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Payments</dt>
+                  <dd>{row.paymentCount.toLocaleString('en-PH')}</dd>
+                </div>
+              </dl>
+            </article>
+          )
+        })}
+
+        {hiddenMobileRowCount > 0 ? (
+          <button
+            type="button"
+            className={dashboardClass('dashboard-overview__monthlyLoadMore')}
+            onClick={() => {
+              setVisibleMobileRowCount((currentCount) => Math.min(
+                currentCount + MOBILE_MONTHLY_ROW_BATCH_SIZE,
+                rows.length,
+              ))
+            }}
+          >
+            Load more
+          </button>
+        ) : null}
+      </div>
     </section>
   )
 }
@@ -145,6 +231,17 @@ export function DashboardMonthlyProfitDetailDialog({
     ? `${formatMonthLabel(selectedYear, selectedMonth)} profit details`
     : 'Monthly profit details'
   const summary = detail?.summary ?? selectedRow
+  const [visibleInterestDueLoanCount, setVisibleInterestDueLoanCount] = useState(MOBILE_MONTHLY_ROW_BATCH_SIZE)
+  const [visibleRealizedPaymentCount, setVisibleRealizedPaymentCount] = useState(MOBILE_MONTHLY_ROW_BATCH_SIZE)
+  const visibleInterestDueLoans = detail?.interestDueLoans.slice(0, visibleInterestDueLoanCount) ?? []
+  const visibleRealizedPayments = detail?.realizedPayments.slice(0, visibleRealizedPaymentCount) ?? []
+  const hiddenInterestDueLoanCount = Math.max((detail?.interestDueLoans.length ?? 0) - visibleInterestDueLoanCount, 0)
+  const hiddenRealizedPaymentCount = Math.max((detail?.realizedPayments.length ?? 0) - visibleRealizedPaymentCount, 0)
+
+  useEffect(() => {
+    setVisibleInterestDueLoanCount(MOBILE_MONTHLY_ROW_BATCH_SIZE)
+    setVisibleRealizedPaymentCount(MOBILE_MONTHLY_ROW_BATCH_SIZE)
+  }, [detail?.monthKey])
 
   return (
     <Dialog
@@ -181,41 +278,93 @@ export function DashboardMonthlyProfitDetailDialog({
                 <p>Current schedule-version rows due in this month.</p>
               </div>
               {detail.interestDueLoans.length > 0 ? (
-                <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap')}>
-                  <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
-                    <thead>
-                      <tr>
-                        <th>Borrower</th>
-                        <th>Loan</th>
-                        <th>Status</th>
-                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Cutoffs</th>
-                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest due</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.interestDueLoans.map((loan) => (
-                        <tr key={loan.loanId}>
-                          <td>
-                            <div className={dashboardClass('dashboard-overview__loanCell')}>
-                              <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
-                                {loan.borrowerDisplayName}
-                              </Link>
-                              <span className="muted micro-copy">{loan.borrowerNumber}</span>
-                            </div>
-                          </td>
-                          <td>
-                            <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
-                              {loan.loanNumber}
-                            </Link>
-                          </td>
-                          <td><span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(loan.loanStatus)}</span></td>
-                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{loan.cutoffCount.toLocaleString('en-PH')}</td>
-                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(loan.interestDueMinor, currency)}</td>
+                <>
+                  <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap', 'dashboard-overview__detailTableDesktop')}>
+                    <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
+                      <thead>
+                        <tr>
+                          <th>Borrower</th>
+                          <th>Loan</th>
+                          <th>Status</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Cutoffs</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest due</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {detail.interestDueLoans.map((loan) => (
+                          <tr key={loan.loanId}>
+                            <td>
+                              <div className={dashboardClass('dashboard-overview__loanCell')}>
+                                <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                                  {loan.borrowerDisplayName}
+                                </Link>
+                                <span className="muted micro-copy">{loan.borrowerNumber}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                                {loan.loanNumber}
+                              </Link>
+                            </td>
+                            <td><span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(loan.loanStatus)}</span></td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>{loan.cutoffCount.toLocaleString('en-PH')}</td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(loan.interestDueMinor, currency)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className={dashboardClass('dashboard-overview__detailTileList')} aria-label="Interest due by loan tiles">
+                    {visibleInterestDueLoans.map((loan) => (
+                      <article key={loan.loanId} className={dashboardClass('dashboard-overview__detailTile')}>
+                        <div className={dashboardClass('dashboard-overview__detailTileHeader')}>
+                          <div className={dashboardClass('dashboard-overview__loanCell')}>
+                            <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                              {loan.borrowerDisplayName}
+                            </Link>
+                            <span className="muted micro-copy">{loan.borrowerNumber}</span>
+                          </div>
+                          <span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(loan.loanStatus)}</span>
+                        </div>
+
+                        <dl className={dashboardClass('dashboard-overview__detailTileMetrics')}>
+                          <div>
+                            <dt>Loan</dt>
+                            <dd>
+                              <Link href={buildLoanDetailPath(loan.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                                {loan.loanNumber}
+                              </Link>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Cutoffs</dt>
+                            <dd>{loan.cutoffCount.toLocaleString('en-PH')}</dd>
+                          </div>
+                          <div>
+                            <dt>Interest due</dt>
+                            <dd>{formatMinorCurrency(loan.interestDueMinor, currency)}</dd>
+                          </div>
+                        </dl>
+                      </article>
+                    ))}
+
+                    {hiddenInterestDueLoanCount > 0 ? (
+                      <button
+                        type="button"
+                        className={dashboardClass('dashboard-overview__monthlyLoadMore')}
+                        onClick={() => {
+                          setVisibleInterestDueLoanCount((currentCount) => Math.min(
+                            currentCount + MOBILE_MONTHLY_ROW_BATCH_SIZE,
+                            detail.interestDueLoans.length,
+                          ))
+                        }}
+                      >
+                        Load more
+                      </button>
+                    ) : null}
+                  </div>
+                </>
               ) : <p className="muted">No scheduled interest is due in this month.</p>}
             </section>
 
@@ -225,45 +374,113 @@ export function DashboardMonthlyProfitDetailDialog({
                 <p>Posted payments whose payment date falls in this month.</p>
               </div>
               {detail.realizedPayments.length > 0 ? (
-                <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap')}>
-                  <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
-                    <thead>
-                      <tr>
-                        <th>Payment date</th>
-                        <th>Receipt</th>
-                        <th>Borrower</th>
-                        <th>Loan</th>
-                        <th>Status</th>
-                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest</th>
-                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Penalty</th>
-                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Excess profit</th>
-                        <th className={dashboardClass('dashboard-overview__tableAmount')}>Realized profit</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.realizedPayments.map((payment) => (
-                        <tr key={payment.paymentId}>
-                          <td>{formatDate(payment.paymentDate)}</td>
-                          <td>{payment.receiptNumber}</td>
-                          <td>
-                            <div className={dashboardClass('dashboard-overview__loanCell')}>
-                              <Link href={buildLoanDetailPath(payment.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
-                                {payment.borrowerDisplayName}
-                              </Link>
-                              <span className="muted micro-copy">{payment.borrowerNumber}</span>
-                            </div>
-                          </td>
-                          <td><Link href={buildLoanDetailPath(payment.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>{payment.loanNumber}</Link></td>
-                          <td><span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(payment.loanStatus)}</span></td>
-                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.interestCollectedMinor, currency)}</td>
-                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.penaltyCollectedMinor, currency)}</td>
-                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.excessProfitMinor, currency)}</td>
-                          <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.totalProfitMinor, currency)}</td>
+                <>
+                  <div className={dashboardClass('dashboard-overview__cutoffDialogTableWrap', 'dashboard-overview__detailTableDesktop')}>
+                    <table className={dashboardClass('dashboard-overview__table', 'dashboard-overview__table--compact')}>
+                      <thead>
+                        <tr>
+                          <th>Payment date</th>
+                          <th>Receipt</th>
+                          <th>Borrower</th>
+                          <th>Loan</th>
+                          <th>Status</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Interest</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Penalty</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Excess profit</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Realized profit</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {detail.realizedPayments.map((payment) => (
+                          <tr key={payment.paymentId}>
+                            <td>{formatDate(payment.paymentDate)}</td>
+                            <td>{payment.receiptNumber}</td>
+                            <td>
+                              <div className={dashboardClass('dashboard-overview__loanCell')}>
+                                <Link href={buildLoanDetailPath(payment.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                                  {payment.borrowerDisplayName}
+                                </Link>
+                                <span className="muted micro-copy">{payment.borrowerNumber}</span>
+                              </div>
+                            </td>
+                            <td><Link href={buildLoanDetailPath(payment.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>{payment.loanNumber}</Link></td>
+                            <td><span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(payment.loanStatus)}</span></td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.interestCollectedMinor, currency)}</td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.penaltyCollectedMinor, currency)}</td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.excessProfitMinor, currency)}</td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>{formatMinorCurrency(payment.totalProfitMinor, currency)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className={dashboardClass('dashboard-overview__detailTileList')} aria-label="Realized payment tiles">
+                    {visibleRealizedPayments.map((payment) => (
+                      <article key={payment.paymentId} className={dashboardClass('dashboard-overview__detailTile')}>
+                        <div className={dashboardClass('dashboard-overview__detailTileHeader')}>
+                          <div className={dashboardClass('dashboard-overview__loanCell')}>
+                            <Link href={buildLoanDetailPath(payment.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                              {payment.borrowerDisplayName}
+                            </Link>
+                            <span className="muted micro-copy">{payment.borrowerNumber}</span>
+                          </div>
+                          <span className={dashboardClass('dashboard-overview__statusBadge')}>{getLoanStatusLabel(payment.loanStatus)}</span>
+                        </div>
+
+                        <dl className={dashboardClass('dashboard-overview__detailTileMetrics')}>
+                          <div>
+                            <dt>Payment date</dt>
+                            <dd>{formatDate(payment.paymentDate)}</dd>
+                          </div>
+                          <div>
+                            <dt>Receipt</dt>
+                            <dd>{payment.receiptNumber}</dd>
+                          </div>
+                          <div>
+                            <dt>Loan</dt>
+                            <dd>
+                              <Link href={buildLoanDetailPath(payment.loanId, '/dashboard')} className="data-card__titleLink" onClick={onClose}>
+                                {payment.loanNumber}
+                              </Link>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Interest</dt>
+                            <dd>{formatMinorCurrency(payment.interestCollectedMinor, currency)}</dd>
+                          </div>
+                          <div>
+                            <dt>Penalty</dt>
+                            <dd>{formatMinorCurrency(payment.penaltyCollectedMinor, currency)}</dd>
+                          </div>
+                          <div>
+                            <dt>Excess profit</dt>
+                            <dd>{formatMinorCurrency(payment.excessProfitMinor, currency)}</dd>
+                          </div>
+                          <div>
+                            <dt>Realized profit</dt>
+                            <dd>{formatMinorCurrency(payment.totalProfitMinor, currency)}</dd>
+                          </div>
+                        </dl>
+                      </article>
+                    ))}
+
+                    {hiddenRealizedPaymentCount > 0 ? (
+                      <button
+                        type="button"
+                        className={dashboardClass('dashboard-overview__monthlyLoadMore')}
+                        onClick={() => {
+                          setVisibleRealizedPaymentCount((currentCount) => Math.min(
+                            currentCount + MOBILE_MONTHLY_ROW_BATCH_SIZE,
+                            detail.realizedPayments.length,
+                          ))
+                        }}
+                      >
+                        Load more
+                      </button>
+                    ) : null}
+                  </div>
+                </>
               ) : <p className="muted">No realized payments were posted in this month.</p>}
             </section>
           </>

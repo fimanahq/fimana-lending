@@ -83,6 +83,13 @@ function getApplicationName(application: LoanApplication) {
     || 'Borrower'
 }
 
+function formatApplicationAmount(application: LoanApplication) {
+  return formatCurrency(
+    (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
+    application.loanProduct?.currency,
+  ).replace('.00', '')
+}
+
 function ProgressSegmentLedger({
   ariaLabel,
   currency,
@@ -739,44 +746,79 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
 
             <div className={dashboardClass('dashboard-overview__tableCard')}>
               {recentApplications.length > 0 ? (
-                <table className={dashboardClass('dashboard-overview__table')}>
-                  <thead>
-                    <tr>
-                      <th>Client Name</th>
-                      <th>Schedule</th>
-                      <th className={dashboardClass('dashboard-overview__tableAmount')}>Amount</th>
-                      <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <>
+                  <div className={dashboardClass('dashboard-overview__recentApplicationsTableDesktop')}>
+                    <table className={dashboardClass('dashboard-overview__table')}>
+                      <thead>
+                        <tr>
+                          <th>Client Name</th>
+                          <th>Schedule</th>
+                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Amount</th>
+                          <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recentApplications.map((application) => (
+                          <tr key={application.id}>
+                            <td>
+                              <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__clientCell')}>
+                                <span className={dashboardClass('dashboard-overview__avatar')}>
+                                  {getNameInitials(getApplicationName(application))}
+                                </span>
+                                <span className={dashboardClass('dashboard-overview__clientName')}>
+                                  {getApplicationName(application)}
+                                </span>
+                              </Link>
+                            </td>
+                            <td>{getApplicationPlan(application)}</td>
+                            <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                              {formatApplicationAmount(application)}
+                            </td>
+                            <td className={dashboardClass('dashboard-overview__tableStatus')}>
+                              <span className={getStatusClassName(application.status)}>
+                                {formatLoanApplicationStatus(application.status)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className={dashboardClass('dashboard-overview__recentApplicationTileList')} aria-label="Recent applications">
                     {recentApplications.map((application) => (
-                      <tr key={application.id}>
-                        <td>
-                          <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__clientCell')}>
-                            <span className={dashboardClass('dashboard-overview__avatar')}>
-                              {getNameInitials(getApplicationName(application))}
-                            </span>
-                            <span className={dashboardClass('dashboard-overview__clientName')}>
-                              {getApplicationName(application)}
-                            </span>
-                          </Link>
-                        </td>
-                        <td>{getApplicationPlan(application)}</td>
-                        <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                          {formatCurrency(
-                            (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
-                            application.loanProduct?.currency,
-                          ).replace('.00', '')}
-                        </td>
-                        <td className={dashboardClass('dashboard-overview__tableStatus')}>
-                          <span className={getStatusClassName(application.status)}>
-                            {formatLoanApplicationStatus(application.status)}
+                      <article key={application.id} className={dashboardClass('dashboard-overview__recentApplicationTile')}>
+                        <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__recentApplicationTileHeader')}>
+                          <span className={dashboardClass('dashboard-overview__avatar')}>
+                            {getNameInitials(getApplicationName(application))}
                           </span>
-                        </td>
-                      </tr>
+                          <span className={dashboardClass('dashboard-overview__clientName')}>
+                            {getApplicationName(application)}
+                          </span>
+                        </Link>
+
+                        <dl className={dashboardClass('dashboard-overview__recentApplicationTileMetrics')}>
+                          <div>
+                            <dt>Schedule</dt>
+                            <dd>{getApplicationPlan(application)}</dd>
+                          </div>
+                          <div>
+                            <dt>Amount</dt>
+                            <dd>{formatApplicationAmount(application)}</dd>
+                          </div>
+                          <div>
+                            <dt>Status</dt>
+                            <dd>
+                              <span className={getStatusClassName(application.status)}>
+                                {formatLoanApplicationStatus(application.status)}
+                              </span>
+                            </dd>
+                          </div>
+                        </dl>
+                      </article>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </>
               ) : (
                 <div className={dashboardClass('dashboard-overview__emptyState')}>
                   <span className={dashboardClass('dashboard-overview__emptyIcon')}>

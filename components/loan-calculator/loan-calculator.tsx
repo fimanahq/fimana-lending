@@ -531,9 +531,9 @@ export function LoanCalculator() {
               <tbody>
                 {rateReductionOptions.map((option) => (
                   <tr key={option.value}>
-                    <td>{option.label}</td>
-                    <td>{option.reduction > 0 ? `-${option.reduction}%` : 'None'}</td>
-                    <td>{option.guidance}</td>
+                    <td data-label="Rate basis">{option.label}</td>
+                    <td data-label="Reduction">{option.reduction > 0 ? `-${option.reduction}%` : 'None'}</td>
+                    <td data-label="Suggested basis">{option.guidance}</td>
                   </tr>
                 ))}
               </tbody>
@@ -603,15 +603,15 @@ export function LoanCalculator() {
             <tbody>
               {calculation.schedule.map((row) => (
                 <tr key={`${row.sequence}-${row.dueDate}`}>
-                  <td>
+                  <td data-label="Cutoff">
                     #{row.sequence}
                     <div className="muted">{formatDate(row.dueDate)}</div>
                   </td>
-                  <td>{formatCurrency(row.beginningBalance)}</td>
-                  <td>{formatCurrency(row.interest)}</td>
-                  <td>{formatCurrency(row.principalPaid)}</td>
-                  <td>{formatCurrency(row.endingBalance)}</td>
-                  <td>{formatCurrency(row.totalPayment)}</td>
+                  <td data-label="Beginning Balance">{formatCurrency(row.beginningBalance)}</td>
+                  <td data-label="Interest">{formatCurrency(row.interest)}</td>
+                  <td data-label="Principal Paid">{formatCurrency(row.principalPaid)}</td>
+                  <td data-label="Ending Balance">{formatCurrency(row.endingBalance)}</td>
+                  <td data-label="Total Payment">{formatCurrency(row.totalPayment)}</td>
                 </tr>
               ))}
               {calculation.schedule.length === 0 ? (
