@@ -325,7 +325,6 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
           <span className="request-loan-form__fieldLabel">Schedule</span>
           <div
             className="request-loan-form__readonly"
-            aria-readonly="true"
             role="status"
           >
             Semi-monthly (15th and month end)
@@ -337,7 +336,6 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
         <span className="request-loan-form__fieldLabel">First due date (computed)</span>
         <div
           className="request-loan-form__readonly"
-          aria-readonly="true"
           role="status"
         >
           {form.firstPaymentDate}

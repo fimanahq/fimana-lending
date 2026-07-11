@@ -1751,7 +1751,7 @@
 
   .dashboard-shell--nav-collapsed .dashboard-shell__sidebarBrand :global(.app-logo__wordmark) {
     display: inline-flex;
-    max-width: 5.5em;
+    max-width: var(--app-logo-wordmark-max-width);
     opacity: 1;
     transform: none;
   }

@@ -80,6 +80,11 @@ export interface User {
   email: string
   firstName: string
   lastName: string
+  mobileNumber?: string
+  accountType: 'lender' | 'borrower' | null
+  accountTypeSelectionRequired: boolean
+  emailVerified: boolean
+  emailVerifiedAt?: string | Date | null
   role: 'user' | 'admin'
   status: 'active' | 'suspended'
   signupSource?: UserAppCode | null

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   }
 
   const authPayload = payload.data as AuthPayload
-  if (!hasLoanAppAccess(authPayload.user)) {
+  if (authPayload.user.accountType === 'lender' && !hasLoanAppAccess(authPayload.user)) {
     await fetchWithTimeout(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: {

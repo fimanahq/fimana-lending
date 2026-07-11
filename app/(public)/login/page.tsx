@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { LoginForm } from '@/components/auth/login-form'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
-import { hasLoanAppAccess } from '@/lib/access'
+import { hasBorrowerPortalAccess, hasLoanAppAccess } from '@/lib/access'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 import { isProtectedPath } from '@/lib/protected-routes'
 import { getSessionUser } from '@/lib/server/backend'
@@ -35,6 +35,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(destination)
   }
 
+  if (user && hasBorrowerPortalAccess(user)) {
+    redirect(user.emailVerified ? '/portal' : '/verify-email')
+  }
+
+  if (user?.accountTypeSelectionRequired) {
+    redirect(user.emailVerified ? '/select-account-type' : '/verify-email')
+  }
+
   const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
 
   if (!hasTransientRefreshError && !user && refreshToken) {
@@ -63,15 +71,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="signin-page__editorialContent">
             <div className="signin-page__portalBadge">
               <span className="signin-page__portalBadgeIcon" aria-hidden="true" />
-              <span>Admin workspace</span>
+              <span>One secure account</span>
             </div>
 
             <h1 className="signin-page__title">
-              FiMana Lending <span>admin access.</span>
+              Borrow. Lend. <span>Stay in control.</span>
             </h1>
 
             <p className="signin-page__lede">
-              Review applications, payment activity, borrower profiles, and portfolio analytics from one secured lending workspace.
+              Choose the FiMana experience that matches your role after verifying your email.
             </p>
           </div>
         </section>
@@ -79,7 +87,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <section className="signin-page__panelColumn">
           <div className="signin-page__panelIntro">
             <h2>Sign in to continue</h2>
-            <p>Use your admin email or username. Successful sign-in returns you to the page you requested.</p>
+            <p>Sign in to your FiMana account or create one, then choose the workspace that fits your role.</p>
           </div>
 
           <div className="signin-page__panelCard">
@@ -91,13 +99,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               <span className="signin-page__trustIcon signin-page__trustIcon--shield" aria-hidden="true">
                 <span />
               </span>
-              <span>Protected operations routes</span>
+              <span>Verified email identity</span>
             </div>
             <div className="signin-page__trustItem">
               <span className="signin-page__trustIcon signin-page__trustIcon--check" aria-hidden="true">
                 <span />
               </span>
-              <span>Session-based access</span>
+              <span>Role-based workspace access</span>
             </div>
           </div>
         </section>

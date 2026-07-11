@@ -1,0 +1,404 @@
+.page {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(217, 131, 69, 0.12), transparent 24rem),
+    var(--bg);
+  color: var(--text);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 4.5rem;
+  padding: 0.85rem clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 251, 241, 0.9);
+  backdrop-filter: blur(16px);
+}
+
+.accountMenu,
+.accountCopy {
+  display: flex;
+  align-items: center;
+}
+
+.accountMenu {
+  gap: 1rem;
+}
+
+.accountCopy {
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.35;
+}
+
+.accountCopy strong {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.88rem;
+}
+
+.accountCopy span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.accountMenu svg,
+.applyButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.shell {
+  display: grid;
+  gap: 1.25rem;
+  width: min(var(--page-width), calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 3rem) 0 4rem;
+}
+
+.applyButton {
+  white-space: nowrap;
+}
+
+.success,
+.error {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-control);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.success {
+  border: 1px solid rgba(36, 98, 79, 0.18);
+  background: rgba(36, 98, 79, 0.1);
+  color: var(--success);
+}
+
+.error {
+  background: rgba(143, 51, 38, 0.1);
+  color: var(--danger);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1.15rem 1.25rem;
+}
+
+.stat + .stat {
+  border-left: 1px solid var(--line);
+}
+
+.statIcon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.statIcon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.stat div {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.stat strong {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.stat div span {
+  color: var(--muted-strong);
+  font-size: 0.83rem;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.section,
+.linkedSection {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.section {
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sectionHeading h2,
+.sectionHeading p,
+.linkedSection h2,
+.linkedSection p {
+  margin: 0;
+}
+
+.sectionHeading h2,
+.linkedSection h2 {
+  font-size: 1.18rem;
+}
+
+.sectionHeading p,
+.linkedSection p {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.item {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.itemTop,
+.itemFooter,
+.loanAmount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.itemTop > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.itemTop strong {
+  font-family: var(--font-heading), sans-serif;
+}
+
+.itemTop div span,
+.itemFooter,
+.loanAmount span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(101, 95, 82, 0.1);
+  color: var(--muted-strong);
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.status[data-status='active'],
+.status[data-status='approved'],
+.status[data-status='completed'] {
+  background: rgba(36, 98, 79, 0.11);
+  color: var(--success);
+}
+
+.status[data-status='rejected'],
+.status[data-status='defaulted'] {
+  background: rgba(143, 51, 38, 0.1);
+  color: var(--danger);
+}
+
+.loanAmount {
+  align-items: flex-end;
+}
+
+.loanAmount strong {
+  font-family: var(--font-heading), sans-serif;
+  font-size: 1.12rem;
+}
+
+.itemFooter {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.itemFooter svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+  min-height: 11rem;
+  align-content: center;
+  padding: 1.25rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--muted-strong);
+}
+
+.empty > svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--accent-strong);
+}
+
+.empty strong {
+  color: var(--text);
+  font-family: var(--font-heading), sans-serif;
+}
+
+.empty span {
+  max-width: 30rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.linkedSection {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.7fr) minmax(0, 1.3fr);
+  gap: 2rem;
+  padding: clamp(1rem, 3vw, 1.4rem);
+}
+
+.linkedRecords {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.linkedRecord {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+}
+
+.linkedRecord + .linkedRecord {
+  border-top: 1px solid var(--line);
+}
+
+.linkedRecord div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.linkedRecord span,
+.linkedEmpty {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.applicationDialog {
+  width: min(100%, 44rem);
+  max-height: min(88dvh, 58rem);
+  overflow-y: auto;
+}
+
+.form,
+.profileForm {
+  display: grid;
+  gap: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.profileDialog {
+  max-width: 28rem;
+}
+
+@media (max-width: 860px) {
+  .contentGrid,
+  .linkedSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    align-items: flex-start;
+  }
+
+  .accountCopy {
+    display: none;
+  }
+
+  .accountMenu button {
+    padding-inline: 0.75rem;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .stat + .stat {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .sectionHeading,
+  .linkedRecord,
+  .loanAmount {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}

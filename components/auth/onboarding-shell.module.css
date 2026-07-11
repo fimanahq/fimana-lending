@@ -1,0 +1,31 @@
+.page {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(217, 131, 69, 0.13), transparent 24rem),
+    var(--bg);
+}
+
+.main {
+  display: grid;
+  place-items: center;
+  width: min(100%, 48rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 8vw, 5rem) 1rem;
+}
+
+.header,
+.footer {
+  border-color: var(--line);
+  background: rgba(255, 251, 241, 0.88);
+}
+
+.header {
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+}
+
+.footer {
+  border-top: 1px solid var(--line);
+}
