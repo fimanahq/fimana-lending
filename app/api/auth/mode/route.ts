@@ -12,17 +12,17 @@ interface AuthPayload {
 export async function POST(request: NextRequest) {
   const body = await readJsonBody<{ accountType?: unknown }>(request)
   if (!body || (body.accountType !== 'lender' && body.accountType !== 'borrower')) {
-    return jsonError('Select a valid account type', 400)
+    return jsonError('Select a valid account mode', 400)
   }
 
   try {
-    const authPayload = await authorizedBackendRequest<AuthPayload>('/auth/account-type', {
+    const authPayload = await authorizedBackendRequest<AuthPayload>('/auth/mode', {
       method: 'POST',
       body: JSON.stringify({ accountType: body.accountType }),
     })
     const user = await createSession(authPayload)
     return NextResponse.json({ user })
   } catch (error) {
-    return backendErrorResponse(error, 'Unable to save account type', 400)
+    return backendErrorResponse(error, 'Unable to switch account mode', 400)
   }
 }

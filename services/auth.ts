@@ -15,6 +15,7 @@ export interface RegisterCredentials {
   password: string
   firstName: string
   lastName: string
+  lenderSlug?: string
 }
 
 export interface LoginResponse {
@@ -49,13 +50,14 @@ export function register(credentials: RegisterCredentials) {
       password: credentials.password,
       firstName: credentials.firstName.trim(),
       lastName: credentials.lastName.trim(),
+      lenderSlug: credentials.lenderSlug,
     }),
     timeoutMs: LOGIN_FETCH_TIMEOUT_MS,
   })
 }
 
-export function selectAccountType(accountType: AccountType) {
-  return apiRequest<LoginResponse>('/api/auth/account-type', {
+export function switchAccountMode(accountType: AccountType) {
+  return apiRequest<LoginResponse>('/api/auth/mode', {
     method: 'POST',
     body: JSON.stringify({ accountType }),
     timeoutMs: LOGIN_FETCH_TIMEOUT_MS,

@@ -25,10 +25,6 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
     redirect('/portal')
   }
 
-  if (!token && user?.emailVerified && user.accountTypeSelectionRequired) {
-    redirect('/select-account-type')
-  }
-
   if (!token && user && hasLoanAppAccess(user)) {
     redirect('/dashboard')
   }

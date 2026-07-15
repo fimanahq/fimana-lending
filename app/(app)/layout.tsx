@@ -29,10 +29,6 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     redirect('/portal')
   }
 
-  if (user.accountTypeSelectionRequired) {
-    redirect(user.emailVerified ? '/select-account-type' : '/verify-email')
-  }
-
   if (!hasLoanAppAccess(user)) {
     redirect('/login')
   }

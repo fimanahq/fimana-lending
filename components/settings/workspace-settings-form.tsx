@@ -166,7 +166,7 @@ export function WorkspaceSettingsForm() {
   }, [requestUrlCopyStatus])
 
   const publicRequestPath = form?.publicLoanRequestSlug.trim()
-    ? `/request-loan/${form.publicLoanRequestSlug.trim()}`
+    ? `/join/${form.publicLoanRequestSlug.trim()}`
     : ''
   const publicRequestUrl = publicRequestPath && origin
     ? `${origin}${publicRequestPath}`
@@ -212,11 +212,11 @@ export function WorkspaceSettingsForm() {
     ? 'Copied'
     : requestUrlCopyStatus === 'error'
       ? 'Copy failed'
-      : 'Copy request URL'
+      : 'Copy invitation URL'
   const requestUrlCopyAnnouncement = requestUrlCopyStatus === 'success'
-    ? 'Request URL copied to clipboard.'
+    ? 'Invitation URL copied to clipboard.'
     : requestUrlCopyStatus === 'error'
-      ? 'Unable to copy request URL.'
+      ? 'Unable to copy invitation URL.'
       : ''
   const hasChanges =
     form.defaultCurrency !== initialForm.defaultCurrency
@@ -330,17 +330,17 @@ export function WorkspaceSettingsForm() {
             <div className="stack">
               <Input
                 id="workspace-public-request-slug"
-                label="Public request link"
+                label="Borrower invitation link"
                 value={form.publicLoanRequestSlug}
                 error={errors.publicLoanRequestSlug}
-                hint="Use lowercase letters, numbers, and hyphens. Borrowers apply through this lender-specific link."
+                hint="Use lowercase letters, numbers, and hyphens. Borrowers register or sign in through this lender-specific invitation."
                 onChange={(event) => updateField('publicLoanRequestSlug', event.target.value.trim().toLowerCase())}
               />
 
               {publicRequestPath ? (
                 <div className="data-card">
                   <div className="request-url-card__header">
-                    <div className="subsection-title">Request URL</div>
+                    <div className="subsection-title">Invitation URL</div>
                     <button
                       type="button"
                       className={`button-ghost table-action-icon table-copy-button${requestUrlCopyStatus === 'success' ? ' is-success' : ''}${requestUrlCopyStatus === 'error' ? ' is-error' : ''}`}

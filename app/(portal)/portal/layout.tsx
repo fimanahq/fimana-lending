@@ -28,10 +28,6 @@ export default async function BorrowerPortalLayout({ children }: { children: Rea
     redirect('/dashboard')
   }
 
-  if (user.accountTypeSelectionRequired) {
-    redirect(user.emailVerified ? '/select-account-type' : '/verify-email')
-  }
-
   if (!hasBorrowerPortalAccess(user)) {
     redirect('/login')
   }

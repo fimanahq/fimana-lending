@@ -39,10 +39,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(user.emailVerified ? '/portal' : '/verify-email')
   }
 
-  if (user?.accountTypeSelectionRequired) {
-    redirect(user.emailVerified ? '/select-account-type' : '/verify-email')
-  }
-
   const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value
 
   if (!hasTransientRefreshError && !user && refreshToken) {
@@ -79,7 +75,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </h1>
 
             <p className="signin-page__lede">
-              Choose the FiMana experience that matches your role after verifying your email.
+              Manage applications, loans, and repayments from one secure FiMana account.
             </p>
           </div>
         </section>
@@ -87,7 +83,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <section className="signin-page__panelColumn">
           <div className="signin-page__panelIntro">
             <h2>Sign in to continue</h2>
-            <p>Sign in to your FiMana account or create one, then choose the workspace that fits your role.</p>
           </div>
 
           <div className="signin-page__panelCard">

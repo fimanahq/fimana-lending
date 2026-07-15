@@ -9,7 +9,19 @@ export interface BorrowerPortalLinkedBorrower {
   mobileNumber: string
 }
 
+export interface BorrowerPortalLender {
+  id: string
+  displayName: string
+}
+
+export interface LenderInvitation {
+  lenderId: string
+  slug: string
+  displayName: string
+}
+
 export interface BorrowerPortalSummary {
+  lender: BorrowerPortalLender | null
   linkedBorrowers: BorrowerPortalLinkedBorrower[]
   counts: {
     linkedBorrowers: number

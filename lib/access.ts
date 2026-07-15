@@ -8,14 +8,8 @@ export function hasBorrowerPortalAccess(user: Pick<User, 'accountType'> | null |
   return user?.accountType === 'borrower'
 }
 
-export function requiresAccountTypeSelection(
-  user: Pick<User, 'accountType' | 'accountTypeSelectionRequired'> | null | undefined,
-) {
-  return Boolean(user?.accountTypeSelectionRequired && user.accountType === null)
-}
-
 export function hasFiManaSessionAccess(
-  user: Pick<User, 'accountType' | 'accountTypeSelectionRequired' | 'enabledApps'> | null | undefined,
+  user: Pick<User, 'accountType' | 'enabledApps'> | null | undefined,
 ) {
-  return hasLoanAppAccess(user) || hasBorrowerPortalAccess(user) || requiresAccountTypeSelection(user)
+  return hasLoanAppAccess(user) || hasBorrowerPortalAccess(user)
 }

@@ -1,12 +1,10 @@
 import { apiRequest } from '@/lib/client-api'
 import { REQUEST_LOAN_FETCH_TIMEOUT_MS } from '@/lib/fetch-timeout'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
-import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
+import type { BorrowerPortalSummary, LenderInvitation } from '@/lib/types/borrower-portal'
 import type { LoanApplication, LoanRecord } from '@/lib/types/lending'
 
-export type BorrowerPortalApplicationInput = ValidatedLoanApplicationInput & {
-  publicLoanRequestSlug: string
-}
+export type BorrowerPortalApplicationInput = ValidatedLoanApplicationInput
 
 export function getBorrowerPortalSummary() {
   return apiRequest<BorrowerPortalSummary>('/api/borrower-portal/summary')
@@ -18,6 +16,13 @@ export function listBorrowerPortalLoans() {
 
 export function listBorrowerPortalApplications() {
   return apiRequest<LoanApplication[]>('/api/borrower-portal/applications')
+}
+
+export function assignBorrowerPortalLender(lenderSlug: string) {
+  return apiRequest<LenderInvitation>('/api/borrower-portal/lender', {
+    method: 'POST',
+    body: JSON.stringify({ lenderSlug }),
+  })
 }
 
 export function createBorrowerPortalApplication(input: BorrowerPortalApplicationInput) {

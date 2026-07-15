@@ -367,10 +367,17 @@
 @media (max-width: 640px) {
   .header {
     align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .accountCopy {
     display: none;
+  }
+
+  .accountMenu {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 0.5rem;
   }
 
   .accountMenu button {

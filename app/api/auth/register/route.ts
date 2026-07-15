@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     firstName?: unknown
     lastName?: unknown
     mobileNumber?: unknown
+    lenderSlug?: unknown
   }>(request)
 
   if (!body) {
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
   const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : ''
   const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : ''
   const mobileNumber = typeof body.mobileNumber === 'string' ? normalizePhilippineMobileNumber(body.mobileNumber) : ''
+  const lenderSlug = typeof body.lenderSlug === 'string' ? body.lenderSlug.trim().toLowerCase() : undefined
 
   if (!email || !password || !firstName || !lastName || !mobileNumber) {
     return jsonError('Name, email, mobile number, and password are required', 400)
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     response = await fetchWithTimeout(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ email, password, firstName, lastName, mobileNumber }),
+      body: JSON.stringify({ email, password, firstName, lastName, mobileNumber, lenderSlug }),
       cache: 'no-store',
     }, AUTH_FETCH_TIMEOUT_MS)
   } catch (error) {

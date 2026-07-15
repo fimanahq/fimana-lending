@@ -8,6 +8,7 @@ import { Button, Input } from '@/components/shared/forms'
 import { ApiRequestError } from '@/lib/client-api'
 import { normalizePhilippineMobileNumber } from '@/lib/phone'
 import { login, register as registerAccount } from '@/services/auth'
+import { assignBorrowerPortalLender } from '@/services/borrower-portal'
 import { classNames } from '@/utils/class-names'
 import styles from './login-form.module.css'
 
@@ -105,7 +106,12 @@ function validateRegisterForm(form: RegisterFormState) {
   return errors
 }
 
-export function LoginForm() {
+interface LoginFormProps {
+  lenderSlug?: string
+  lenderName?: string
+}
+
+export function LoginForm({ lenderSlug, lenderName }: LoginFormProps = {}) {
   const searchParams = useSearchParams()
   const { setUser } = useAuth()
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginFormState)
@@ -127,7 +133,11 @@ export function LoginForm() {
   const [registering, setRegistering] = useState(false)
   const nextPath = searchParams.get('next')
   const destination = nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/dashboard'
-  const googleHref = '/api/auth/google'
+  const googleParams = new URLSearchParams()
+  if (lenderSlug) {
+    googleParams.set('lenderSlug', lenderSlug)
+  }
+  const googleHref = googleParams.size > 0 ? `/api/auth/google?${googleParams.toString()}` : '/api/auth/google'
 
   const updateLoginField = (field: keyof LoginFormState, value: string) => {
     setLoginForm((current) => ({ ...current, [field]: value }))
@@ -158,11 +168,12 @@ export function LoginForm() {
     try {
       const payload = await login(loginForm)
       setUser(payload.user)
+      if (lenderSlug && payload.user.accountType === 'borrower') {
+        await assignBorrowerPortalLender(lenderSlug)
+      }
       window.location.replace(!payload.user.emailVerified
         ? '/verify-email'
-        : payload.user.accountTypeSelectionRequired
-          ? '/select-account-type'
-          : payload.user.accountType === 'borrower' ? '/portal' : destination)
+        : payload.user.accountType === 'borrower' ? '/portal' : destination)
     } catch (caughtError) {
       if (caughtError instanceof ApiRequestError && caughtError.status === 401) {
         setInvalidCredentials(true)
@@ -195,6 +206,7 @@ export function LoginForm() {
         password: registerForm.password,
         firstName: registerForm.firstName,
         lastName: registerForm.lastName,
+        lenderSlug,
       })
       setUser(payload.user)
       window.location.replace(payload.verificationEmailSent
@@ -224,7 +236,7 @@ export function LoginForm() {
           )}
           value={loginForm.identifier}
           onChange={(event) => updateLoginField('identifier', event.target.value)}
-          placeholder="borrower@example.com"
+          placeholder="you@example.com"
         />
 
         <Input
@@ -273,8 +285,7 @@ export function LoginForm() {
       <Dialog
         id="account-register-dialog"
         open={registerOpen}
-        title="Create your FiMana account"
-        description="Verify your email, then choose whether you are joining as a borrower or lender."
+        title={lenderName ? `Register with ${lenderName}` : 'Create your FiMana account'}
         onClose={() => {
           if (!registering) {
             setRegisterOpen(false)
@@ -335,7 +346,7 @@ export function LoginForm() {
             maxLength={320}
             value={registerForm.email}
             onChange={(event) => updateRegisterField('email', event.target.value)}
-            placeholder="borrower@example.com"
+            placeholder="you@example.com"
           />
 
           <Input

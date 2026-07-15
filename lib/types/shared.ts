@@ -81,8 +81,7 @@ export interface User {
   firstName: string
   lastName: string
   mobileNumber?: string
-  accountType: 'lender' | 'borrower' | null
-  accountTypeSelectionRequired: boolean
+  accountType: 'lender' | 'borrower'
   emailVerified: boolean
   emailVerifiedAt?: string | Date | null
   role: 'user' | 'admin'

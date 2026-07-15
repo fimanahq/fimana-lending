@@ -13,19 +13,36 @@ interface AuthPayload {
   user: User
 }
 
+interface GoogleAuthState {
+  nonce: string
+  next: string
+  lenderSlug?: string
+}
+
 function getLoginUrl(request: NextRequest, reason: string) {
   const loginUrl = new URL('/login', request.url)
   loginUrl.searchParams.set('authError', reason)
   return loginUrl
 }
 
-function getDestination(state: string | null, user: User) {
-  if (user.accountTypeSelectionRequired) {
-    return '/select-account-type'
+function parseAuthState(state: string): GoogleAuthState | null {
+  try {
+    const parsed = JSON.parse(Buffer.from(state, 'base64url').toString('utf8')) as Partial<GoogleAuthState>
+    if (typeof parsed.nonce !== 'string' || typeof parsed.next !== 'string') {
+      return null
+    }
+    return {
+      nonce: parsed.nonce,
+      next: parsed.next,
+      lenderSlug: typeof parsed.lenderSlug === 'string' ? parsed.lenderSlug : undefined,
+    }
+  } catch {
+    return null
   }
+}
 
-  const parts = state?.split(':') ?? []
-  const rawNext = parts.length >= 3 ? decodeURIComponent(parts.slice(2).join(':')) : ''
+function getDestination(authState: GoogleAuthState, user: User) {
+  const rawNext = authState.next
   const isSafePath = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
   if (isSafePath && user.accountType === 'borrower' && isBorrowerProtectedPath(rawNext)) {
     return rawNext
@@ -47,13 +64,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(getLoginUrl(request, 'google_state'))
   }
 
+  const authState = parseAuthState(state)
+  if (!authState) {
+    return NextResponse.redirect(getLoginUrl(request, 'google_state'))
+  }
+
   let backendResponse: Response
 
   try {
     backendResponse = await fetchWithTimeout(`${API_BASE_URL}/auth/google/exchange`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ ticket }),
+      body: JSON.stringify({ ticket, lenderSlug: authState.lenderSlug }),
       cache: 'no-store',
     }, AUTH_FETCH_TIMEOUT_MS)
   } catch (error) {
@@ -69,7 +91,7 @@ export async function GET(request: NextRequest) {
 
   const authPayload = payload.data as AuthPayload
   const user = await createSession(authPayload)
-  const response = NextResponse.redirect(new URL(getDestination(state, user), request.url))
+  const response = NextResponse.redirect(new URL(getDestination(authState, user), request.url))
   response.cookies.set(GOOGLE_AUTH_STATE_COOKIE, '', {
     httpOnly: true,
     sameSite: 'lax',

@@ -37,11 +37,9 @@ export function EmailVerificationPanel({ token = '', email = '', deliveryFailed 
         const payload = await confirmEmailVerification(token)
         setUser(payload.user)
         setState('confirmed')
-        setMessage('Email verified. Redirecting to account setup...')
+        setMessage('Email verified. Redirecting to your account...')
         window.setTimeout(() => {
-          window.location.replace(payload.user.accountTypeSelectionRequired
-            ? '/select-account-type'
-            : payload.user.accountType === 'borrower' ? '/portal' : '/dashboard')
+          window.location.replace(payload.user.accountType === 'borrower' ? '/portal' : '/dashboard')
         }, 800)
       } catch (error) {
         setState('error')

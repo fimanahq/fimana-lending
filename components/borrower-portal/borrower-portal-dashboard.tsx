@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowRight, BriefcaseBusiness, FileText, LogOut, Plus, WalletCards } from 'lucide-react'
+import { ArrowLeftRight, ArrowRight, BriefcaseBusiness, FileText, LogOut, Plus, WalletCards } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { AppLogo } from '@/components/shared/app-logo'
@@ -12,7 +12,7 @@ import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedu
 import { normalizePhilippineMobileNumber } from '@/lib/phone'
 import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
 import { createBorrowerPortalApplication, getBorrowerPortalSummary } from '@/services/borrower-portal'
-import { updateCurrentUserProfile } from '@/services/auth'
+import { switchAccountMode, updateCurrentUserProfile } from '@/services/auth'
 import styles from './borrower-portal-dashboard.module.css'
 
 interface BorrowerPortalDashboardProps {
@@ -21,9 +21,10 @@ interface BorrowerPortalDashboardProps {
 
 const PHONE_PREFIX = '+63 '
 
-function buildInitialForm(user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null) {
+function buildInitialForm(
+  user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null,
+) {
   return {
-    publicLoanRequestSlug: '',
     firstName: user?.firstName ?? '',
     lastName: user?.lastName ?? '',
     email: user?.email ?? '',
@@ -49,6 +50,8 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
   const [savingProfile, setSavingProfile] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const [switchingMode, setSwitchingMode] = useState(false)
+  const [modeError, setModeError] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const requiresMobileNumber = user?.accountType === 'borrower' && !user.mobileNumber
@@ -70,8 +73,8 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
     setError('')
 
     try {
-      if (!form.publicLoanRequestSlug.trim()) {
-        throw new Error('Enter your lender request code.')
+      if (!summary.lender) {
+        throw new Error('Open a lender invitation before applying for a loan.')
       }
 
       const validated = validateLoanApplicationInput({
@@ -89,10 +92,7 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
         firstPaymentDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
       })
 
-      await createBorrowerPortalApplication({
-        ...validated,
-        publicLoanRequestSlug: form.publicLoanRequestSlug.trim().toLowerCase(),
-      })
+      await createBorrowerPortalApplication(validated)
 
       try {
         setSummary(await getBorrowerPortalSummary())
@@ -139,6 +139,24 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
     window.location.replace('/login')
   }
 
+  const switchToLenderMode = async () => {
+    if (switchingMode) {
+      return
+    }
+
+    setSwitchingMode(true)
+    setModeError('')
+
+    try {
+      const payload = await switchAccountMode('lender')
+      setUser(payload.user)
+      window.location.replace('/dashboard')
+    } catch (caughtError) {
+      setModeError(caughtError instanceof Error ? caughtError.message : 'Unable to switch to lender mode')
+      setSwitchingMode(false)
+    }
+  }
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -148,7 +166,13 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
             <strong>{user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'}</strong>
             <span>{user?.email}</span>
           </div>
-          <Button variant="secondary" size="sm" onClick={signOut} disabled={signingOut}>
+          {user?.role === 'admin' ? (
+            <Button variant="secondary" size="sm" onClick={switchToLenderMode} disabled={switchingMode || signingOut}>
+              <ArrowLeftRight aria-hidden="true" />
+              {switchingMode ? 'Switching mode...' : 'Switch to lender mode'}
+            </Button>
+          ) : null}
+          <Button variant="secondary" size="sm" onClick={signOut} disabled={signingOut || switchingMode}>
             <LogOut aria-hidden="true" />
             {signingOut ? 'Signing out...' : 'Sign out'}
           </Button>
@@ -158,6 +182,7 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
       <div className={styles.shell}>
         <h1 className="ui-sr-only">Borrower Portal overview</h1>
 
+        {modeError ? <div className={styles.error} role="alert">{modeError}</div> : null}
         {success ? <div className={styles.success} role="status">{success}</div> : null}
 
         <section className={styles.stats} aria-label="Account summary">
@@ -209,7 +234,13 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
           <section className={styles.section}>
             <div className={styles.sectionHeading}>
               <div><h2>Recent applications</h2><p>Follow each request from submission to decision.</p></div>
-              <Button className={styles.applyButton} size="sm" onClick={openApplication}>
+              <Button
+                className={styles.applyButton}
+                size="sm"
+                onClick={openApplication}
+                disabled={!summary.lender}
+                title={!summary.lender ? 'Open a lender invitation link before applying.' : undefined}
+              >
                 <Plus aria-hidden="true" />
                 Apply for a loan
               </Button>
@@ -230,7 +261,7 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
                 <div className={styles.empty}>
                   <FileText aria-hidden="true" />
                   <strong>No applications yet</strong>
-                  <span>Use the application action above with a lender request code to submit your first request.</span>
+                  <span>{summary.lender ? 'Use the application action above to submit your first request.' : 'Open a lender invitation link to connect your account and apply.'}</span>
                 </div>
               )}
             </div>
@@ -253,13 +284,14 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
       <Dialog
         id="borrower-application-dialog"
         open={applicationOpen}
-        title="Apply with a lender code"
-        description="Use the request code shared by your lender. Your verified email is used for this application."
+        title="Apply for a loan"
+        description={summary.lender
+          ? `Your verified application will be sent to ${summary.lender.displayName}.`
+          : 'Open a lender invitation before applying for a loan.'}
         onClose={() => { if (!submitting) setApplicationOpen(false) }}
         className={styles.applicationDialog}
       >
         <form className={styles.form} onSubmit={submitApplication} noValidate>
-          <Input id="portalLenderCode" label="Lender request code" value={form.publicLoanRequestSlug} onChange={(event) => updateField('publicLoanRequestSlug', event.target.value)} placeholder="Enter request code" required />
           <div className={styles.formGrid}>
             <Input id="portalFirstName" label="First name" autoComplete="given-name" value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} required />
             <Input id="portalLastName" label="Last name" autoComplete="family-name" value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} required />
