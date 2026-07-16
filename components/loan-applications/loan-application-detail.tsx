@@ -162,7 +162,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         await loadApplication()
         setError(`${message} Available: ${available}; required: ${required}.`)
       } else if (status === 'approved') {
-        setError('Unable to approve application. No changes were made.')
+        setError(caughtError instanceof Error ? caughtError.message : 'Unable to approve application')
       } else {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to update application')
       }
