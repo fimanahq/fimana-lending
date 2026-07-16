@@ -162,7 +162,8 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         await loadApplication()
         setError(`${message} Available: ${available}; required: ${required}.`)
       } else if (status === 'approved') {
-        setError(caughtError instanceof Error ? caughtError.message : 'Unable to approve application')
+        const canShowBackendMessage = caughtError instanceof ApiRequestError && caughtError.status < 500
+        setError(canShowBackendMessage ? caughtError.message : 'Unable to approve application. No changes were made.')
       } else {
         setError(caughtError instanceof Error ? caughtError.message : 'Unable to update application')
       }
