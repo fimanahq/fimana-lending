@@ -1,7 +1,7 @@
 'use client'
 
-import { ArrowLeftRight, LogOut, Plus, WalletCards } from 'lucide-react'
-import { useState } from 'react'
+import { Plus, WalletCards } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { useAuth } from '@/components/providers/auth-provider'
 import { AppLogo } from '@/components/shared/app-logo'
@@ -10,8 +10,9 @@ import { Button, Input } from '@/components/shared/forms'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { normalizePhilippineMobileNumber } from '@/lib/phone'
+import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
-import type { LoanRecord } from '@/lib/types/lending'
+import type { LoanApplication, LoanApplicationRecordStatus, LoanRecord } from '@/lib/types/lending'
 import { createBorrowerPortalApplication, getBorrowerPortalSummary } from '@/services/borrower-portal'
 import { switchAccountMode, updateCurrentUserProfile } from '@/services/auth'
 import styles from './borrower-portal-dashboard.module.css'
@@ -21,6 +22,7 @@ interface BorrowerPortalDashboardProps {
 }
 
 const PHONE_PREFIX = '+63 '
+const OPEN_APPLICATION_STATUSES: LoanApplicationRecordStatus[] = ['pending', 'submitted', 'under_review']
 
 function buildApplicationInitialValues(
   user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null,
@@ -47,20 +49,76 @@ function getNextDueSummary(loan: LoanRecord) {
   }
 }
 
+function getAccountInitials(firstName?: string, lastName?: string, email?: string) {
+  const initials = `${firstName?.trim()[0] || ''}${lastName?.trim()[0] || ''}`.toUpperCase()
+
+  if (initials) {
+    return initials
+  }
+
+  return email?.trim()[0]?.toUpperCase() || ''
+}
+
+function getApplicationTimestamp(application: LoanApplication) {
+  return new Date(application.submittedAt ?? application.createdAt).getTime()
+}
+
+function getOpenApplications(applications: LoanApplication[]) {
+  return [...applications]
+    .filter((application) => OPEN_APPLICATION_STATUSES.includes(application.status))
+    .sort((firstApplication, secondApplication) => (
+      getApplicationTimestamp(secondApplication) - getApplicationTimestamp(firstApplication)
+    ))
+}
+
+function formatApplicationAmount(application: LoanApplication) {
+  return formatCurrency(
+    (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
+    application.loanProduct?.currency,
+  )
+}
+
 export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashboardProps) {
   const { setUser, user } = useAuth()
   const toast = useToast()
+  const accountMenuRef = useRef<HTMLDivElement | null>(null)
   const [summary, setSummary] = useState(initialSummary)
   const [profileMobileNumber, setProfileMobileNumber] = useState(user?.mobileNumber ?? PHONE_PREFIX)
   const [profileError, setProfileError] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
   const [applicationOpen, setApplicationOpen] = useState(false)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [switchingMode, setSwitchingMode] = useState(false)
   const [modeError, setModeError] = useState('')
   const requiresMobileNumber = user?.accountType === 'borrower' && !user.mobileNumber
   const applicationInitialValues = buildApplicationInitialValues(user)
   const applicationFormKey = `${applicationInitialValues.email}:${applicationInitialValues.phone}`
+  const accountName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'
+  const accountInitials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
+  const openApplications = getOpenApplications(summary.applications)
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setAccountMenuOpen(false)
+      }
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
 
   const submitPortalApplication = async (input: ValidatedLoanApplicationInput) => {
     if (!summary.lender) {
@@ -135,21 +193,57 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
     <main className={styles.page}>
       <header className={styles.header}>
         <AppLogo suffix="Borrower Portal" />
-        <div className={styles.accountMenu}>
-          <div className={styles.accountCopy}>
-            <strong>{user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'}</strong>
-            <span>{user?.email}</span>
-          </div>
-          {user?.role === 'admin' ? (
-            <Button variant="secondary" size="sm" onClick={switchToLenderMode} disabled={switchingMode || signingOut}>
-              <ArrowLeftRight aria-hidden="true" />
-              {switchingMode ? 'Switching mode...' : 'Switch to lender mode'}
-            </Button>
+        <div className={styles.accountMenu} ref={accountMenuRef}>
+          <button
+            className={styles.accountButton}
+            type="button"
+            aria-label={`${accountName} account menu`}
+            aria-expanded={accountMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => setAccountMenuOpen((current) => !current)}
+          >
+            <span className={styles.accountAvatar}>{accountInitials}</span>
+          </button>
+
+          {accountMenuOpen ? (
+            <div className={styles.accountDropdown} role="menu" aria-label="Account menu">
+              <div className={styles.accountDropdownHeader}>
+                <span className={styles.accountAvatar}>{accountInitials}</span>
+                <span className={styles.accountCopy}>
+                  <span>{accountName}</span>
+                  <span>{user?.email || 'Borrower menu'}</span>
+                </span>
+              </div>
+
+              {user?.role === 'admin' ? (
+                <button
+                  className={styles.modeSwitch}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => switchToLenderMode()}
+                  disabled={switchingMode || signingOut}
+                >
+                  {switchingMode ? 'Switching mode...' : 'Switch to lender mode'}
+                </button>
+              ) : null}
+
+              {modeError ? (
+                <div className={styles.modeError} role="alert">
+                  {modeError}
+                </div>
+              ) : null}
+
+              <button
+                className={styles.logout}
+                type="button"
+                role="menuitem"
+                onClick={signOut}
+                disabled={signingOut || switchingMode}
+              >
+                {signingOut ? 'Signing out...' : 'Sign out'}
+              </button>
+            </div>
           ) : null}
-          <Button variant="secondary" size="sm" onClick={signOut} disabled={signingOut || switchingMode}>
-            <LogOut aria-hidden="true" />
-            {signingOut ? 'Signing out...' : 'Sign out'}
-          </Button>
         </div>
       </header>
 
@@ -170,7 +264,11 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
                 return (
                   <article className={styles.item} key={loan.id}>
                     <div className={styles.itemTop}>
-                      <div><strong>{dueSummary.dueDate ? formatDate(dueSummary.dueDate) : 'No payment due'}</strong><span>Due</span></div>
+                      <div>
+                        <strong>{dueSummary.dueDate ? formatDate(dueSummary.dueDate) : 'No payment due'}</strong>
+                        <span>Due</span>
+                        <span className={styles.loanNumber}>Loan # {loan.loanNumber}</span>
+                      </div>
                     </div>
                     <div className={styles.loanAmount}>
                       <span>Amount due</span>
@@ -199,6 +297,28 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
               <Plus aria-hidden="true" />
               Apply for a loan
             </Button>
+
+            {openApplications.map((application) => (
+              <article className={styles.applicationStatus} key={application.id} aria-label="Application status">
+                <div className={styles.applicationStatusHeader}>
+                  <span>Application</span>
+                  <span className={getStatusClassName(application.status)}>
+                    {formatLoanApplicationStatus(application.status)}
+                  </span>
+                </div>
+                {application.applicationNumber ? (
+                  <span className={styles.applicationNumber}>
+                    Application # {application.applicationNumber}
+                  </span>
+                ) : null}
+                <div className={styles.applicationStatusBody}>
+                  <strong>{formatApplicationAmount(application)}</strong>
+                  <span>
+                    Submitted {formatDate(application.submittedAt ?? application.createdAt)}
+                  </span>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
 
