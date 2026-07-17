@@ -13,7 +13,9 @@ html {
   html {
     font-size: 95%;
   }
+}
 
+@media (max-width: 1024px) {
   * {
     scrollbar-width: none;
     -ms-overflow-style: none;

@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { useAuth } from '@/components/providers/auth-provider'
 import { AppLogo } from '@/components/shared/app-logo'
-import { Dialog } from '@/components/shared'
+import { Dialog, useToast } from '@/components/shared'
 import { Button, Input } from '@/components/shared/forms'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
@@ -49,6 +49,7 @@ function getNextDueSummary(loan: LoanRecord) {
 
 export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashboardProps) {
   const { setUser, user } = useAuth()
+  const toast = useToast()
   const [summary, setSummary] = useState(initialSummary)
   const [profileMobileNumber, setProfileMobileNumber] = useState(user?.mobileNumber ?? PHONE_PREFIX)
   const [profileError, setProfileError] = useState('')
@@ -72,10 +73,16 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
   const refreshAfterApplicationSubmit = async () => {
     try {
       setSummary(await getBorrowerPortalSummary())
-      return 'Application submitted. Your lender can now review it.'
+      toast.success('Your lender can now review it.', 'Application submitted')
     } catch {
-      return 'Application submitted. Refresh the page to see the latest status.'
+      toast.success('Refresh the page to see the latest status.', 'Application submitted')
+    } finally {
+      setApplicationOpen(false)
     }
+  }
+
+  const handleApplicationSubmitError = (submitError: Error) => {
+    toast.error(submitError.message || 'Unable to submit loan application.', 'Submission failed')
   }
 
   const saveProfileMobileNumber = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -216,6 +223,7 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
           disabledMessage={!summary.lender ? 'A linked lender is required before you can submit a loan application.' : undefined}
           finePrint="Your verified email is used to link this application to your borrower portal account."
           onSubmitApplication={submitPortalApplication}
+          onSubmitError={handleApplicationSubmitError}
           onSubmitted={refreshAfterApplicationSubmit}
         />
       </Dialog>

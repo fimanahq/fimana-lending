@@ -92,6 +92,7 @@ interface LoanApplicationIntakeFormProps {
   finePrint?: string
   idPrefix?: string
   onSubmitApplication?: (input: ValidatedLoanApplicationInput) => Promise<LoanApplication>
+  onSubmitError?: (error: Error) => void
   onSubmitted?: (application: LoanApplication) => string | void | Promise<string | void>
   successMessage?: (application: LoanApplication, submittedForm: LoanApplicationIntakeFormState) => string
 }
@@ -107,6 +108,7 @@ export function LoanApplicationIntakeForm({
   finePrint = 'By submitting, you agree to our curated ledger review process.',
   idPrefix = 'request',
   onSubmitApplication,
+  onSubmitError,
   onSubmitted,
   successMessage,
 }: LoanApplicationIntakeFormProps) {
@@ -203,6 +205,7 @@ export function LoanApplicationIntakeForm({
     setError('')
     setSuccess('')
     setSubmitting(true)
+    let attemptedSubmission = false
 
     try {
       const validated = validateLoanApplicationInput({
@@ -216,6 +219,7 @@ export function LoanApplicationIntakeForm({
       })
 
       const submittedForm = form
+      attemptedSubmission = true
       const created = onSubmitApplication
         ? await onSubmitApplication(validated)
         : publicLoanRequestSlug
@@ -240,7 +244,11 @@ export function LoanApplicationIntakeForm({
         gives: false,
       })
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit loan application')
+      const submitError = caughtError instanceof Error ? caughtError : new Error('Unable to submit loan application')
+      setError(submitError.message)
+      if (attemptedSubmission) {
+        onSubmitError?.(submitError)
+      }
     } finally {
       setSubmitting(false)
     }
