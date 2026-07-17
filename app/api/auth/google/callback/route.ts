@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/constants'
+import { getPostAuthDestination, hasBorrowerPortalAccess, hasLoanAppAccess } from '@/lib/access'
 import { AUTH_FETCH_TIMEOUT_MS, fetchWithTimeout, getFetchFailureMessage, isAbortLikeError } from '@/lib/fetch-timeout'
 import { createSession } from '@/lib/server/backend'
+import { resolveDefaultAdminLenderMode } from '@/lib/server/auth-mode'
 import { isBorrowerProtectedPath, isLenderProtectedPath } from '@/lib/protected-routes'
 import type { User } from '@/lib/types/shared'
 
@@ -44,15 +46,15 @@ function parseAuthState(state: string): GoogleAuthState | null {
 function getDestination(authState: GoogleAuthState, user: User) {
   const rawNext = authState.next
   const isSafePath = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//')
-  if (isSafePath && user.accountType === 'borrower' && isBorrowerProtectedPath(rawNext)) {
+  if (isSafePath && hasBorrowerPortalAccess(user) && isBorrowerProtectedPath(rawNext)) {
     return rawNext
   }
 
-  if (isSafePath && user.accountType === 'lender' && isLenderProtectedPath(rawNext)) {
+  if (isSafePath && hasLoanAppAccess(user) && isLenderProtectedPath(rawNext)) {
     return rawNext
   }
 
-  return user.accountType === 'borrower' ? '/portal' : '/dashboard'
+  return getPostAuthDestination(user)
 }
 
 export async function GET(request: NextRequest) {
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(getLoginUrl(request, 'google_failed'))
   }
 
-  const authPayload = payload.data as AuthPayload
+  const authPayload = await resolveDefaultAdminLenderMode(payload.data as AuthPayload)
   const user = await createSession(authPayload)
   const response = NextResponse.redirect(new URL(getDestination(authState, user), request.url))
   response.cookies.set(GOOGLE_AUTH_STATE_COOKIE, '', {

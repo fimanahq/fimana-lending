@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { LoginForm } from '@/components/auth/login-form'
 import { PublicSiteFooter } from '@/components/public-site-footer'
 import { PublicSiteHeader } from '@/components/public-site-header'
+import { hasBorrowerPortalAccess, hasLoanAppAccess } from '@/lib/access'
 import { API_BASE_URL } from '@/lib/constants'
 import { authorizedBackendRequest, getSessionUser } from '@/lib/server/backend'
 import type { LenderInvitation } from '@/lib/types/borrower-portal'
@@ -38,7 +39,7 @@ export default async function JoinLenderPage({ params }: JoinLenderPageProps) {
   const invitation = await getInvitation(slug)
   const user = await getSessionUser()
 
-  if (user?.accountType === 'borrower') {
+  if (user && hasBorrowerPortalAccess(user)) {
     await authorizedBackendRequest<LenderInvitation>('/borrower-portal/lender', {
       method: 'POST',
       body: JSON.stringify({ lenderSlug: invitation.slug }),
@@ -46,7 +47,7 @@ export default async function JoinLenderPage({ params }: JoinLenderPageProps) {
     redirect(user.emailVerified ? '/portal' : '/verify-email')
   }
 
-  if (user?.accountType === 'lender') {
+  if (hasLoanAppAccess(user)) {
     redirect('/dashboard')
   }
 

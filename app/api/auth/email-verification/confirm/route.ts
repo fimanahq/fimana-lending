@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/constants'
 import { AUTH_FETCH_TIMEOUT_MS, fetchWithTimeout, getFetchFailureMessage, isAbortLikeError } from '@/lib/fetch-timeout'
 import { createSession, jsonError } from '@/lib/server/backend'
+import { resolveDefaultAdminLenderMode } from '@/lib/server/auth-mode'
 import { readJsonBody } from '@/lib/server/request'
 import type { User } from '@/lib/types/shared'
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     return jsonError(payload?.message || 'Unable to verify email', response.status)
   }
 
-  const authPayload = payload.data as AuthPayload
+  const authPayload = await resolveDefaultAdminLenderMode(payload.data as AuthPayload)
   const user = await createSession(authPayload)
   return NextResponse.json({ user })
 }

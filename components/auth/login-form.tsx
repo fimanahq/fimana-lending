@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Dialog } from '@/components/shared'
 import { Button, Input } from '@/components/shared/forms'
+import { getPostAuthDestination, hasBorrowerPortalAccess } from '@/lib/access'
 import { ApiRequestError } from '@/lib/client-api'
 import { normalizePhilippineMobileNumber } from '@/lib/phone'
 import { login, register as registerAccount } from '@/services/auth'
@@ -168,12 +169,12 @@ export function LoginForm({ lenderSlug, lenderName }: LoginFormProps = {}) {
     try {
       const payload = await login(loginForm)
       setUser(payload.user)
-      if (lenderSlug && payload.user.accountType === 'borrower') {
+      if (lenderSlug && hasBorrowerPortalAccess(payload.user)) {
         await assignBorrowerPortalLender(lenderSlug)
       }
       window.location.replace(!payload.user.emailVerified
         ? '/verify-email'
-        : payload.user.accountType === 'borrower' ? '/portal' : destination)
+        : getPostAuthDestination(payload.user, destination))
     } catch (caughtError) {
       if (caughtError instanceof ApiRequestError && caughtError.status === 401) {
         setInvalidCredentials(true)

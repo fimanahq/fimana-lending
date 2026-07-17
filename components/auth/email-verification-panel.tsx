@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CircleAlert, LoaderCircle, MailCheck, Send } from 'lucide-react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Button } from '@/components/shared/forms'
+import { getPostAuthDestination } from '@/lib/access'
 import { confirmEmailVerification, resendEmailVerification } from '@/services/auth'
 import styles from './email-verification-panel.module.css'
 
@@ -39,7 +40,7 @@ export function EmailVerificationPanel({ token = '', email = '', deliveryFailed 
         setState('confirmed')
         setMessage('Email verified. Redirecting to your account...')
         window.setTimeout(() => {
-          window.location.replace(payload.user.accountType === 'borrower' ? '/portal' : '/dashboard')
+          window.location.replace(getPostAuthDestination(payload.user))
         }, 800)
       } catch (error) {
         setState('error')

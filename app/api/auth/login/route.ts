@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/constants'
 import { AUTH_FETCH_TIMEOUT_MS, fetchWithTimeout, getFetchFailureMessage, isAbortLikeError, LOGIN_FETCH_TIMEOUT_MS } from '@/lib/fetch-timeout'
 import { createSession, jsonError } from '@/lib/server/backend'
+import { resolveDefaultAdminLenderMode } from '@/lib/server/auth-mode'
 import { readJsonBody } from '@/lib/server/request'
 import { hasLoanAppAccess } from '@/lib/access'
 import type { User } from '@/lib/types/shared'
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     return jsonError(payload?.message || 'Unable to sign in', response.status)
   }
 
-  const authPayload = payload.data as AuthPayload
+  const authPayload = await resolveDefaultAdminLenderMode(payload.data as AuthPayload)
   if (authPayload.user.accountType === 'lender' && !hasLoanAppAccess(authPayload.user)) {
     await fetchWithTimeout(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',

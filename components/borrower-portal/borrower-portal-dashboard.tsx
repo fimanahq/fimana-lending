@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, WalletCards } from 'lucide-react'
+import { Bell, Plus, WalletCards } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { useAuth } from '@/components/providers/auth-provider'
@@ -10,6 +10,11 @@ import { Button, Input } from '@/components/shared/forms'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { normalizePhilippineMobileNumber } from '@/lib/phone'
+import {
+  enablePushNotifications,
+  getPushNotificationSupportMessage,
+  syncExistingPushNotificationSubscription,
+} from '@/lib/push-notifications'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
 import type { LoanApplication, LoanApplicationRecordStatus, LoanRecord } from '@/lib/types/lending'
@@ -22,7 +27,8 @@ interface BorrowerPortalDashboardProps {
 }
 
 const PHONE_PREFIX = '+63 '
-const OPEN_APPLICATION_STATUSES: LoanApplicationRecordStatus[] = ['pending', 'submitted', 'under_review']
+const OPEN_APPLICATION_STATUSES: LoanApplicationRecordStatus[] = ['submitted']
+type NotificationStatus = 'checking' | 'unsupported' | 'default' | 'denied' | 'enabled'
 
 function buildApplicationInitialValues(
   user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null,
@@ -78,6 +84,56 @@ function formatApplicationAmount(application: LoanApplication) {
   )
 }
 
+function getNotificationGateContent(status: NotificationStatus) {
+  if (status === 'checking') {
+    return {
+      title: 'Checking notifications',
+      message: 'FiMana is checking whether this device can receive approval notifications.',
+      actionLabel: 'Checking...',
+    }
+  }
+
+  if (status === 'unsupported') {
+    return {
+      title: 'Notifications are not available',
+      message: 'Use a supported browser or installed PWA with a secure connection before opening the borrower portal.',
+      actionLabel: 'Notifications unavailable',
+    }
+  }
+
+  if (status === 'denied') {
+    return {
+      title: 'Notifications are blocked',
+      message: 'Allow notifications for this site in your browser settings, then reload the borrower portal.',
+      actionLabel: 'Notifications blocked',
+    }
+  }
+
+  return {
+    title: 'Enable notifications to continue',
+    message: '',
+    actionLabel: 'Enable notifications',
+  }
+}
+
+function getNotificationFailureStatus(message: string): NotificationStatus {
+  const normalizedMessage = message.toLowerCase()
+
+  if (normalizedMessage.includes('blocked') || normalizedMessage.includes('denied')) {
+    return 'denied'
+  }
+
+  if (
+    normalizedMessage.includes('not supported')
+    || normalizedMessage.includes('secure connection')
+    || normalizedMessage.includes('unsupported')
+  ) {
+    return 'unsupported'
+  }
+
+  return 'default'
+}
+
 export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashboardProps) {
   const { setUser, user } = useAuth()
   const toast = useToast()
@@ -88,6 +144,8 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
   const [savingProfile, setSavingProfile] = useState(false)
   const [applicationOpen, setApplicationOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [notificationStatus, setNotificationStatus] = useState<NotificationStatus>('checking')
+  const [notificationBusy, setNotificationBusy] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [switchingMode, setSwitchingMode] = useState(false)
   const [modeError, setModeError] = useState('')
@@ -97,6 +155,10 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
   const accountName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'
   const accountInitials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
   const openApplications = getOpenApplications(summary.applications)
+  const notificationGate = getNotificationGateContent(notificationStatus)
+  const notificationsEnabled = notificationStatus === 'enabled'
+  const notificationGateTitleId = 'borrower-notification-gate-title'
+  const notificationGateDescriptionId = 'borrower-notification-gate-description'
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -120,6 +182,28 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
     }
   }, [])
 
+  useEffect(() => {
+    const unsupportedMessage = getPushNotificationSupportMessage()
+    if (unsupportedMessage) {
+      setNotificationStatus('unsupported')
+      return
+    }
+
+    if (Notification.permission === 'denied') {
+      setNotificationStatus('denied')
+      return
+    }
+
+    if (Notification.permission !== 'granted') {
+      setNotificationStatus('default')
+      return
+    }
+
+    syncExistingPushNotificationSubscription()
+      .then((subscription) => setNotificationStatus(subscription ? 'enabled' : 'default'))
+      .catch(() => setNotificationStatus('default'))
+  }, [])
+
   const submitPortalApplication = async (input: ValidatedLoanApplicationInput) => {
     if (!summary.lender) {
       throw new Error('A linked lender is required before you can submit a loan application.')
@@ -141,6 +225,21 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
 
   const handleApplicationSubmitError = (submitError: Error) => {
     toast.error(submitError.message || 'Unable to submit loan application.', 'Submission failed')
+  }
+
+  const enableNotifications = async () => {
+    setNotificationBusy(true)
+    try {
+      await enablePushNotifications()
+      setNotificationStatus('enabled')
+      toast.success('Approval updates can now appear on this device.', 'Notifications enabled')
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Unable to enable notifications.'
+      setNotificationStatus(getNotificationFailureStatus(message))
+      toast.error(message, 'Notifications unavailable')
+    } finally {
+      setNotificationBusy(false)
+    }
   }
 
   const saveProfileMobileNumber = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -193,57 +292,59 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
     <main className={styles.page}>
       <header className={styles.header}>
         <AppLogo suffix="Borrower Portal" />
-        <div className={styles.accountMenu} ref={accountMenuRef}>
-          <button
-            className={styles.accountButton}
-            type="button"
-            aria-label={`${accountName} account menu`}
-            aria-expanded={accountMenuOpen}
-            aria-haspopup="menu"
-            onClick={() => setAccountMenuOpen((current) => !current)}
-          >
-            <span className={styles.accountAvatar}>{accountInitials}</span>
-          </button>
+        <div className={styles.headerActions}>
+          <div className={styles.accountMenu} ref={accountMenuRef}>
+            <button
+              className={styles.accountButton}
+              type="button"
+              aria-label={`${accountName} account menu`}
+              aria-expanded={accountMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setAccountMenuOpen((current) => !current)}
+            >
+              <span className={styles.accountAvatar}>{accountInitials}</span>
+            </button>
 
-          {accountMenuOpen ? (
-            <div className={styles.accountDropdown} role="menu" aria-label="Account menu">
-              <div className={styles.accountDropdownHeader}>
-                <span className={styles.accountAvatar}>{accountInitials}</span>
-                <span className={styles.accountCopy}>
-                  <span>{accountName}</span>
-                  <span>{user?.email || 'Borrower menu'}</span>
-                </span>
-              </div>
+            {accountMenuOpen ? (
+              <div className={styles.accountDropdown} role="menu" aria-label="Account menu">
+                <div className={styles.accountDropdownHeader}>
+                  <span className={styles.accountAvatar}>{accountInitials}</span>
+                  <span className={styles.accountCopy}>
+                    <span>{accountName}</span>
+                    <span>{user?.email || 'Borrower menu'}</span>
+                  </span>
+                </div>
 
-              {user?.role === 'admin' ? (
+                {user?.role === 'admin' ? (
+                  <button
+                    className={styles.modeSwitch}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => switchToLenderMode()}
+                    disabled={switchingMode || signingOut}
+                  >
+                    {switchingMode ? 'Switching mode...' : 'Switch to lender mode'}
+                  </button>
+                ) : null}
+
+                {modeError ? (
+                  <div className={styles.modeError} role="alert">
+                    {modeError}
+                  </div>
+                ) : null}
+
                 <button
-                  className={styles.modeSwitch}
+                  className={styles.logout}
                   type="button"
                   role="menuitem"
-                  onClick={() => switchToLenderMode()}
-                  disabled={switchingMode || signingOut}
+                  onClick={signOut}
+                  disabled={signingOut || switchingMode}
                 >
-                  {switchingMode ? 'Switching mode...' : 'Switch to lender mode'}
+                  {signingOut ? 'Signing out...' : 'Sign out'}
                 </button>
-              ) : null}
-
-              {modeError ? (
-                <div className={styles.modeError} role="alert">
-                  {modeError}
-                </div>
-              ) : null}
-
-              <button
-                className={styles.logout}
-                type="button"
-                role="menuitem"
-                onClick={signOut}
-                disabled={signingOut || switchingMode}
-              >
-                {signingOut ? 'Signing out...' : 'Sign out'}
-              </button>
-            </div>
-          ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -252,75 +353,105 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
 
         {modeError ? <div className={styles.error} role="alert">{modeError}</div> : null}
 
-        <div className={styles.contentGrid}>
-          <section className={styles.section}>
-            <div className={styles.sectionHeading}>
-              <div><h2>Active loans</h2></div>
-            </div>
-            <div className={styles.list}>
-              {summary.loans.length ? summary.loans.map((loan) => {
-                const dueSummary = getNextDueSummary(loan)
+        {notificationsEnabled ? (
+          <div className={styles.contentGrid}>
+            <section className={styles.section}>
+              <div className={styles.sectionHeading}>
+                <div><h2>Active loans</h2></div>
+              </div>
+              <div className={styles.list}>
+                {summary.loans.length ? summary.loans.map((loan) => {
+                  const dueSummary = getNextDueSummary(loan)
 
-                return (
-                  <article className={styles.item} key={loan.id}>
-                    <div className={styles.itemTop}>
-                      <div>
-                        <strong>{dueSummary.dueDate ? formatDate(dueSummary.dueDate) : 'No payment due'}</strong>
-                        <span>Due</span>
-                        <span className={styles.loanNumber}>Loan # {loan.loanNumber}</span>
+                  return (
+                    <article className={styles.item} key={loan.id}>
+                      <div className={styles.itemTop}>
+                        <div>
+                          <strong>{dueSummary.dueDate ? formatDate(dueSummary.dueDate) : 'No payment due'}</strong>
+                          <span>Due</span>
+                          <span className={styles.loanNumber}>Loan # {loan.loanNumber}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className={styles.loanAmount}>
-                      <span>Amount due</span>
-                      <strong>{dueSummary.amountMinor === null ? 'Unavailable' : formatCurrency(dueSummary.amountMinor / 100, loan.loanProduct.currency)}</strong>
-                    </div>
-                    <div className={styles.itemFooter}>
-                      <span>{dueSummary.progress}</span>
-                    </div>
-                  </article>
-                )
-              }) : (
-                <div className={styles.empty}>
-                  <WalletCards aria-hidden="true" />
-                  <strong>No active loans yet</strong>
-                  <span>Released loans will appear here while they are active.</span>
-                </div>
-              )}
+                      <div className={styles.loanAmount}>
+                        <span>Amount due</span>
+                        <strong>{dueSummary.amountMinor === null ? 'Unavailable' : formatCurrency(dueSummary.amountMinor / 100, loan.loanProduct.currency)}</strong>
+                      </div>
+                      <div className={styles.itemFooter}>
+                        <span>{dueSummary.progress}</span>
+                      </div>
+                    </article>
+                  )
+                }) : (
+                  <div className={styles.empty}>
+                    <WalletCards aria-hidden="true" />
+                    <strong>No active loans yet</strong>
+                    <span>Released loans will appear here while they are active.</span>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <div className={styles.applyAction}>
+              <Button
+                className={styles.applyButton}
+                onClick={() => setApplicationOpen(true)}
+              >
+                <Plus aria-hidden="true" />
+                Apply for a loan
+              </Button>
+
+              {openApplications.map((application) => (
+                <article className={styles.applicationStatus} key={application.id} aria-label="Application status">
+                  <div className={styles.applicationStatusHeader}>
+                    <span>Application</span>
+                    <span className={getStatusClassName(application.status)}>
+                      {formatLoanApplicationStatus(application.status)}
+                    </span>
+                  </div>
+                  {application.applicationNumber ? (
+                    <span className={styles.applicationNumber}>
+                      Application # {application.applicationNumber}
+                    </span>
+                  ) : null}
+                  <div className={styles.applicationStatusBody}>
+                    <strong>{formatApplicationAmount(application)}</strong>
+                    <span>
+                      Submitted {formatDate(application.submittedAt ?? application.createdAt)}
+                    </span>
+                  </div>
+                </article>
+              ))}
             </div>
-          </section>
-
-          <div className={styles.applyAction}>
-            <Button
-              className={styles.applyButton}
-              onClick={() => setApplicationOpen(true)}
-            >
-              <Plus aria-hidden="true" />
-              Apply for a loan
-            </Button>
-
-            {openApplications.map((application) => (
-              <article className={styles.applicationStatus} key={application.id} aria-label="Application status">
-                <div className={styles.applicationStatusHeader}>
-                  <span>Application</span>
-                  <span className={getStatusClassName(application.status)}>
-                    {formatLoanApplicationStatus(application.status)}
-                  </span>
-                </div>
-                {application.applicationNumber ? (
-                  <span className={styles.applicationNumber}>
-                    Application # {application.applicationNumber}
-                  </span>
-                ) : null}
-                <div className={styles.applicationStatusBody}>
-                  <strong>{formatApplicationAmount(application)}</strong>
-                  <span>
-                    Submitted {formatDate(application.submittedAt ?? application.createdAt)}
-                  </span>
-                </div>
-              </article>
-            ))}
           </div>
-        </div>
+        ) : null}
+
+        {!notificationsEnabled ? (
+          <div className={styles.notificationGateOverlay} role="presentation">
+            <section
+              className={styles.notificationGate}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby={notificationGateTitleId}
+              aria-describedby={notificationGate.message ? notificationGateDescriptionId : undefined}
+            >
+              <span className={styles.notificationGateIcon}>
+                <Bell aria-hidden="true" />
+              </span>
+              <div className={styles.notificationGateCopy}>
+                <h2 id={notificationGateTitleId}>{notificationGate.title}</h2>
+                {notificationGate.message ? <p id={notificationGateDescriptionId}>{notificationGate.message}</p> : null}
+              </div>
+              <Button
+                className={styles.notificationGateButton}
+                onClick={enableNotifications}
+                disabled={notificationBusy || notificationStatus === 'checking' || notificationStatus === 'unsupported' || notificationStatus === 'denied'}
+              >
+                <Bell aria-hidden="true" />
+                {notificationBusy ? 'Enabling notifications...' : notificationGate.actionLabel}
+              </Button>
+            </section>
+          </div>
+        ) : null}
 
       </div>
 
