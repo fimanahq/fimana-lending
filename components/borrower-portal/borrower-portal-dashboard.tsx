@@ -20,6 +20,7 @@ import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
 import type { LoanApplication, LoanApplicationRecordStatus, LoanRecord } from '@/lib/types/lending'
 import { createBorrowerPortalApplication, getBorrowerPortalSummary } from '@/services/borrower-portal'
 import { switchAccountMode, updateCurrentUserProfile } from '@/services/auth'
+import { classNames } from '@/utils/class-names'
 import styles from './borrower-portal-dashboard.module.css'
 
 interface BorrowerPortalDashboardProps {
@@ -27,8 +28,17 @@ interface BorrowerPortalDashboardProps {
 }
 
 const PHONE_PREFIX = '+63 '
+const MIN_PORTAL_PARTIAL_PAYMENT_MINOR = 2000
 const OPEN_APPLICATION_STATUSES: LoanApplicationRecordStatus[] = ['submitted']
 type NotificationStatus = 'checking' | 'unsupported' | 'default' | 'denied' | 'enabled'
+type DueStatusTone = 'overdue' | 'dueToday' | 'partial' | 'upcoming'
+
+const dueStatusClassNames: Record<DueStatusTone, string> = {
+  overdue: styles.dueStatusOverdue,
+  dueToday: styles.dueStatusDueToday,
+  partial: styles.dueStatusPartial,
+  upcoming: styles.dueStatusUpcoming,
+}
 
 function buildApplicationInitialValues(
   user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null,
@@ -47,12 +57,56 @@ function getNextDueSummary(loan: LoanRecord) {
   const maxScheduleSequence = schedule.reduce((maxSequence, row) => Math.max(maxSequence, row.sequence), 0)
   const totalInstallments = Math.max(loan.installmentCount, schedule.length, maxScheduleSequence)
   const paidInstallments = schedule.filter((row) => row.status === 'paid').length
+  const amountMinor = upcomingScheduleRow?.status === 'partial'
+    && upcomingScheduleRow.paidTotalAmountMinor > 0
+    && upcomingScheduleRow.paidTotalAmountMinor < MIN_PORTAL_PARTIAL_PAYMENT_MINOR
+    ? upcomingScheduleRow.scheduledTotalAmountMinor
+    : upcomingScheduleRow?.outstandingTotalAmountMinor ?? null
+  const dueStatus = getDueStatus(upcomingScheduleRow)
 
   return {
-    amountMinor: upcomingScheduleRow?.outstandingTotalAmountMinor ?? null,
+    amountMinor,
     dueDate: upcomingScheduleRow?.dueDate ?? loan.nextDueDate,
+    dueStatus,
     progress: totalInstallments > 0 ? `${paidInstallments}/${totalInstallments}` : '-',
   }
+}
+
+function getDateKey(value: Date) {
+  const year = value.getFullYear()
+  const month = `${value.getMonth() + 1}`.padStart(2, '0')
+  const day = `${value.getDate()}`.padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function getDueStatus(
+  scheduleRow: NonNullable<LoanRecord['schedule']>[number] | undefined,
+): { label: string; tone: DueStatusTone } | null {
+  if (!scheduleRow?.dueDate) {
+    return null
+  }
+
+  const dueDate = new Date(scheduleRow.dueDate)
+  const dueDateKey = getDateKey(dueDate)
+  const todayKey = getDateKey(new Date())
+
+  if (dueDateKey < todayKey) {
+    return { label: 'Overdue', tone: 'overdue' }
+  }
+
+  if (dueDateKey === todayKey) {
+    return { label: 'Due today', tone: 'dueToday' }
+  }
+
+  if (
+    scheduleRow.status === 'partial'
+    && scheduleRow.paidTotalAmountMinor >= MIN_PORTAL_PARTIAL_PAYMENT_MINOR
+  ) {
+    return { label: 'Partial', tone: 'partial' }
+  }
+
+  return { label: 'Upcoming', tone: 'upcoming' }
 }
 
 function getAccountInitials(firstName?: string, lastName?: string, email?: string) {
@@ -371,6 +425,16 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
                           <span>Due</span>
                           <span className={styles.loanNumber}>Loan # {loan.loanNumber}</span>
                         </div>
+                      </div>
+                      <div className={styles.loanStatus}>
+                        <span>Status</span>
+                        {dueSummary.dueStatus ? (
+                          <strong className={classNames(styles.dueStatus, dueStatusClassNames[dueSummary.dueStatus.tone])}>
+                            {dueSummary.dueStatus.label}
+                          </strong>
+                        ) : (
+                          <strong className={classNames(styles.dueStatus, styles.dueStatusUpcoming)}>Unavailable</strong>
+                        )}
                       </div>
                       <div className={styles.loanAmount}>
                         <span>Amount due</span>
