@@ -1,16 +1,17 @@
 'use client'
 
-import { ArrowLeftRight, ArrowRight, BriefcaseBusiness, FileText, LogOut, Plus, WalletCards } from 'lucide-react'
+import { ArrowLeftRight, LogOut, Plus, WalletCards } from 'lucide-react'
 import { useState } from 'react'
+import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { useAuth } from '@/components/providers/auth-provider'
 import { AppLogo } from '@/components/shared/app-logo'
 import { Dialog } from '@/components/shared'
-import { Button, Input, Select, Textarea } from '@/components/shared/forms'
+import { Button, Input } from '@/components/shared/forms'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { validateLoanApplicationInput } from '@/lib/loan-application-validation'
-import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
+import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { normalizePhilippineMobileNumber } from '@/lib/phone'
 import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
+import type { LoanRecord } from '@/lib/types/lending'
 import { createBorrowerPortalApplication, getBorrowerPortalSummary } from '@/services/borrower-portal'
 import { switchAccountMode, updateCurrentUserProfile } from '@/services/auth'
 import styles from './borrower-portal-dashboard.module.css'
@@ -21,7 +22,7 @@ interface BorrowerPortalDashboardProps {
 
 const PHONE_PREFIX = '+63 '
 
-function buildInitialForm(
+function buildApplicationInitialValues(
   user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null,
 ) {
   return {
@@ -29,84 +30,51 @@ function buildInitialForm(
     lastName: user?.lastName ?? '',
     email: user?.email ?? '',
     phone: user?.mobileNumber || PHONE_PREFIX,
-    principal: '',
-    gives: '12',
-    income: '',
-    purpose: '',
   }
 }
 
-function formatStatus(status: string) {
-  return status.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+function getNextDueSummary(loan: LoanRecord) {
+  const schedule = [...(loan.schedule ?? [])].sort((firstRow, secondRow) => firstRow.sequence - secondRow.sequence)
+  const upcomingScheduleRow = schedule.find((row) => row.status !== 'paid' && row.outstandingTotalAmountMinor > 0)
+  const maxScheduleSequence = schedule.reduce((maxSequence, row) => Math.max(maxSequence, row.sequence), 0)
+  const totalInstallments = Math.max(loan.installmentCount, schedule.length, maxScheduleSequence)
+  const paidInstallments = schedule.filter((row) => row.status === 'paid').length
+
+  return {
+    amountMinor: upcomingScheduleRow?.outstandingTotalAmountMinor ?? null,
+    dueDate: upcomingScheduleRow?.dueDate ?? loan.nextDueDate,
+    progress: totalInstallments > 0 ? `${paidInstallments}/${totalInstallments}` : '-',
+  }
 }
 
 export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashboardProps) {
   const { setUser, user } = useAuth()
   const [summary, setSummary] = useState(initialSummary)
-  const [form, setForm] = useState(() => buildInitialForm(user))
-  const [applicationOpen, setApplicationOpen] = useState(false)
   const [profileMobileNumber, setProfileMobileNumber] = useState(user?.mobileNumber ?? PHONE_PREFIX)
   const [profileError, setProfileError] = useState('')
   const [savingProfile, setSavingProfile] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [applicationOpen, setApplicationOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [switchingMode, setSwitchingMode] = useState(false)
   const [modeError, setModeError] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
   const requiresMobileNumber = user?.accountType === 'borrower' && !user.mobileNumber
+  const applicationInitialValues = buildApplicationInitialValues(user)
+  const applicationFormKey = `${applicationInitialValues.email}:${applicationInitialValues.phone}`
 
-  const updateField = (field: keyof typeof form, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }))
-    setError('')
+  const submitPortalApplication = async (input: ValidatedLoanApplicationInput) => {
+    if (!summary.lender) {
+      throw new Error('A linked lender is required before you can submit a loan application.')
+    }
+
+    return createBorrowerPortalApplication(input)
   }
 
-  const openApplication = () => {
-    setForm(buildInitialForm(user))
-    setError('')
-    setApplicationOpen(true)
-  }
-
-  const submitApplication = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setSubmitting(true)
-    setError('')
-
+  const refreshAfterApplicationSubmit = async () => {
     try {
-      if (!summary.lender) {
-        throw new Error('Open a lender invitation before applying for a loan.')
-      }
-
-      const validated = validateLoanApplicationInput({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        phone: form.phone,
-        principal: Number(form.principal),
-        gives: Number(form.gives),
-        income: form.income.trim() ? Number(form.income) : null,
-        purpose: form.purpose,
-        paymentFrequency: 'semi_monthly',
-        firstDay: '15',
-        secondDay: 'month_end',
-        firstPaymentDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
-      })
-
-      await createBorrowerPortalApplication(validated)
-
-      try {
-        setSummary(await getBorrowerPortalSummary())
-        setSuccess('Application submitted. Your lender can now review it.')
-      } catch {
-        setSuccess('Application submitted. Refresh the page to see the latest status.')
-      }
-
-      setApplicationOpen(false)
-      setForm(buildInitialForm(user))
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit application')
-    } finally {
-      setSubmitting(false)
+      setSummary(await getBorrowerPortalSummary())
+      return 'Application submitted. Your lender can now review it.'
+    } catch {
+      return 'Application submitted. Refresh the page to see the latest status.'
     }
   }
 
@@ -124,7 +92,6 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
     try {
       const payload = await updateCurrentUserProfile({ mobileNumber: normalizedMobileNumber })
       setUser(payload.user)
-      setForm(buildInitialForm(payload.user))
     } catch (caughtError) {
       setProfileError(caughtError instanceof Error ? caughtError.message : 'Unable to save mobile number')
     } finally {
@@ -183,102 +150,51 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
         <h1 className="ui-sr-only">Borrower Portal overview</h1>
 
         {modeError ? <div className={styles.error} role="alert">{modeError}</div> : null}
-        {success ? <div className={styles.success} role="status">{success}</div> : null}
-
-        <section className={styles.stats} aria-label="Account summary">
-          <article className={styles.stat}>
-            <span className={styles.statIcon}><WalletCards aria-hidden="true" /></span>
-            <div><strong>{summary.counts.activeLoans}</strong><span>Active loans</span></div>
-          </article>
-          <article className={styles.stat}>
-            <span className={styles.statIcon}><FileText aria-hidden="true" /></span>
-            <div><strong>{summary.counts.applications}</strong><span>Applications</span></div>
-          </article>
-          <article className={styles.stat}>
-            <span className={styles.statIcon}><BriefcaseBusiness aria-hidden="true" /></span>
-            <div><strong>{summary.counts.linkedBorrowers}</strong><span>Linked records</span></div>
-          </article>
-        </section>
 
         <div className={styles.contentGrid}>
           <section className={styles.section}>
             <div className={styles.sectionHeading}>
-              <div><h2>Recent loans</h2><p>Balances and the next scheduled payment.</p></div>
+              <div><h2>Active loans</h2></div>
             </div>
             <div className={styles.list}>
-              {summary.loans.length ? summary.loans.map((loan) => (
-                <article className={styles.item} key={loan.id}>
-                  <div className={styles.itemTop}>
-                    <div><strong>{loan.loanNumber}</strong><span>{loan.loanProduct.name}</span></div>
-                    <span className={styles.status} data-status={loan.status}>{formatStatus(loan.status)}</span>
-                  </div>
-                  <div className={styles.loanAmount}>
-                    <span>Outstanding balance</span>
-                    <strong>{formatCurrency(loan.balances.totalOutstandingAmountMinor / 100, loan.loanProduct.currency)}</strong>
-                  </div>
-                  <div className={styles.itemFooter}>
-                    <span>{loan.nextDueDate ? `Next due ${formatDate(loan.nextDueDate)}` : 'No payment currently due'}</span>
-                    <ArrowRight aria-hidden="true" />
-                  </div>
-                </article>
-              )) : (
+              {summary.loans.length ? summary.loans.map((loan) => {
+                const dueSummary = getNextDueSummary(loan)
+
+                return (
+                  <article className={styles.item} key={loan.id}>
+                    <div className={styles.itemTop}>
+                      <div><strong>{dueSummary.dueDate ? formatDate(dueSummary.dueDate) : 'No payment due'}</strong><span>Due</span></div>
+                    </div>
+                    <div className={styles.loanAmount}>
+                      <span>Amount due</span>
+                      <strong>{dueSummary.amountMinor === null ? 'Unavailable' : formatCurrency(dueSummary.amountMinor / 100, loan.loanProduct.currency)}</strong>
+                    </div>
+                    <div className={styles.itemFooter}>
+                      <span>{dueSummary.progress}</span>
+                    </div>
+                  </article>
+                )
+              }) : (
                 <div className={styles.empty}>
                   <WalletCards aria-hidden="true" />
-                  <strong>No linked loans yet</strong>
-                  <span>Approved and released loans will appear here automatically.</span>
+                  <strong>No active loans yet</strong>
+                  <span>Released loans will appear here while they are active.</span>
                 </div>
               )}
             </div>
           </section>
 
-          <section className={styles.section}>
-            <div className={styles.sectionHeading}>
-              <div><h2>Recent applications</h2><p>Follow each request from submission to decision.</p></div>
-              <Button
-                className={styles.applyButton}
-                size="sm"
-                onClick={openApplication}
-                disabled={!summary.lender}
-                title={!summary.lender ? 'Open a lender invitation link before applying.' : undefined}
-              >
-                <Plus aria-hidden="true" />
-                Apply for a loan
-              </Button>
-            </div>
-            <div className={styles.list}>
-              {summary.applications.length ? summary.applications.map((application) => (
-                <article className={styles.item} key={application.id}>
-                  <div className={styles.itemTop}>
-                    <div><strong>{application.applicationNumber}</strong><span>Submitted {application.submittedAt ? formatDate(application.submittedAt) : formatDate(application.createdAt)}</span></div>
-                    <span className={styles.status} data-status={application.status}>{formatStatus(application.status)}</span>
-                  </div>
-                  <div className={styles.loanAmount}>
-                    <span>Requested amount</span>
-                    <strong>{formatCurrency((application.loanAmountMinor ?? 0) / 100, application.loanProduct?.currency ?? 'PHP')}</strong>
-                  </div>
-                </article>
-              )) : (
-                <div className={styles.empty}>
-                  <FileText aria-hidden="true" />
-                  <strong>No applications yet</strong>
-                  <span>{summary.lender ? 'Use the application action above to submit your first request.' : 'Open a lender invitation link to connect your account and apply.'}</span>
-                </div>
-              )}
-            </div>
-          </section>
+          <div className={styles.applyAction}>
+            <Button
+              className={styles.applyButton}
+              onClick={() => setApplicationOpen(true)}
+            >
+              <Plus aria-hidden="true" />
+              Apply for a loan
+            </Button>
+          </div>
         </div>
 
-        <section className={styles.linkedSection}>
-          <div><h2>Linked borrower records</h2><p>Records matched through your verified email and submitted applications.</p></div>
-          <div className={styles.linkedRecords}>
-            {summary.linkedBorrowers.length ? summary.linkedBorrowers.map((borrower) => (
-              <article className={styles.linkedRecord} key={borrower.id}>
-                <div><strong>{borrower.displayName}</strong><span>{borrower.borrowerNumber}</span></div>
-                <span>{borrower.email || borrower.mobileNumber || 'Contact details unavailable'}</span>
-              </article>
-            )) : <span className={styles.linkedEmpty}>No lender records are linked yet.</span>}
-          </div>
-        </section>
       </div>
 
       <Dialog
@@ -287,31 +203,21 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
         title="Apply for a loan"
         description={summary.lender
           ? `Your verified application will be sent to ${summary.lender.displayName}.`
-          : 'Open a lender invitation before applying for a loan.'}
-        onClose={() => { if (!submitting) setApplicationOpen(false) }}
+          : 'Your account is not linked to a lender yet.'}
+        onClose={() => setApplicationOpen(false)}
         className={styles.applicationDialog}
       >
-        <form className={styles.form} onSubmit={submitApplication} noValidate>
-          <div className={styles.formGrid}>
-            <Input id="portalFirstName" label="First name" autoComplete="given-name" value={form.firstName} onChange={(event) => updateField('firstName', event.target.value)} required />
-            <Input id="portalLastName" label="Last name" autoComplete="family-name" value={form.lastName} onChange={(event) => updateField('lastName', event.target.value)} required />
-          </div>
-          <Input id="portalEmail" label="Verified email" type="email" value={form.email} readOnly hint="Applications are linked using this verified address." />
-          <Input id="portalPhone" label="Mobile number" autoComplete="tel" inputMode="tel" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} required />
-          <div className={styles.formGrid}>
-            <Input id="portalPrincipal" label="Loan amount" inputMode="decimal" value={form.principal} onChange={(event) => updateField('principal', event.target.value)} placeholder="0.00" required />
-            <Input id="portalIncome" label="Monthly income" inputMode="decimal" value={form.income} onChange={(event) => updateField('income', event.target.value)} placeholder="Optional" />
-          </div>
-          <Select id="portalInstallments" label="Number of installments" value={form.gives} onChange={(event) => updateField('gives', event.target.value)}>
-            {[6, 8, 10, 12, 18, 24].map((count) => <option key={count} value={count}>{count} installments</option>)}
-          </Select>
-          <Textarea id="portalPurpose" label="Loan purpose" value={form.purpose} onChange={(event) => updateField('purpose', event.target.value)} placeholder="Tell your lender how you plan to use the loan." />
-          {error ? <div className={styles.error} role="alert">{error}</div> : null}
-          <div className={styles.formActions}>
-            <Button type="button" variant="secondary" onClick={() => setApplicationOpen(false)} disabled={submitting}>Cancel</Button>
-            <Button type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit application'}</Button>
-          </div>
-        </form>
+        <LoanApplicationIntakeForm
+          key={applicationFormKey}
+          idPrefix="portalApplication"
+          initialValues={applicationInitialValues}
+          emailReadOnly
+          disabled={!summary.lender}
+          disabledMessage={!summary.lender ? 'A linked lender is required before you can submit a loan application.' : undefined}
+          finePrint="Your verified email is used to link this application to your borrower portal account."
+          onSubmitApplication={submitPortalApplication}
+          onSubmitted={refreshAfterApplicationSubmit}
+        />
       </Dialog>
 
       <Dialog

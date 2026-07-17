@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { getLoanApplicationValidationResult, validateLoanApplicationInput } from '@/lib/loan-application-validation'
+import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import type { LoanApplication } from '@/lib/types/lending'
 import { createPublicLoanApplication } from '@/services'
@@ -12,17 +13,31 @@ const BORROWER_REQUEST_PAYMENT_FREQUENCY = 'semi_monthly' as const
 const BORROWER_REQUEST_FIRST_DAY = '15'
 const BORROWER_REQUEST_SECOND_DAY = 'month_end'
 
-function buildInitialForm() {
+interface LoanApplicationIntakeFormState {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  principal: string
+  gives: string
+  firstPaymentDate: string
+  income: string
+  purpose: string
+}
+
+type LoanApplicationIntakeInitialValues = Partial<Omit<LoanApplicationIntakeFormState, 'firstPaymentDate'>>
+
+function buildInitialForm(initialValues: LoanApplicationIntakeInitialValues = {}): LoanApplicationIntakeFormState {
   return {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: PHONE_PREFIX,
-    principal: '',
-    gives: '12',
+    firstName: initialValues.firstName ?? '',
+    lastName: initialValues.lastName ?? '',
+    email: initialValues.email ?? '',
+    phone: initialValues.phone || PHONE_PREFIX,
+    principal: initialValues.principal ?? '',
+    gives: initialValues.gives ?? '12',
     firstPaymentDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
-    income: '',
-    purpose: '',
+    income: initialValues.income ?? '',
+    purpose: initialValues.purpose ?? '',
   }
 }
 
@@ -67,11 +82,35 @@ function parseOptionalNumber(value: string) {
 }
 
 interface LoanApplicationIntakeFormProps {
-  publicLoanRequestSlug: string
+  publicLoanRequestSlug?: string
+  initialValues?: LoanApplicationIntakeInitialValues
+  emailReadOnly?: boolean
+  disabled?: boolean
+  disabledMessage?: string
+  submitLabel?: string
+  submittingLabel?: string
+  finePrint?: string
+  idPrefix?: string
+  onSubmitApplication?: (input: ValidatedLoanApplicationInput) => Promise<LoanApplication>
+  onSubmitted?: (application: LoanApplication) => string | void | Promise<string | void>
+  successMessage?: (application: LoanApplication, submittedForm: LoanApplicationIntakeFormState) => string
 }
 
-export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplicationIntakeFormProps) {
-  const [form, setForm] = useState(() => buildInitialForm())
+export function LoanApplicationIntakeForm({
+  publicLoanRequestSlug,
+  initialValues,
+  emailReadOnly = false,
+  disabled = false,
+  disabledMessage,
+  submitLabel = 'Submit loan application',
+  submittingLabel = 'Submitting loan application...',
+  finePrint = 'By submitting, you agree to our curated ledger review process.',
+  idPrefix = 'request',
+  onSubmitApplication,
+  onSubmitted,
+  successMessage,
+}: LoanApplicationIntakeFormProps) {
+  const [form, setForm] = useState(() => buildInitialForm(initialValues))
   const [touchedFields, setTouchedFields] = useState({
     firstName: false,
     lastName: false,
@@ -84,7 +123,7 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState<LoanApplication | null>(null)
+  const [success, setSuccess] = useState('')
   const validation = useMemo(
     () =>
       getLoanApplicationValidationResult({
@@ -105,6 +144,10 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
   const phoneDigits = form.phone.replace(/\D/g, '').replace(/^63/, '')
   const phoneIsDirty = phoneDigits.length > 0
   const phoneHasLengthError = touchedFields.phone && phoneIsDirty && Boolean(validation.errors.phone) && !isRequiredError(validation.errors.phone)
+  const resolvedSuccessMessage = (application: LoanApplication, submittedForm: LoanApplicationIntakeFormState) =>
+    successMessage
+      ? successMessage(application, submittedForm)
+      : `Loan application submitted for ${application.borrower?.displayName || `${submittedForm.firstName} ${submittedForm.lastName}`.trim()}. Reference: ${application.applicationNumber || application.id}`
 
   const markTouched = (field: keyof typeof touchedFields) => {
     setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }))
@@ -153,8 +196,12 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (disabled) {
+      return
+    }
+
     setError('')
-    setSuccess(null)
+    setSuccess('')
     setSubmitting(true)
 
     try {
@@ -168,10 +215,20 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
         secondDay: BORROWER_REQUEST_SECOND_DAY,
       })
 
-      const created = await createPublicLoanApplication(publicLoanRequestSlug, validated)
+      const submittedForm = form
+      const created = onSubmitApplication
+        ? await onSubmitApplication(validated)
+        : publicLoanRequestSlug
+          ? await createPublicLoanApplication(publicLoanRequestSlug, validated)
+          : null
 
-      setSuccess(created)
-      setForm(buildInitialForm())
+      if (!created) {
+        throw new Error('Unable to submit loan application')
+      }
+
+      const submittedMessage = await onSubmitted?.(created)
+      setSuccess(submittedMessage || resolvedSuccessMessage(created, submittedForm))
+      setForm(buildInitialForm(initialValues))
       setTouchedFields({
         firstName: false,
         lastName: false,
@@ -190,12 +247,12 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
   }
 
   return (
-    <form className="request-loan-form" onSubmit={handleSubmit}>
+    <form className="request-loan-form" onSubmit={handleSubmit} noValidate>
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestFirstName">First Name</label>
+          <label htmlFor={`${idPrefix}FirstName`}>First Name</label>
           <input
-            id="requestFirstName"
+            id={`${idPrefix}FirstName`}
             autoComplete="given-name"
             placeholder="e.g., Julian"
             className={showDirtyField('firstName', validation.errors.firstName) ? 'request-loan-form__input--dirty' : ''}
@@ -209,9 +266,9 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestLastName">Last Name</label>
+          <label htmlFor={`${idPrefix}LastName`}>Last Name</label>
           <input
-            id="requestLastName"
+            id={`${idPrefix}LastName`}
             autoComplete="family-name"
             placeholder="e.g., Sterling"
             className={showDirtyField('lastName', validation.errors.lastName) ? 'request-loan-form__input--dirty' : ''}
@@ -228,12 +285,13 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
 
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestEmail">Email Address</label>
+          <label htmlFor={`${idPrefix}Email`}>Email Address</label>
           <input
-            id="requestEmail"
+            id={`${idPrefix}Email`}
             type="email"
             autoComplete="email"
             placeholder="julian@example.com"
+            readOnly={emailReadOnly}
             className={`request-loan-form__input${emailIsDirty || showDirtyField('email', validation.errors.email)
               ? ' request-loan-form__input--dirty'
               : ''}${emailIsValid ? ' request-loan-form__input--valid' : ''}`}
@@ -247,9 +305,9 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestPhone">Phone Number</label>
+          <label htmlFor={`${idPrefix}Phone`}>Phone Number</label>
           <input
-            id="requestPhone"
+            id={`${idPrefix}Phone`}
             type="tel"
             autoComplete="tel"
             className={phoneHasLengthError || showDirtyField('phone', validation.errors.phone) ? 'request-loan-form__input--dirty' : ''}
@@ -266,9 +324,9 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
 
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestPrincipal">Loan Amount</label>
+          <label htmlFor={`${idPrefix}Principal`}>Loan Amount</label>
           <input
-            id="requestPrincipal"
+            id={`${idPrefix}Principal`}
             type="number"
             min="1"
             inputMode="decimal"
@@ -284,9 +342,9 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
           ) : null}
         </div>
         <div className="request-loan-form__field">
-          <label htmlFor="requestIncome">Monthly Income</label>
+          <label htmlFor={`${idPrefix}Income`}>Monthly Income</label>
           <input
-            id="requestIncome"
+            id={`${idPrefix}Income`}
             type="number"
             min="0"
             inputMode="decimal"
@@ -305,9 +363,9 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
 
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
-          <label htmlFor="requestGives">Number of Installments</label>
+          <label htmlFor={`${idPrefix}Gives`}>Number of Installments</label>
           <input
-            id="requestGives"
+            id={`${idPrefix}Gives`}
             type="number"
             min="1"
             inputMode="numeric"
@@ -343,9 +401,9 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
       </div>
 
       <div className="request-loan-form__field">
-          <label htmlFor="requestPurpose">Loan Purpose</label>
+          <label htmlFor={`${idPrefix}Purpose`}>Loan Purpose</label>
         <textarea
-          id="requestPurpose"
+          id={`${idPrefix}Purpose`}
           value={form.purpose}
           aria-invalid={Boolean(getVisibleError('purpose', touchedFields.purpose))}
           className={showDirtyField('purpose', validation.errors.purpose) ? 'request-loan-form__input--dirty' : ''}
@@ -359,24 +417,19 @@ export function LoanApplicationIntakeForm({ publicLoanRequestSlug }: LoanApplica
       </div>
 
       {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
-      {success ? (
-        <div className="notice request-loan-form__notice">
-          Loan application submitted for {success.borrower?.displayName || `${form.firstName} ${form.lastName}`.trim()}. Reference: {success.applicationNumber || success.id}
-        </div>
-      ) : null}
+      {disabled && disabledMessage ? <div className="notice danger request-loan-form__notice">{disabledMessage}</div> : null}
+      {success ? <div className="notice request-loan-form__notice">{success}</div> : null}
 
       <button
         className="request-loan-form__submit"
         type="submit"
-        disabled={submitting || !validation.isValid}
+        disabled={disabled || submitting || !validation.isValid}
       >
-        <span>{submitting ? 'Submitting loan application...' : 'Submit loan application'}</span>
+        <span>{submitting ? submittingLabel : submitLabel}</span>
         <span className="request-loan-form__submitArrow" aria-hidden="true">→</span>
       </button>
 
-      <p className="request-loan-form__finePrint">
-        By submitting, you agree to our curated ledger review process.
-      </p>
+      {finePrint ? <p className="request-loan-form__finePrint">{finePrint}</p> : null}
     </form>
   )
 }
