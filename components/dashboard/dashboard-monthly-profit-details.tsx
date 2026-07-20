@@ -38,6 +38,8 @@ function hasMonthlyProfitDetails(row: DashboardMonthlyProfitRow) {
     || row.penaltyCollectedMinor !== 0
     || (row.excessProfitMinor ?? 0) !== 0
     || (row.treasuryInterestEarnedMinor ?? 0) !== 0
+    || (row.rewardExpenseMinor ?? 0) !== 0
+    || (row.netProfitMinor ?? row.totalProfitMinor) !== 0
     || row.paymentCount !== 0
 }
 
@@ -84,7 +86,9 @@ export function DashboardMonthlyProfitTable({
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Penalty collected</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Excess profit</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Treasury interest</th>
-              <th className={dashboardClass('dashboard-overview__tableAmount')}>Realized profit</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Gross profit</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Reward expenses</th>
+              <th className={dashboardClass('dashboard-overview__tableAmount')}>Net profit</th>
               <th className={dashboardClass('dashboard-overview__tableAmount')}>Payments</th>
               <th className={dashboardClass('dashboard-overview__tableActions')}>Actions</th>
             </tr>
@@ -113,6 +117,12 @@ export function DashboardMonthlyProfitTable({
                   </td>
                   <td className={dashboardClass('dashboard-overview__tableAmount')}>
                     {formatMinorCurrency(row.totalProfitMinor, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)}
+                  </td>
+                  <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                    {formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)}
                   </td>
                   <td className={dashboardClass('dashboard-overview__tableAmount')}>
                     {row.paymentCount.toLocaleString('en-PH')}
@@ -179,8 +189,16 @@ export function DashboardMonthlyProfitTable({
                   <dd>{formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)}</dd>
                 </div>
                 <div>
-                  <dt>Realized profit</dt>
+                  <dt>Gross profit</dt>
                   <dd>{formatMinorCurrency(row.totalProfitMinor, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Reward expenses</dt>
+                  <dd>{formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)}</dd>
+                </div>
+                <div>
+                  <dt>Net profit</dt>
+                  <dd>{formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)}</dd>
                 </div>
                 <div>
                   <dt>Payments</dt>
@@ -260,7 +278,9 @@ export function DashboardMonthlyProfitDetailDialog({
             <ProfitMetric label="Penalty collected" value={formatMinorCurrency(summary.penaltyCollectedMinor, currency)} meta="Posted in this month" />
             <ProfitMetric label="Excess profit" value={formatMinorCurrency(summary.excessProfitMinor ?? 0, currency)} meta="Confirmed non-refundable excess" />
             <ProfitMetric label="Treasury interest" value={formatMinorCurrency(summary.treasuryInterestEarnedMinor ?? 0, currency)} meta="Earned by the Treasury account" />
-            <ProfitMetric label="Realized profit" value={formatMinorCurrency(summary.totalProfitMinor, currency)} meta="All recognized profit sources" />
+            <ProfitMetric label="Gross profit" value={formatMinorCurrency(summary.totalProfitMinor, currency)} meta="All recognized profit sources before rewards" />
+            <ProfitMetric label="Reward expenses" value={formatMinorCurrency(summary.rewardExpenseMinor ?? 0, currency)} meta="Referral and bonus rewards paid from Treasury" />
+            <ProfitMetric label="Net profit" value={formatMinorCurrency(summary.netProfitMinor ?? summary.totalProfitMinor, currency)} meta="Realized profit less reward expenses" />
             <ProfitMetric label="Payments" value={summary.paymentCount.toLocaleString('en-PH')} meta="Posted payment records" />
           </div>
         ) : null}

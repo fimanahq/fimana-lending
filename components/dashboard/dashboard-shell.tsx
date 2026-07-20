@@ -78,7 +78,6 @@ const pathLabels: Record<string, string> = {
 }
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
-
 const icons = {
   overview: LayoutDashboard,
   borrowers: UsersRound,
@@ -193,7 +192,13 @@ function getPageTitle(pathname: string) {
   return pathLabels[lastSegment] || formatPathSegment(lastSegment)
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({
+  children,
+  copyrightYear,
+}: {
+  children: React.ReactNode
+  copyrightYear: number
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const { loading, user, setUser } = useAuth()
@@ -430,7 +435,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </main>
 
         <footer className={dashboardClass('dashboard-shell__footer')}>
-          <span>&copy; {new Date().getFullYear()} FiMana Lending. All rights reserved.</span>
+          <span>&copy; {copyrightYear} FiMana Lending. All rights reserved.</span>
           <div className={dashboardClass('dashboard-shell__footerLinks')}>
             <Link href="/">Internal Privacy Policy</Link>
           </div>

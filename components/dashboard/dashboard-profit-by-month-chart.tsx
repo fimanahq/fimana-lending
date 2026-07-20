@@ -40,19 +40,21 @@ function formatCompactMinorCurrency(valueMinor: number, currency: string) {
   }).format(valueMinor / 100)
 }
 
+export type DashboardProfitByMonthChartProps = {
+  averageMonthlyProfitMinor?: number
+  currency: string
+  rows: DashboardMonthlyProfitRow[]
+  showInterestDue?: boolean
+}
+
 export function DashboardProfitByMonthChart({
   averageMonthlyProfitMinor,
   currency,
   rows,
   showInterestDue = true,
-}: {
-  averageMonthlyProfitMinor?: number
-  currency: string
-  rows: DashboardMonthlyProfitRow[]
-  showInterestDue?: boolean
-}) {
+}: DashboardProfitByMonthChartProps) {
   const ariaLabel = rows.map((row) => (
-    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
+    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)} reward expenses, ${formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)} net profit`
   )).join('. ')
 
   return (
@@ -137,8 +139,8 @@ export function DashboardProfitByMonthChart({
             />
           ) : null}
           <Line
-            dataKey="totalProfitMinor"
-            name="Total profit"
+            dataKey="netProfitMinor"
+            name="Net profit"
             type="monotone"
             stroke="#17140f"
             strokeWidth={2.5}

@@ -1,11 +1,11 @@
 'use client'
 
-import { Bell, Plus, WalletCards } from 'lucide-react'
+import { Bell, CalendarRange, ChevronDown, Plus, WalletCards } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { LoanApplicationIntakeForm } from '@/components/loan-application-intake-form'
 import { useAuth } from '@/components/providers/auth-provider'
 import { AppLogo } from '@/components/shared/app-logo'
-import { Dialog, useToast } from '@/components/shared'
+import { DataTable, Dialog, useToast } from '@/components/shared'
 import { Button, Input } from '@/components/shared/forms'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
@@ -25,19 +25,31 @@ import styles from './borrower-portal-dashboard.module.css'
 
 interface BorrowerPortalDashboardProps {
   initialSummary: BorrowerPortalSummary
+  todayDateKey: string
 }
 
 const PHONE_PREFIX = '+63 '
 const MIN_PORTAL_PARTIAL_PAYMENT_MINOR = 2000
 const OPEN_APPLICATION_STATUSES: LoanApplicationRecordStatus[] = ['submitted']
-type NotificationStatus = 'checking' | 'unsupported' | 'default' | 'denied' | 'enabled'
+type NotificationStatus = 'checking' | 'unsupported' | 'default' | 'denied' | 'syncError' | 'enabled'
 type DueStatusTone = 'overdue' | 'dueToday' | 'partial' | 'upcoming'
+type ScheduleStatusTone = DueStatusTone | 'paid' | 'cancelled'
+type DueStatusSummary = { label: string; tone: DueStatusTone; detail?: string }
 
 const dueStatusClassNames: Record<DueStatusTone, string> = {
   overdue: styles.dueStatusOverdue,
   dueToday: styles.dueStatusDueToday,
   partial: styles.dueStatusPartial,
   upcoming: styles.dueStatusUpcoming,
+}
+
+const scheduleStatusClassNames: Record<ScheduleStatusTone, string> = {
+  overdue: styles.scheduleStatusOverdue,
+  dueToday: styles.scheduleStatusDueToday,
+  partial: styles.scheduleStatusPartial,
+  upcoming: styles.scheduleStatusUpcoming,
+  paid: styles.scheduleStatusPaid,
+  cancelled: styles.scheduleStatusCancelled,
 }
 
 function buildApplicationInitialValues(
@@ -51,7 +63,7 @@ function buildApplicationInitialValues(
   }
 }
 
-function getNextDueSummary(loan: LoanRecord) {
+function getNextDueSummary(loan: LoanRecord, todayDateKey: string) {
   const schedule = [...(loan.schedule ?? [])].sort((firstRow, secondRow) => firstRow.sequence - secondRow.sequence)
   const upcomingScheduleRow = schedule.find((row) => row.status !== 'paid' && row.outstandingTotalAmountMinor > 0)
   const maxScheduleSequence = schedule.reduce((maxSequence, row) => Math.max(maxSequence, row.sequence), 0)
@@ -62,37 +74,63 @@ function getNextDueSummary(loan: LoanRecord) {
     && upcomingScheduleRow.paidTotalAmountMinor < MIN_PORTAL_PARTIAL_PAYMENT_MINOR
     ? upcomingScheduleRow.scheduledTotalAmountMinor
     : upcomingScheduleRow?.outstandingTotalAmountMinor ?? null
-  const dueStatus = getDueStatus(upcomingScheduleRow)
+  const dueStatus = getDueStatus(upcomingScheduleRow, todayDateKey, loan.nextDueDate)
+  const partialPaidAmountMinor = upcomingScheduleRow?.status === 'partial' && upcomingScheduleRow.paidTotalAmountMinor > 0
+    ? upcomingScheduleRow.paidTotalAmountMinor
+    : null
 
   return {
     amountMinor,
     dueDate: upcomingScheduleRow?.dueDate ?? loan.nextDueDate,
     dueStatus,
-    progress: totalInstallments > 0 ? `${paidInstallments}/${totalInstallments}` : '-',
+    partialPaidAmountMinor,
+    progress: totalInstallments > 0 ? `${paidInstallments} of ${totalInstallments}` : '-',
   }
 }
 
 function getDateKey(value: Date) {
-  const year = value.getFullYear()
-  const month = `${value.getMonth() + 1}`.padStart(2, '0')
-  const day = `${value.getDate()}`.padStart(2, '0')
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+  }).formatToParts(value)
+  const year = parts.find((part) => part.type === 'year')?.value ?? '0000'
+  const month = parts.find((part) => part.type === 'month')?.value ?? '01'
+  const day = parts.find((part) => part.type === 'day')?.value ?? '01'
 
   return `${year}-${month}-${day}`
 }
 
+function getDateFromKey(value: string) {
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+function formatDaysOverdue(daysOverdue: number) {
+  return `${daysOverdue} ${daysOverdue === 1 ? 'day' : 'days'} overdue`
+}
+
 function getDueStatus(
   scheduleRow: NonNullable<LoanRecord['schedule']>[number] | undefined,
-): { label: string; tone: DueStatusTone } | null {
-  if (!scheduleRow?.dueDate) {
+  todayKey: string,
+  fallbackDueDate?: string | null,
+): DueStatusSummary | null {
+  const rawDueDate = scheduleRow?.dueDate ?? fallbackDueDate
+
+  if (!rawDueDate) {
     return null
   }
 
-  const dueDate = new Date(scheduleRow.dueDate)
+  const dueDate = new Date(rawDueDate)
   const dueDateKey = getDateKey(dueDate)
-  const todayKey = getDateKey(new Date())
 
   if (dueDateKey < todayKey) {
-    return { label: 'Overdue', tone: 'overdue' }
+    const daysOverdue = Math.max(
+      1,
+      Math.round((getDateFromKey(todayKey).getTime() - getDateFromKey(dueDateKey).getTime()) / 86_400_000),
+    )
+    return { label: 'Overdue', tone: 'overdue', detail: formatDaysOverdue(daysOverdue) }
   }
 
   if (dueDateKey === todayKey) {
@@ -100,13 +138,28 @@ function getDueStatus(
   }
 
   if (
-    scheduleRow.status === 'partial'
+    scheduleRow?.status === 'partial'
     && scheduleRow.paidTotalAmountMinor >= MIN_PORTAL_PARTIAL_PAYMENT_MINOR
   ) {
     return { label: 'Partial', tone: 'partial' }
   }
 
   return { label: 'Upcoming', tone: 'upcoming' }
+}
+
+function getScheduleRowStatus(
+  scheduleRow: NonNullable<LoanRecord['schedule']>[number],
+  todayDateKey: string,
+): { label: string; tone: ScheduleStatusTone } {
+  if (scheduleRow.status === 'paid') {
+    return { label: 'Paid', tone: 'paid' }
+  }
+
+  if (scheduleRow.status === 'cancelled') {
+    return { label: 'Cancelled', tone: 'cancelled' }
+  }
+
+  return getDueStatus(scheduleRow, todayDateKey) ?? { label: 'Unavailable', tone: 'upcoming' }
 }
 
 function getAccountInitials(firstName?: string, lastName?: string, email?: string) {
@@ -138,11 +191,11 @@ function formatApplicationAmount(application: LoanApplication) {
   )
 }
 
-function getNotificationGateContent(status: NotificationStatus) {
+function getNotificationNoticeContent(status: NotificationStatus) {
   if (status === 'checking') {
     return {
       title: 'Checking notifications',
-      message: 'FiMana is checking whether this device can receive approval notifications.',
+      message: 'FiMana is checking whether this device can receive approval notifications. You can continue using the portal.',
       actionLabel: 'Checking...',
     }
   }
@@ -150,7 +203,7 @@ function getNotificationGateContent(status: NotificationStatus) {
   if (status === 'unsupported') {
     return {
       title: 'Notifications are not available',
-      message: 'Use a supported browser or installed PWA with a secure connection before opening the borrower portal.',
+      message: 'This browser cannot receive approval notifications, but the borrower portal remains available.',
       actionLabel: 'Notifications unavailable',
     }
   }
@@ -158,14 +211,22 @@ function getNotificationGateContent(status: NotificationStatus) {
   if (status === 'denied') {
     return {
       title: 'Notifications are blocked',
-      message: 'Allow notifications for this site in your browser settings, then reload the borrower portal.',
+      message: 'Allow notifications for this site in your browser settings, then reload to receive approval updates.',
       actionLabel: 'Notifications blocked',
     }
   }
 
+  if (status === 'syncError') {
+    return {
+      title: 'Notifications need attention',
+      message: 'Permission is allowed, but this device is not subscribed. Retry to receive approval updates.',
+      actionLabel: 'Retry notifications',
+    }
+  }
+
   return {
-    title: 'Enable notifications to continue',
-    message: '',
+    title: 'Enable notifications',
+    message: 'Receive loan application and approval updates on this device.',
     actionLabel: 'Enable notifications',
   }
 }
@@ -188,7 +249,7 @@ function getNotificationFailureStatus(message: string): NotificationStatus {
   return 'default'
 }
 
-export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashboardProps) {
+export function BorrowerPortalDashboard({ initialSummary, todayDateKey }: BorrowerPortalDashboardProps) {
   const { setUser, user } = useAuth()
   const toast = useToast()
   const accountMenuRef = useRef<HTMLDivElement | null>(null)
@@ -209,10 +270,10 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
   const accountName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'
   const accountInitials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
   const openApplications = getOpenApplications(summary.applications)
-  const notificationGate = getNotificationGateContent(notificationStatus)
+  const notificationNotice = getNotificationNoticeContent(notificationStatus)
   const notificationsEnabled = notificationStatus === 'enabled'
-  const notificationGateTitleId = 'borrower-notification-gate-title'
-  const notificationGateDescriptionId = 'borrower-notification-gate-description'
+  const notificationNoticeTitleId = 'borrower-notification-notice-title'
+  const notificationNoticeDescriptionId = 'borrower-notification-notice-description'
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
@@ -253,9 +314,22 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
       return
     }
 
+    let active = true
     syncExistingPushNotificationSubscription()
-      .then((subscription) => setNotificationStatus(subscription ? 'enabled' : 'default'))
-      .catch(() => setNotificationStatus('default'))
+      .then((subscription) => {
+        if (active) {
+          setNotificationStatus(subscription ? 'enabled' : 'default')
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setNotificationStatus('syncError')
+        }
+      })
+
+    return () => {
+      active = false
+    }
   }, [])
 
   const submitPortalApplication = async (input: ValidatedLoanApplicationInput) => {
@@ -289,7 +363,12 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
       toast.success('Approval updates can now appear on this device.', 'Notifications enabled')
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Unable to enable notifications.'
-      setNotificationStatus(getNotificationFailureStatus(message))
+      const failureStatus = getNotificationFailureStatus(message)
+      setNotificationStatus(
+        failureStatus === 'default' && typeof Notification !== 'undefined' && Notification.permission === 'granted'
+          ? 'syncError'
+          : failureStatus,
+      )
       toast.error(message, 'Notifications unavailable')
     } finally {
       setNotificationBusy(false)
@@ -407,15 +486,40 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
 
         {modeError ? <div className={styles.error} role="alert">{modeError}</div> : null}
 
-        {notificationsEnabled ? (
-          <div className={styles.contentGrid}>
+        {!notificationsEnabled ? (
+          <section
+            className={styles.notificationNotice}
+            aria-labelledby={notificationNoticeTitleId}
+            aria-describedby={notificationNotice.message ? notificationNoticeDescriptionId : undefined}
+          >
+            <span className={styles.notificationNoticeIcon}>
+              <Bell aria-hidden="true" />
+            </span>
+            <div className={styles.notificationNoticeCopy}>
+              <h2 id={notificationNoticeTitleId}>{notificationNotice.title}</h2>
+              {notificationNotice.message ? <p id={notificationNoticeDescriptionId}>{notificationNotice.message}</p> : null}
+            </div>
+            <Button
+              className={styles.notificationNoticeButton}
+              onClick={enableNotifications}
+              disabled={notificationBusy || notificationStatus === 'checking' || notificationStatus === 'unsupported' || notificationStatus === 'denied'}
+            >
+              <Bell aria-hidden="true" />
+              {notificationBusy ? 'Enabling notifications...' : notificationNotice.actionLabel}
+            </Button>
+          </section>
+        ) : null}
+
+        <div className={styles.contentGrid}>
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <div><h2>Active loans</h2></div>
               </div>
               <div className={styles.list}>
                 {summary.loans.length ? summary.loans.map((loan) => {
-                  const dueSummary = getNextDueSummary(loan)
+                  const dueSummary = getNextDueSummary(loan, todayDateKey)
+                  const scheduleRows = [...(loan.schedule ?? [])]
+                    .sort((firstRow, secondRow) => firstRow.sequence - secondRow.sequence)
 
                   return (
                     <article className={styles.item} key={loan.id}>
@@ -435,6 +539,14 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
                         ) : (
                           <strong className={classNames(styles.dueStatus, styles.dueStatusUpcoming)}>Unavailable</strong>
                         )}
+                        {dueSummary.dueStatus?.detail ? (
+                          <span className={styles.statusDetail}>{dueSummary.dueStatus.detail}</span>
+                        ) : null}
+                        {dueSummary.partialPaidAmountMinor !== null ? (
+                          <span className={styles.statusDetail}>
+                            Paid {formatCurrency(dueSummary.partialPaidAmountMinor / 100, loan.loanProduct.currency)}
+                          </span>
+                        ) : null}
                       </div>
                       <div className={styles.loanAmount}>
                         <span>Amount due</span>
@@ -442,7 +554,54 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
                       </div>
                       <div className={styles.itemFooter}>
                         <span>{dueSummary.progress}</span>
+                        <small>Paid</small>
                       </div>
+                      {scheduleRows.length ? (
+                        <details className={styles.scheduleDisclosure}>
+                          <summary className={styles.scheduleSummary}>
+                            <span className={styles.scheduleIcon} aria-hidden="true">
+                              <CalendarRange />
+                            </span>
+                            <span className={styles.scheduleLabel}>Schedules</span>
+                            <ChevronDown className={styles.scheduleChevron} aria-hidden="true" />
+                          </summary>
+                          <div className={styles.scheduleDetails}>
+                            <DataTable className={styles.scheduleTable} data-responsive-table-skip="true">
+                              <thead>
+                                <tr>
+                                  <th>Scheduled payment</th>
+                                  <th>Status</th>
+                                  <th>Payment date</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {scheduleRows.map((scheduleRow) => {
+                                  const scheduleStatus = getScheduleRowStatus(scheduleRow, todayDateKey)
+                                  const paymentDate = scheduleRow.status === 'paid' ? scheduleRow.paymentDate : null
+
+                                  return (
+                                    <tr key={scheduleRow.id}>
+                                      <td><time dateTime={scheduleRow.dueDate}>{formatDate(scheduleRow.dueDate)}</time></td>
+                                      <td>
+                                        <span className={classNames(styles.scheduleStatus, scheduleStatusClassNames[scheduleStatus.tone])}>
+                                          {scheduleStatus.label}
+                                        </span>
+                                      </td>
+                                      <td>
+                                        {paymentDate ? (
+                                          <time dateTime={paymentDate}>{formatDate(paymentDate)}</time>
+                                        ) : (
+                                          <span className={styles.scheduleEmptyDate}>-</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </DataTable>
+                          </div>
+                        </details>
+                      ) : null}
                     </article>
                   )
                 }) : (
@@ -486,36 +645,7 @@ export function BorrowerPortalDashboard({ initialSummary }: BorrowerPortalDashbo
                 </article>
               ))}
             </div>
-          </div>
-        ) : null}
-
-        {!notificationsEnabled ? (
-          <div className={styles.notificationGateOverlay} role="presentation">
-            <section
-              className={styles.notificationGate}
-              role="alertdialog"
-              aria-modal="true"
-              aria-labelledby={notificationGateTitleId}
-              aria-describedby={notificationGate.message ? notificationGateDescriptionId : undefined}
-            >
-              <span className={styles.notificationGateIcon}>
-                <Bell aria-hidden="true" />
-              </span>
-              <div className={styles.notificationGateCopy}>
-                <h2 id={notificationGateTitleId}>{notificationGate.title}</h2>
-                {notificationGate.message ? <p id={notificationGateDescriptionId}>{notificationGate.message}</p> : null}
-              </div>
-              <Button
-                className={styles.notificationGateButton}
-                onClick={enableNotifications}
-                disabled={notificationBusy || notificationStatus === 'checking' || notificationStatus === 'unsupported' || notificationStatus === 'denied'}
-              >
-                <Bell aria-hidden="true" />
-                {notificationBusy ? 'Enabling notifications...' : notificationGate.actionLabel}
-              </Button>
-            </section>
-          </div>
-        ) : null}
+        </div>
 
       </div>
 

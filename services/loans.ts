@@ -1,7 +1,7 @@
 import { apiRequest } from '@/lib/client-api'
 import { getOrCreateCachedRequest } from '@/lib/request-cache'
 import { buildPathWithQuery, buildQueryString } from '@/lib/request-query'
-import type { LoanRecord, LoanStatus } from '@/lib/types/lending'
+import type { LoanRecord, LoanRewardType, LoanStatus } from '@/lib/types/lending'
 import { PaginatedResponse } from '@/types'
 
 const loanListRequests = new Map<string, Promise<PaginatedResponse<LoanRecord> | LoanRecord[]>>()
@@ -22,6 +22,16 @@ export function applyLoanReferral(
   input: { referrerBorrowerId: string; referralRewardAmountMinor: number },
 ) {
   return apiRequest<LoanRecord>(`/api/loans/${loanId}/referral`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function postLoanReward(
+  loanId: string,
+  input: { rewardType: LoanRewardType; rewardAmountMinor: number; notes?: string },
+) {
+  return apiRequest<LoanRecord>(`/api/loans/${loanId}/rewards`, {
     method: 'POST',
     body: JSON.stringify(input),
   })

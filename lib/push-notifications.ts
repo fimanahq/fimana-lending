@@ -30,6 +30,10 @@ export function getPushNotificationSupportMessage() {
     return 'Notifications are unavailable.'
   }
 
+  if (process.env.NODE_ENV !== 'production') {
+    return 'Notifications are disabled in local development.'
+  }
+
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
     return 'Notifications are not supported on this device.'
   }

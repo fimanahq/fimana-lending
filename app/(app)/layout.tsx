@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
+  const copyrightYear = new Date().getFullYear()
 
   if (!user) {
     const cookieStore = await cookies()
@@ -36,7 +37,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   return (
     <AuthProvider initialUser={user} shouldRefreshOnMount={false}>
       <ToastProvider>
-        <DashboardShell>{children}</DashboardShell>
+        <DashboardShell copyrightYear={copyrightYear}>{children}</DashboardShell>
       </ToastProvider>
     </AuthProvider>
   )

@@ -49,6 +49,7 @@ export interface DashboardOverviewData {
   interestOutlookSegments: DashboardProgressSegment[]
   profitGrowth: DashboardProfitGrowthData | null
   profitGrowthYearOptions: number[]
+  currentYear: number
   recentApplications: LoanApplication[]
   partialFailureNotice: string | null
 }
@@ -104,7 +105,11 @@ export function buildDashboardProfitGrowthData(
       penaltyCollectedMinor: source?.penaltyCollectedMinor ?? 0,
       excessProfitMinor: source?.excessProfitMinor ?? 0,
       treasuryInterestEarnedMinor: source?.treasuryInterestEarnedMinor ?? 0,
+      referralRewardExpenseMinor: source?.referralRewardExpenseMinor ?? 0,
+      bonusRewardExpenseMinor: source?.bonusRewardExpenseMinor ?? 0,
+      rewardExpenseMinor: source?.rewardExpenseMinor ?? 0,
       totalProfitMinor: source?.totalProfitMinor ?? 0,
+      netProfitMinor: source?.netProfitMinor ?? source?.totalProfitMinor ?? 0,
       paymentCount: source?.paymentCount ?? 0,
     }
   })
@@ -117,19 +122,25 @@ export function buildDashboardProfitGrowthData(
   const elapsedRows = rows.slice(0, elapsedMonthCount)
   const scheduledInterestDueMinor = rows.reduce((sum, row) => sum + row.interestDueMinor, 0)
   const averageMonthlyInterestDueMinor = scheduledInterestDueMinor / 12
-  const ytdCollectedProfitMinor = elapsedRows.reduce((sum, row) => sum + row.totalProfitMinor, 0)
+  const ytdCollectedProfitMinor = elapsedRows.reduce((sum, row) => sum + (row.netProfitMinor ?? row.totalProfitMinor), 0)
   const averageMonthlyProfitMinor = elapsedMonthCount > 0
     ? ytdCollectedProfitMinor / elapsedMonthCount
     : 0
   const bestMonth = elapsedRows.reduce<DashboardMonthlyProfitRow | null>((best, row) => {
-    if (row.totalProfitMinor <= 0 || (best && row.totalProfitMinor <= best.totalProfitMinor)) {
+    const rowProfitMinor = row.netProfitMinor ?? row.totalProfitMinor
+    const bestProfitMinor = best ? best.netProfitMinor ?? best.totalProfitMinor : 0
+    if (rowProfitMinor <= 0 || (best && rowProfitMinor <= bestProfitMinor)) {
       return best
     }
 
     return row
   }, null)
-  const currentMonthProfitMinor = elapsedRows.at(-1)?.totalProfitMinor ?? 0
-  const previousMonthProfitMinor = elapsedRows.at(-2)?.totalProfitMinor ?? 0
+  const currentMonthProfitMinor = elapsedRows.at(-1)
+    ? elapsedRows.at(-1)!.netProfitMinor ?? elapsedRows.at(-1)!.totalProfitMinor
+    : 0
+  const previousMonthProfitMinor = elapsedRows.at(-2)
+    ? elapsedRows.at(-2)!.netProfitMinor ?? elapsedRows.at(-2)!.totalProfitMinor
+    : 0
   const percentageChange = previousMonthProfitMinor > 0
     ? ((currentMonthProfitMinor - previousMonthProfitMinor) / previousMonthProfitMinor) * 100
     : null
@@ -149,7 +160,9 @@ export function buildDashboardProfitGrowthData(
       || row.penaltyCollectedMinor !== 0
       || row.excessProfitMinor !== 0
       || row.treasuryInterestEarnedMinor !== 0
+      || (row.rewardExpenseMinor ?? 0) !== 0
       || row.totalProfitMinor !== 0
+      || (row.netProfitMinor ?? 0) !== 0
     )),
     hasInterestDue: rows.some((row) => row.interestDueMinor !== 0),
     elapsedMonthCount,
@@ -195,6 +208,13 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     collectedProfitMinor: 0,
     collectedExcessProfitMinor: 0,
     treasuryInterestEarnedMinor: 0,
+    referralRewardExpenseMinor: 0,
+    bonusRewardExpenseMinor: 0,
+    rewardExpenseMinor: 0,
+    netCollectedProfitMinor: 0,
+    netTotalProjectedProfitMinor: 0,
+    netCollectedProfitVsCapitalBps: 0,
+    netProjectedProfitVsCapitalBps: 0,
     capitalDepositsMinor: 0,
     capitalWithdrawalsMinor: 0,
     netCapitalMovementMinor: 0,
@@ -244,6 +264,13 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     profitOutlookTotalProjectedInterestMinor: 0,
     profitOutlookTotalPenaltyMinor: 0,
     profitOutlookTotalProjectedProfitMinor: 0,
+    profitOutlookReferralRewardExpenseMinor: 0,
+    profitOutlookBonusRewardExpenseMinor: 0,
+    profitOutlookRewardExpenseMinor: 0,
+    profitOutlookNetCollectedProfitMinor: 0,
+    profitOutlookNetTotalProjectedProfitMinor: 0,
+    profitOutlookNetCollectedProfitVsCapitalBps: 0,
+    profitOutlookNetProjectedProfitVsCapitalBps: 0,
     profitOutlookCollectedProfitVsCapitalBps: 0,
     profitOutlookProjectedProfitVsCapitalBps: 0,
     activeLoanCount: 0,
@@ -268,6 +295,13 @@ export function buildDashboardOverviewData({
   }
   mergedSummary.ownerLoanInterestExcluded = mergedSummary.ownerLoanInterestExcluded ?? false
   mergedSummary.ownerLoanInterestExcludedAmountMinor = mergedSummary.ownerLoanInterestExcludedAmountMinor ?? 0
+  mergedSummary.rewardExpenseMinor = mergedSummary.rewardExpenseMinor ?? 0
+  mergedSummary.referralRewardExpenseMinor = mergedSummary.referralRewardExpenseMinor ?? 0
+  mergedSummary.bonusRewardExpenseMinor = mergedSummary.bonusRewardExpenseMinor ?? 0
+  mergedSummary.netCollectedProfitMinor = mergedSummary.netCollectedProfitMinor ?? mergedSummary.collectedProfitMinor
+  mergedSummary.netTotalProjectedProfitMinor = mergedSummary.netTotalProjectedProfitMinor ?? mergedSummary.totalProjectedProfitMinor
+  mergedSummary.netCollectedProfitVsCapitalBps = mergedSummary.netCollectedProfitVsCapitalBps ?? mergedSummary.collectedProfitVsCapitalBps
+  mergedSummary.netProjectedProfitVsCapitalBps = mergedSummary.netProjectedProfitVsCapitalBps ?? mergedSummary.projectedProfitVsCapitalBps
   mergedSummary.profitOutlookCollectedInterestMinor = mergedSummary.profitOutlookCollectedInterestMinor ?? mergedSummary.collectedInterestMinor
   mergedSummary.profitOutlookCollectedPenaltyMinor = mergedSummary.profitOutlookCollectedPenaltyMinor ?? mergedSummary.collectedPenaltyMinor
   mergedSummary.profitOutlookCollectedProfitMinor = mergedSummary.profitOutlookCollectedProfitMinor ?? mergedSummary.collectedProfitMinor
@@ -277,6 +311,13 @@ export function buildDashboardOverviewData({
   mergedSummary.profitOutlookTotalProjectedInterestMinor = mergedSummary.profitOutlookTotalProjectedInterestMinor ?? mergedSummary.totalProjectedInterestMinor
   mergedSummary.profitOutlookTotalPenaltyMinor = mergedSummary.profitOutlookTotalPenaltyMinor ?? mergedSummary.totalPenaltyMinor
   mergedSummary.profitOutlookTotalProjectedProfitMinor = mergedSummary.profitOutlookTotalProjectedProfitMinor ?? mergedSummary.totalProjectedProfitMinor
+  mergedSummary.profitOutlookReferralRewardExpenseMinor = mergedSummary.profitOutlookReferralRewardExpenseMinor ?? mergedSummary.referralRewardExpenseMinor
+  mergedSummary.profitOutlookBonusRewardExpenseMinor = mergedSummary.profitOutlookBonusRewardExpenseMinor ?? mergedSummary.bonusRewardExpenseMinor
+  mergedSummary.profitOutlookRewardExpenseMinor = mergedSummary.profitOutlookRewardExpenseMinor ?? mergedSummary.rewardExpenseMinor
+  mergedSummary.profitOutlookNetCollectedProfitMinor = mergedSummary.profitOutlookNetCollectedProfitMinor ?? mergedSummary.profitOutlookCollectedProfitMinor
+  mergedSummary.profitOutlookNetTotalProjectedProfitMinor = mergedSummary.profitOutlookNetTotalProjectedProfitMinor ?? mergedSummary.profitOutlookTotalProjectedProfitMinor
+  mergedSummary.profitOutlookNetCollectedProfitVsCapitalBps = mergedSummary.profitOutlookNetCollectedProfitVsCapitalBps ?? mergedSummary.profitOutlookCollectedProfitVsCapitalBps
+  mergedSummary.profitOutlookNetProjectedProfitVsCapitalBps = mergedSummary.profitOutlookNetProjectedProfitVsCapitalBps ?? mergedSummary.profitOutlookProjectedProfitVsCapitalBps
   mergedSummary.profitOutlookCollectedProfitVsCapitalBps = mergedSummary.profitOutlookCollectedProfitVsCapitalBps ?? mergedSummary.collectedProfitVsCapitalBps
   mergedSummary.profitOutlookProjectedProfitVsCapitalBps = mergedSummary.profitOutlookProjectedProfitVsCapitalBps ?? mergedSummary.projectedProfitVsCapitalBps
   const currentYear = getManilaCalendarPeriod(now).year
@@ -333,23 +374,31 @@ export function buildDashboardOverviewData({
 
   const interestOutlookBaseMinor = Math.max(
     0,
-    mergedSummary.profitOutlookTotalProjectedProfitMinor || mergedSummary.profitOutlookTotalProjectedInterestMinor,
+    mergedSummary.profitOutlookNetTotalProjectedProfitMinor,
+  )
+  const netCollectedProfitMinor = Math.min(
+    interestOutlookBaseMinor,
+    Math.max(0, mergedSummary.profitOutlookNetCollectedProfitMinor),
+  )
+  const netRemainingProjectedProfitMinor = Math.max(
+    0,
+    interestOutlookBaseMinor - netCollectedProfitMinor,
   )
   const interestOutlookSegments: DashboardProgressSegment[] = [
     {
       key: 'collected_interest',
-      label: 'Collected profit',
-      description: 'Interest and penalties already collected and realized.',
-      valueMinor: mergedSummary.profitOutlookCollectedProfitMinor,
-      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.profitOutlookCollectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
+      label: 'Collected net profit',
+      description: 'Realized profit after referral and bonus reward expenses.',
+      valueMinor: netCollectedProfitMinor,
+      percentage: interestOutlookBaseMinor > 0 ? (netCollectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'green',
     },
     {
       key: 'remaining_projected_interest',
-      label: 'Remaining projected profit',
-      description: 'Expected future interest and penalties from active schedules that are still unpaid.',
-      valueMinor: mergedSummary.profitOutlookRemainingProjectedProfitMinor,
-      percentage: interestOutlookBaseMinor > 0 ? (mergedSummary.profitOutlookRemainingProjectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
+      label: 'Remaining net projected profit',
+      description: 'Expected future profit after booked reward expenses.',
+      valueMinor: netRemainingProjectedProfitMinor,
+      percentage: interestOutlookBaseMinor > 0 ? (netRemainingProjectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'olive',
     },
   ]
@@ -361,6 +410,7 @@ export function buildDashboardOverviewData({
     interestOutlookSegments,
     profitGrowth: monthlyProfit ? buildDashboardProfitGrowthData(monthlyProfit, now) : null,
     profitGrowthYearOptions,
+    currentYear,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }

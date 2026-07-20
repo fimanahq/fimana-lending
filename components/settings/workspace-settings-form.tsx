@@ -107,6 +107,7 @@ export function WorkspaceSettingsForm() {
   const [reloadToken, setReloadToken] = useState(0)
   const [origin, setOrigin] = useState('')
   const [requestUrlCopyStatus, setRequestUrlCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [requestUrlCopyTarget, setRequestUrlCopyTarget] = useState<'invitation' | 'application' | null>(null)
   const currencyOptions = settingsCurrencyValues.map((currency) => ({
     label: currency,
     value: currency,
@@ -165,16 +166,75 @@ export function WorkspaceSettingsForm() {
     return () => window.clearTimeout(timeoutId)
   }, [requestUrlCopyStatus])
 
-  const publicRequestPath = form?.publicLoanRequestSlug.trim()
-    ? `/join/${form.publicLoanRequestSlug.trim()}`
+  const requestSlug = form?.publicLoanRequestSlug.trim() ?? ''
+  const invitationRequestPath = requestSlug
+    ? `/join/${requestSlug}`
     : ''
-  const publicRequestUrl = publicRequestPath && origin
-    ? `${origin}${publicRequestPath}`
-    : publicRequestPath
+  const loanApplicationRequestPath = requestSlug
+    ? `/request-loan/${requestSlug}`
+    : ''
+  const invitationRequestUrl = invitationRequestPath && origin
+    ? `${origin}${invitationRequestPath}`
+    : invitationRequestPath
+  const loanApplicationRequestUrl = loanApplicationRequestPath && origin
+    ? `${origin}${loanApplicationRequestPath}`
+    : loanApplicationRequestPath
 
   useEffect(() => {
     setRequestUrlCopyStatus('idle')
-  }, [publicRequestUrl])
+    setRequestUrlCopyTarget(null)
+  }, [invitationRequestUrl, loanApplicationRequestUrl])
+
+  const getRequestUrlCopyLabel = (target: 'invitation' | 'application') => {
+    if (requestUrlCopyTarget !== target) {
+      return target === 'invitation' ? 'Copy invitation URL' : 'Copy loan application URL'
+    }
+
+    return requestUrlCopyStatus === 'success'
+      ? 'Copied'
+      : requestUrlCopyStatus === 'error'
+        ? 'Copy failed'
+        : target === 'invitation'
+          ? 'Copy invitation URL'
+          : 'Copy loan application URL'
+  }
+
+  const requestUrlCopyAnnouncement = requestUrlCopyStatus === 'success'
+    ? `${requestUrlCopyTarget === 'application' ? 'Loan Application URL' : 'Invitation URL'} copied to clipboard.`
+    : requestUrlCopyStatus === 'error'
+      ? `Unable to copy ${requestUrlCopyTarget === 'application' ? 'Loan Application URL' : 'Invitation URL'}.`
+      : ''
+
+  const handleCopyRequestUrl = async (target: 'invitation' | 'application') => {
+    const nextPath = target === 'invitation' ? invitationRequestPath : loanApplicationRequestPath
+    if (!nextPath) {
+      return
+    }
+
+    setRequestUrlCopyTarget(target)
+
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${nextPath}`)
+      setRequestUrlCopyStatus('success')
+    } catch {
+      setRequestUrlCopyStatus('error')
+    }
+  }
+
+  const requestUrlCards = requestSlug
+    ? [
+      {
+        target: 'invitation' as const,
+        title: 'Invitation URL',
+        value: invitationRequestUrl,
+      },
+      {
+        target: 'application' as const,
+        title: 'Loan Application URL',
+        value: loanApplicationRequestUrl,
+      },
+    ]
+    : []
 
   const updateField = <Field extends keyof SettingsFormState>(field: Field, value: SettingsFormState[Field]) => {
     setForm((current) => (current ? { ...current, [field]: value } : current))
@@ -208,16 +268,6 @@ export function WorkspaceSettingsForm() {
   const parsedStartingCapital = parseStartingCapital(form.startingCapital)
   const parsedDefaultPenaltyRate = parseDefaultPenaltyRate(form.defaultPenaltyRate)
   const initialForm = buildFormState(settings)
-  const requestUrlCopyLabel = requestUrlCopyStatus === 'success'
-    ? 'Copied'
-    : requestUrlCopyStatus === 'error'
-      ? 'Copy failed'
-      : 'Copy invitation URL'
-  const requestUrlCopyAnnouncement = requestUrlCopyStatus === 'success'
-    ? 'Invitation URL copied to clipboard.'
-    : requestUrlCopyStatus === 'error'
-      ? 'Unable to copy invitation URL.'
-      : ''
   const hasChanges =
     form.defaultCurrency !== initialForm.defaultCurrency
     || form.startingCapital !== initialForm.startingCapital
@@ -261,19 +311,6 @@ export function WorkspaceSettingsForm() {
       setSubmitError(caughtError instanceof Error ? caughtError.message : 'Unable to save workspace settings.')
     } finally {
       setSaving(false)
-    }
-  }
-
-  const handleCopyRequestUrl = async () => {
-    if (!publicRequestPath) {
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}${publicRequestPath}`)
-      setRequestUrlCopyStatus('success')
-    } catch {
-      setRequestUrlCopyStatus('error')
     }
   }
 
@@ -330,31 +367,36 @@ export function WorkspaceSettingsForm() {
             <div className="stack">
               <Input
                 id="workspace-public-request-slug"
-                label="Borrower invitation link"
+                label="Request slug"
                 value={form.publicLoanRequestSlug}
                 error={errors.publicLoanRequestSlug}
-                hint="Use lowercase letters, numbers, and hyphens. Borrowers register or sign in through this lender-specific invitation."
+                hint="Use lowercase letters, numbers, and hyphens. This creates both the borrower invitation URL and public loan application URL."
                 onChange={(event) => updateField('publicLoanRequestSlug', event.target.value.trim().toLowerCase())}
               />
 
-              {publicRequestPath ? (
-                <div className="data-card">
-                  <div className="request-url-card__header">
-                    <div className="subsection-title">Invitation URL</div>
-                    <button
-                      type="button"
-                      className={`button-ghost table-action-icon table-copy-button${requestUrlCopyStatus === 'success' ? ' is-success' : ''}${requestUrlCopyStatus === 'error' ? ' is-error' : ''}`}
-                      aria-label={requestUrlCopyLabel}
-                      title={requestUrlCopyLabel}
-                      onClick={() => void handleCopyRequestUrl()}
-                    >
-                      {requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
-                    </button>
+              {requestUrlCards.map((requestUrlCard) => {
+                const copyLabel = getRequestUrlCopyLabel(requestUrlCard.target)
+                const isCurrentTarget = requestUrlCopyTarget === requestUrlCard.target
+
+                return (
+                  <div className="data-card" key={requestUrlCard.target}>
+                    <div className="request-url-card__header">
+                      <div className="subsection-title">{requestUrlCard.title}</div>
+                      <button
+                        type="button"
+                        className={`button-ghost table-action-icon table-copy-button${isCurrentTarget && requestUrlCopyStatus === 'success' ? ' is-success' : ''}${isCurrentTarget && requestUrlCopyStatus === 'error' ? ' is-error' : ''}`}
+                        aria-label={copyLabel}
+                        title={copyLabel}
+                        onClick={() => void handleCopyRequestUrl(requestUrlCard.target)}
+                      >
+                        {isCurrentTarget && requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
+                      </button>
+                    </div>
+                    <div className="muted request-url-card__value">{requestUrlCard.value}</div>
                   </div>
-                  <div className="muted request-url-card__value">{publicRequestUrl}</div>
-                  <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
-                </div>
-              ) : null}
+                )
+              })}
+              <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
             </div>
           </CardWrapper>
 
