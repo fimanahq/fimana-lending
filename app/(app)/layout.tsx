@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers'
 import { DashboardShell } from '@/components/dashboard/dashboard-shell'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { ToastProvider } from '@/components/shared'
-import { hasLoanAppAccess } from '@/lib/access'
+import { hasBorrowerPortalAccess, hasLoanAppAccess } from '@/lib/access'
 import { REFRESH_COOKIE_NAME } from '@/lib/constants'
 import { getSessionUser } from '@/lib/server/backend'
 
@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser()
+  const copyrightYear = new Date().getFullYear()
 
   if (!user) {
     const cookieStore = await cookies()
@@ -25,6 +26,10 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     redirect('/login')
   }
 
+  if (hasBorrowerPortalAccess(user)) {
+    redirect('/portal')
+  }
+
   if (!hasLoanAppAccess(user)) {
     redirect('/login')
   }
@@ -32,7 +37,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   return (
     <AuthProvider initialUser={user} shouldRefreshOnMount={false}>
       <ToastProvider>
-        <DashboardShell>{children}</DashboardShell>
+        <DashboardShell copyrightYear={copyrightYear}>{children}</DashboardShell>
       </ToastProvider>
     </AuthProvider>
   )

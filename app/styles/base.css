@@ -15,6 +15,17 @@ html {
   }
 }
 
+@media (max-width: 1024px) {
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 body {
   position: relative;
   margin: 0;

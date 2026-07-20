@@ -1,53 +1,17 @@
-import dynamic from 'next/dynamic'
+import { Info } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplication } from '@/lib/types/lending'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 import { Badge, ProtectedLink as Link } from '@/components/shared'
 import { classNames } from '@/utils/class-names'
+import { DashboardPortfolioChartLoader } from './dashboard-portfolio-chart-loader'
+import { DashboardProfitGrowth } from './dashboard-profit-growth'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
-
-const DashboardPortfolioChart = dynamic(
-  () => import('@/components/dashboard/dashboard-portfolio-chart').then((module) => module.DashboardPortfolioChart),
-  {
-    loading: () => (
-      <div className={dashboardClass('dashboard-overview__progressChartPanel', 'dashboard-overview__deferredBlock')}>
-        <div className="ui-skeleton" aria-hidden="true">
-          <span className="ui-skeleton__line" />
-          <span className="ui-skeleton__line" />
-          <span className="ui-skeleton__line" />
-        </div>
-      </div>
-    ),
-  },
-)
-
-const DashboardProfitGrowth = dynamic(
-  () => import('@/components/dashboard/dashboard-profit-growth').then((module) => module.DashboardProfitGrowth),
-  {
-    loading: () => (
-      <section className={dashboardClass('dashboard-overview__operator')} aria-busy="true" aria-live="polite">
-        <div className={dashboardClass('dashboard-overview__operatorHeader')}>
-          <div>
-            <h2 className="section-title title-offset">Profit Growth</h2>
-            <p className="muted">Loading monthly collected profit and growth trends.</p>
-          </div>
-        </div>
-        <div className={dashboardClass('dashboard-overview__interestCard', 'dashboard-overview__deferredBlock')}>
-          <div className="ui-skeleton" aria-hidden="true">
-            <span className="ui-skeleton__line" />
-            <span className="ui-skeleton__line" />
-            <span className="ui-skeleton__line" />
-            <span className="ui-skeleton__line" />
-          </div>
-        </div>
-      </section>
-    ),
-  },
-)
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
   return formatCurrency(valueMinor / 100, currency)
@@ -81,6 +45,29 @@ function getApplicationName(application: LoanApplication) {
   return application.borrower?.displayName
     || `${application.firstName || ''} ${application.lastName || ''}`.trim()
     || 'Borrower'
+}
+
+function StatInfoDisclosure({
+  children,
+  contrast = false,
+  id,
+  label,
+}: {
+  children: ReactNode
+  contrast?: boolean
+  id: string
+  label: string
+}) {
+  return (
+    <details className={dashboardClass('dashboard-overview__statInfo', contrast && 'dashboard-overview__statInfo--contrast')}>
+      <summary aria-describedby={id} aria-label={label} className={dashboardClass('dashboard-overview__statInfoButton')}>
+        <Info className={dashboardClass('dashboard-overview__statMetaIcon')} aria-hidden="true" strokeWidth={2} />
+        <span className={dashboardClass('dashboard-overview__statInfoBubble')} id={id} role="tooltip">
+          {children}
+        </span>
+      </summary>
+    </details>
+  )
 }
 
 function formatApplicationAmount(application: LoanApplication) {
@@ -145,10 +132,14 @@ function ProfitOutlookPanel({
   segments: DashboardProgressSegment[]
   summary: DashboardOverviewData['summary']
 }) {
-  const collectedProfitMinor = summary.profitOutlookCollectedProfitMinor ?? summary.collectedProfitMinor
-  const totalProjectedProfitMinor = summary.profitOutlookTotalProjectedProfitMinor ?? summary.totalProjectedProfitMinor
-  const collectedProfitVsCapitalBps = summary.profitOutlookCollectedProfitVsCapitalBps ?? summary.collectedProfitVsCapitalBps
-  const projectedProfitVsCapitalBps = summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
+  const collectedProfitMinor = summary.profitOutlookNetCollectedProfitMinor ?? summary.profitOutlookCollectedProfitMinor ?? summary.collectedProfitMinor
+  const totalProjectedProfitMinor = summary.profitOutlookNetTotalProjectedProfitMinor ?? summary.profitOutlookTotalProjectedProfitMinor ?? summary.totalProjectedProfitMinor
+  const grossTotalProjectedProfitMinor = summary.profitOutlookTotalProjectedProfitMinor ?? summary.totalProjectedProfitMinor
+  const collectedProfitVsCapitalBps = summary.profitOutlookNetCollectedProfitVsCapitalBps ?? summary.profitOutlookCollectedProfitVsCapitalBps ?? summary.collectedProfitVsCapitalBps
+  const projectedProfitVsCapitalBps = summary.profitOutlookNetProjectedProfitVsCapitalBps ?? summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
+  const rewardExpenseMinor = summary.profitOutlookRewardExpenseMinor ?? summary.rewardExpenseMinor ?? 0
+  const hasProfitOutlook = grossTotalProjectedProfitMinor > 0 || rewardExpenseMinor > 0
+  const hasPositiveNetProfit = totalProjectedProfitMinor > 0
 
   return (
     <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard')}>
@@ -163,18 +154,32 @@ function ProfitOutlookPanel({
         </div>
       </div>
 
-      {totalProjectedProfitMinor > 0 ? (
+      {hasProfitOutlook ? (
         <div className={dashboardClass('dashboard-overview__mixCardBody')}>
-          <DashboardPortfolioChart
-            caption="Collected profit and remaining projected profit. Projected amounts are expected future profit, not current cash."
-            centerKicker="Profit outlook"
-            centerSubvalue={`${formatBasisPointsPercentage(projectedProfitVsCapitalBps)} vs capital`}
-            centerValueMinor={totalProjectedProfitMinor}
-            currency={currency}
-            segments={segments}
-          />
+          {hasPositiveNetProfit ? (
+            <>
+              <DashboardPortfolioChartLoader
+                caption="Collected net profit and remaining net projected profit. Projected amounts are expected future profit, not current cash."
+                centerKicker="Profit outlook"
+                centerSubvalue={`${formatBasisPointsPercentage(projectedProfitVsCapitalBps)} vs capital`}
+                centerValueMinor={totalProjectedProfitMinor}
+                currency={currency}
+                segments={segments}
+              />
 
-          <ProgressSegmentLedger ariaLabel="Profit outlook ledger" currency={currency} segments={segments} />
+              <ProgressSegmentLedger ariaLabel="Profit outlook ledger" currency={currency} segments={segments} />
+            </>
+          ) : (
+            <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')}>
+              <span className={dashboardClass('dashboard-overview__emptyIcon')}>
+                <OverviewGlyph name="alert" />
+              </span>
+              <div>
+                <strong>Net projected profit is below zero</strong>
+                <p>Reward expenses are higher than projected profit.</p>
+              </div>
+            </div>
+          )}
 
           <MixContext
             label="Collected so far"
@@ -186,6 +191,27 @@ function ProfitOutlookPanel({
               label="Excess-payment profit"
               meta="Realized profit included in collected profit above"
               value={formatMinorCurrency(summary.collectedExcessProfitMinor, currency)}
+            />
+          ) : null}
+          {rewardExpenseMinor > 0 ? (
+            <MixContext
+              label="Gross projected profit"
+              meta="Profit before referral and bonus rewards"
+              value={formatMinorCurrency(grossTotalProjectedProfitMinor, currency)}
+            />
+          ) : null}
+          {rewardExpenseMinor > 0 ? (
+            <MixContext
+              label="Reward expenses"
+              meta="Referral and bonus rewards paid from Treasury"
+              value={formatMinorCurrency(rewardExpenseMinor, currency)}
+            />
+          ) : null}
+          {!hasPositiveNetProfit ? (
+            <MixContext
+              label="Net projected profit"
+              meta={`${formatBasisPointsPercentage(projectedProfitVsCapitalBps)} vs capital`}
+              value={formatMinorCurrency(totalProjectedProfitMinor, currency)}
             />
           ) : null}
         </div>
@@ -381,7 +407,7 @@ function ActiveLoansPanel({
         <div className={dashboardClass('dashboard-overview__activeLoansBody')}>
           <section className={dashboardClass('dashboard-overview__activeLoansMain')} aria-label="Active loan balance mix">
             <div className={dashboardClass('dashboard-overview__activeLoansMix')}>
-              <DashboardPortfolioChart
+              <DashboardPortfolioChartLoader
                 caption="Principal and expected profit still receivable from active loans."
                 centerKicker="Active loan mix"
                 centerSubvalue={`${summary.activeLoanCount.toLocaleString('en-PH')} active loan${summary.activeLoanCount === 1 ? '' : 's'}`}
@@ -455,7 +481,7 @@ function CurrentCapitalPositionPanel({
 
       {liveCapitalPositionMinor > 0 ? (
         <div className={dashboardClass('dashboard-overview__mixCardBody')}>
-          <DashboardPortfolioChart
+          <DashboardPortfolioChartLoader
             caption="Cash and deployed principal within live capital. Defaulted principal is excluded."
             centerKicker="Live capital"
             centerSubvalue="Excludes write-offs"
@@ -501,6 +527,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     interestOutlookSegments,
     profitGrowth,
     profitGrowthYearOptions,
+    currentYear,
     recentApplications,
     partialFailureNotice,
   } = data
@@ -510,8 +537,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
   const projectedNetWorthAfterWriteOffMinor = summary.projectedNetWorthMinor
   const projectedNetWorthMeta = summary.ownerLoanInterestExcluded
-    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Owner loan interest is excluded only from Profit Outlook.'
-    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit'
+    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Booked rewards are reflected in cash; owner loan interest is excluded only from Profit Outlook.'
+    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit. Booked rewards are reflected in cash.'
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
@@ -537,93 +564,101 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         ) : null}
 
         <section className={dashboardClass('dashboard-overview__kpiGrid', 'dashboard-overview__kpiGrid--six')}>
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warm')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warm', 'dashboard-overview__statCard--hasInfo')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Current capital basis</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Starting capital + net capital movements + realized profit − capital losses</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)} net movements · {formatBasisPointsPercentage(summary.collectedProfitVsCapitalBps)} profit vs capital
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)} net movements · {formatBasisPointsPercentage(summary.netCollectedProfitVsCapitalBps)} net profit vs capital
             </span>
+            <StatInfoDisclosure id="current-capital-basis-info" label="Show current capital basis details">
+              Formula: starting capital + net capital movements + net realized profit - capital losses.
+            </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="money" />
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--sage')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--sage', 'dashboard-overview__statCard--hasInfo')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Cash on hand</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>
-              {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury' : 'Calculated amount available to lend'}
-            </span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.treasuryCashOnHandMinor !== null
                 ? `Calculated lending cash: ${formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency)}`
-                : 'Current capital basis less active principal and write-offs'}
+                : 'Current capital basis less active principal and write-offs, net of booked rewards'}
             </span>
+            <StatInfoDisclosure id="cash-on-hand-info" label="Show cash on hand details">
+              {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury.' : 'Calculated amount available to lend.'}
+            </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="shield" />
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--ink')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--ink', 'dashboard-overview__statCard--hasInfo')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Money with borrowers</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta', 'dashboard-overview__statMeta--contrast')}>
-              Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}
-            </span>
             <span className={dashboardClass('dashboard-overview__statSubvalue', 'dashboard-overview__statSubvalue--contrast')}>
               {summary.pendingReviewCount > 0
                 ? `${summary.pendingReviewCount} pending review${summary.pendingReviewCount === 1 ? '' : 's'} still in the queue`
                 : 'No pending reviews in the intake queue'}
             </span>
+            <StatInfoDisclosure id="money-with-borrowers-info" label="Show money with borrowers details" contrast>
+              Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}.
+            </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="applications" />
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Next cutoff receivable</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.nextCutoffReceivableMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Expected collection on the nearest cutoff date</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.currentCutoffReceivable ? formatDate(summary.currentCutoffReceivable.cutoffDate) : 'No upcoming cutoff'}
             </span>
+            <StatInfoDisclosure id="next-cutoff-receivable-info" label="Show next cutoff receivable details">
+              Expected collection on the nearest cutoff date.
+            </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="trend" />
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warningSoft')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warningSoft', 'dashboard-overview__statCard--hasInfo')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Overdue receivable</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>Past due unpaid schedules</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No overdue schedules right now'}
             </span>
+            <StatInfoDisclosure id="overdue-receivable-info" label="Show overdue receivable details">
+              Past due unpaid schedules.
+            </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="alert" />
             </div>
           </article>
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Projected total net worth</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(projectedNetWorthAfterWriteOffMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statMeta')}>{projectedNetWorthMeta}</span>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatBasisPointsPercentage(summary.projectedProfitVsCapitalBps)} projected profit vs starting capital
+              {formatBasisPointsPercentage(summary.netProjectedProfitVsCapitalBps)} net projected profit vs starting capital
             </span>
+            <StatInfoDisclosure id="projected-net-worth-info" label="Show projected total net worth details">
+              {projectedNetWorthMeta}
+            </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="note" />
             </div>
@@ -652,6 +687,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         </div>
 
         <DashboardProfitGrowth
+          currentYear={currentYear}
           data={profitGrowth}
           fallbackCurrency={dashboardCurrency}
           yearOptions={profitGrowthYearOptions}

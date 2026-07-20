@@ -2,16 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { DashboardMonthlyProfitDetailDialog, DashboardMonthlyProfitTable } from '@/components/dashboard/dashboard-monthly-profit-details'
-import { DashboardProfitByMonthChart } from '@/components/dashboard/dashboard-profit-by-month-chart'
+import { DashboardProfitByMonthChartLoader } from '@/components/dashboard/dashboard-profit-by-month-chart-loader'
 import { Select } from '@/components/shared'
 import { formatCurrency } from '@/lib/format'
 import {
   buildDashboardProfitGrowthData,
-  getManilaCalendarPeriod,
   type DashboardProfitGrowthData,
 } from '@/components/dashboard/dashboard-overview-data'
 import type { DashboardMonthlyProfitDetailResponse, DashboardMonthlyProfitRow } from '@/lib/types/lending'
 import { getDashboardMonthlyProfit, getDashboardMonthlyProfitDetails } from '@/services/dashboard'
+import { DASHBOARD_PROFIT_GROWTH_DESCRIPTION, DASHBOARD_PROFIT_GROWTH_TITLE } from './dashboard-copy'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 
@@ -47,15 +47,16 @@ function formatMonthOverMonth(data: DashboardProfitGrowthData) {
 }
 
 export function DashboardProfitGrowth({
+  currentYear,
   data,
   fallbackCurrency,
   yearOptions,
 }: {
+  currentYear: number
   data: DashboardProfitGrowthData | null
   fallbackCurrency: string
   yearOptions: number[]
 }) {
-  const currentYear = getManilaCalendarPeriod().year
   const initialYear = data?.year ?? yearOptions[0] ?? currentYear
   const dataByYearRef = useRef(new Map<number, DashboardProfitGrowthData>(
     data ? [[data.year, data]] : [],
@@ -172,8 +173,8 @@ export function DashboardProfitGrowth({
     <section className={dashboardClass('dashboard-overview__operator')}>
       <div className={dashboardClass('dashboard-overview__operatorHeader')}>
         <div>
-          <h2 className="section-title title-offset">Profit Growth</h2>
-          <p className="muted">Collected interest and penalties by payment month, with scheduled interest due as a reference line. Interest due is not counted as profit.</p>
+          <h2 className="section-title title-offset">{DASHBOARD_PROFIT_GROWTH_TITLE}</h2>
+          <p className="muted">{DASHBOARD_PROFIT_GROWTH_DESCRIPTION}</p>
         </div>
         <Select
           id="dashboard-profit-growth-year"
@@ -230,7 +231,7 @@ export function DashboardProfitGrowth({
             />
             <GrowthMetric
               label="Best Month"
-              value={formatMinorCurrency(activeData.bestMonth?.totalProfitMinor ?? 0, currency)}
+              value={formatMinorCurrency(activeData.bestMonth?.netProfitMinor ?? activeData.bestMonth?.totalProfitMinor ?? 0, currency)}
               meta={activeData.bestMonth ? `${activeData.bestMonth.monthLabel} ${activeData.year}` : 'No collected profit yet'}
             />
             <GrowthMetric
@@ -251,7 +252,7 @@ export function DashboardProfitGrowth({
             </div>
 
             {activeData.hasCollectedProfit || activeData.hasInterestDue ? (
-              <DashboardProfitByMonthChart
+              <DashboardProfitByMonthChartLoader
                 averageMonthlyProfitMinor={activeData.averageMonthlyProfitMinor}
                 currency={currency}
                 rows={activeData.rows}

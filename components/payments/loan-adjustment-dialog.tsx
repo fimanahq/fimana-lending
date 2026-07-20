@@ -13,12 +13,32 @@ const adjustmentTypeLabels: Record<LoanAdjustmentRecord['type'], string> = {
   schedule_adjustment: 'Schedule adjustment',
   rounding_adjustment: 'Rounding adjustment',
   referral_adjustment: 'Referral adjustment',
+  reward_adjustment: 'Reward expense',
 }
 
 const adjustmentReasonLabels: Record<string, string> = {
   rounding_shortage_write_off: 'Rounding shortage write-off',
   rounding_overpayment_income: 'Rounding overpayment income',
   referral_reward: 'Referral reward',
+  bonus_reward: 'Bonus reward',
+}
+
+const rewardTypeLabels = {
+  referral: 'Referral reward expense',
+  bonus: 'Bonus reward expense',
+} as const
+
+function getAdjustmentTypeLabel(adjustment: LoanAdjustmentRecord) {
+  if (adjustment.type === 'reward_adjustment') {
+    const rewardType = adjustment.rewardType ?? adjustment.rewardKind ?? null
+    return rewardType ? rewardTypeLabels[rewardType] : 'Reward expense'
+  }
+
+  if (adjustment.type === 'referral_adjustment') {
+    return 'Referral interest waiver'
+  }
+
+  return adjustmentTypeLabels[adjustment.type]
 }
 
 function formatMinorCurrency(value: number, currency: string) {
@@ -27,7 +47,7 @@ function formatMinorCurrency(value: number, currency: string) {
 
 function formatAdjustmentMeta(adjustment: LoanAdjustmentRecord) {
   const component = adjustment.component[0]?.toUpperCase() + adjustment.component.slice(1)
-  return `${adjustmentTypeLabels[adjustment.type]} · ${component} ${adjustment.direction}${adjustment.isSystemGenerated ? ' · System' : ''}`
+  return `${getAdjustmentTypeLabel(adjustment)} · ${component} ${adjustment.direction}${adjustment.isSystemGenerated ? ' · System' : ''}`
 }
 
 function todayDateValue() {
