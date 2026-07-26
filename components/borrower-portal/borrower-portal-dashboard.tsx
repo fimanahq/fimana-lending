@@ -17,7 +17,7 @@ import {
 } from '@/lib/push-notifications'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
-import type { LoanApplication, LoanApplicationRecordStatus, LoanRecord } from '@/lib/types/lending'
+import type { LoanApplication, LoanRecord } from '@/lib/types/lending'
 import { createBorrowerPortalApplication, getBorrowerPortalSummary } from '@/services/borrower-portal'
 import { switchAccountMode, updateCurrentUserProfile } from '@/services/auth'
 import { classNames } from '@/utils/class-names'
@@ -30,7 +30,6 @@ interface BorrowerPortalDashboardProps {
 
 const PHONE_PREFIX = '+63 '
 const MIN_PORTAL_PARTIAL_PAYMENT_MINOR = 2000
-const OPEN_APPLICATION_STATUSES: LoanApplicationRecordStatus[] = ['submitted']
 type NotificationStatus = 'checking' | 'unsupported' | 'default' | 'denied' | 'syncError' | 'enabled'
 type DueStatusTone = 'overdue' | 'dueToday' | 'partial' | 'upcoming'
 type ScheduleStatusTone = DueStatusTone | 'paid' | 'cancelled'
@@ -172,18 +171,6 @@ function getAccountInitials(firstName?: string, lastName?: string, email?: strin
   return email?.trim()[0]?.toUpperCase() || ''
 }
 
-function getApplicationTimestamp(application: LoanApplication) {
-  return new Date(application.submittedAt ?? application.createdAt).getTime()
-}
-
-function getOpenApplications(applications: LoanApplication[]) {
-  return [...applications]
-    .filter((application) => OPEN_APPLICATION_STATUSES.includes(application.status))
-    .sort((firstApplication, secondApplication) => (
-      getApplicationTimestamp(secondApplication) - getApplicationTimestamp(firstApplication)
-    ))
-}
-
 function formatApplicationAmount(application: LoanApplication) {
   return formatCurrency(
     (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
@@ -269,7 +256,6 @@ export function BorrowerPortalDashboard({ initialSummary, todayDateKey }: Borrow
   const applicationFormKey = `${applicationInitialValues.email}:${applicationInitialValues.phone}`
   const accountName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'
   const accountInitials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
-  const openApplications = getOpenApplications(summary.applications)
   const notificationNotice = getNotificationNoticeContent(notificationStatus)
   const notificationsEnabled = notificationStatus === 'enabled'
   const notificationNoticeTitleId = 'borrower-notification-notice-title'
@@ -623,7 +609,7 @@ export function BorrowerPortalDashboard({ initialSummary, todayDateKey }: Borrow
                 Apply for a loan
               </Button>
 
-              {openApplications.map((application) => (
+              {summary.applications.map((application) => (
                 <article className={styles.applicationStatus} key={application.id} aria-label="Application status">
                   <div className={styles.applicationStatusHeader}>
                     <span>Application</span>
