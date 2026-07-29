@@ -16,11 +16,8 @@ import {
   Dialog,
   EmptyState,
   ErrorState,
-  Input,
   LoadingState,
   ProtectedLink as Link,
-  SearchableSelect,
-  type SearchableSelectOption,
   Textarea,
   useToast,
 } from '@/components/shared'
@@ -62,8 +59,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const [loading, setLoading] = useState(true)
   const [loadingBorrowers, setLoadingBorrowers] = useState(true)
   const [savingStatus, setSavingStatus] = useState<LoanApplicationStatus | null>(null)
-  const [approvalReferrerBorrowerId, setApprovalReferrerBorrowerId] = useState('')
-  const [approvalReferralRewardAmount, setApprovalReferralRewardAmount] = useState('')
 
   const loadApplication = useCallback(async () => {
     setError('')
@@ -81,8 +76,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
       setDecisionNotes(
         loaded.reviewerRemarks || loaded.decisionNotes || loaded.approvalNotes || loaded.rejectionReason || '',
       )
-      setApprovalReferrerBorrowerId(loaded.referral?.referrerBorrowerId ?? '')
-      setApprovalReferralRewardAmount(loaded.referral?.rewardAmountMinor ? String(loaded.referral.rewardAmountMinor / 100) : '')
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Unable to load application')
     } finally {
@@ -102,40 +95,16 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
 
     setSavingStatus(status)
     setError('')
-    const referralRewardAmountMinor = Math.round(Number(approvalReferralRewardAmount || '0') * 100)
-    if (status === 'approved') {
-      if (!Number.isFinite(referralRewardAmountMinor) || referralRewardAmountMinor < 0) {
-        setError('Referral reward must be zero or greater')
-        setSavingStatus(null)
-        return
-      }
-
-      if (referralRewardAmountMinor > 0 && !approvalReferrerBorrowerId) {
-        setError('Referrer is required when referral reward is greater than zero')
-        setSavingStatus(null)
-        return
-      }
-
-      if (approvalReferrerBorrowerId && approvalReferrerBorrowerId === application.borrowerId) {
-        setError('Referrer cannot be the application borrower')
-        setSavingStatus(null)
-        return
-      }
-    }
     const toastId = showLoading(status === 'approved' ? 'Approving application...' : 'Rejecting application...')
 
     try {
       const updated = await updateLoanApplicationStatus(application.id, status, {
         reviewerRemarks: decisionNotes.trim() || undefined,
-        referrerBorrowerId: status === 'approved' ? approvalReferrerBorrowerId || null : undefined,
-        referralRewardAmountMinor: status === 'approved' ? referralRewardAmountMinor : undefined,
       })
       setApplication(updated)
       setDecisionNotes(
         updated.reviewerRemarks || updated.decisionNotes || updated.approvalNotes || updated.rejectionReason || decisionNotes,
       )
-      setApprovalReferrerBorrowerId(updated.referral?.referrerBorrowerId ?? '')
-      setApprovalReferralRewardAmount(updated.referral?.rewardAmountMinor ? String(updated.referral.rewardAmountMinor / 100) : '')
       if (status === 'approved' && updated.loanId) {
         update(toastId, 'Application approved.', { tone: 'success', title: 'Success' })
         router.push(buildLoanDetailPath(updated.loanId, `/loan-applications/${application.id}`))
@@ -238,12 +207,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const canUndoApproval = normalizedStatus === 'approved'
   const reviewDisabled = terminal || !hasPreview || !canReview || Boolean(savingStatus) || isEditing
   const referral = application.referral
-  const referrerOptions: SearchableSelectOption[] = borrowers
-    .filter((borrower) => borrower.id !== application.borrowerId)
-    .map((borrower) => ({
-      label: `${borrower.fullName} (${borrower.borrowerNumber})`,
-      value: borrower.id,
-    }))
 
   const cancelEditing = () => {
     setIsEditing(false)
@@ -404,34 +367,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         />
 
         {canReview ? (
-          <div className="grid two">
-            <SearchableSelect
-              id="approvalReferrer"
-              label="Referrer"
-              placeholder="No referrer"
-              options={referrerOptions}
-              value={approvalReferrerBorrowerId}
-              loading={loadingBorrowers}
-              disabled={loadingBorrowers || Boolean(savingStatus)}
-              emptyMessage="No borrowers match your search"
-              onChange={setApprovalReferrerBorrowerId}
-            />
-            <Input
-              id="approvalReferralReward"
-              label="Referral reward"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              inputClassName="input-no-spinner"
-              value={approvalReferralRewardAmount}
-              disabled={Boolean(savingStatus)}
-              onChange={(event) => setApprovalReferralRewardAmount(event.target.value)}
-            />
-          </div>
-        ) : null}
-
-        {canReview ? (
           <div className="inline-actions">
             <Button disabled={reviewDisabled} onClick={() => void handleDecision('approved')}>
               {savingStatus === 'approved' ? 'Approving...' : 'Approve application'}
@@ -466,8 +401,6 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           onCancel={cancelEditing}
           onSaved={(updated) => {
             setApplication(updated)
-            setApprovalReferrerBorrowerId(updated.referral?.referrerBorrowerId ?? '')
-            setApprovalReferralRewardAmount(updated.referral?.rewardAmountMinor ? String(updated.referral.rewardAmountMinor / 100) : '')
             if (updated.borrower) {
               setBorrowers((current) => current.map((borrower) => (
                 borrower.id === updated.borrower?.id

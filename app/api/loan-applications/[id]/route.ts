@@ -70,8 +70,6 @@ export async function PATCH(
     if (actionPath !== 'submit') {
       init.body = JSON.stringify({
         reviewerRemarks: body?.reviewerRemarks ?? '',
-        referrerBorrowerId: body?.referrerBorrowerId ?? undefined,
-        referralRewardAmountMinor: body?.referralRewardAmountMinor ?? undefined,
       })
     }
 

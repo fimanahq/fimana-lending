@@ -74,8 +74,6 @@ export function updateLoanApplicationStatus(
   status: LoanApplicationStatus,
   input: {
     reviewerRemarks?: string
-    referrerBorrowerId?: string | null
-    referralRewardAmountMinor?: number
   } = {},
 ) {
   return apiRequest<LoanApplication>(`/api/loan-applications/${applicationId}`, {
