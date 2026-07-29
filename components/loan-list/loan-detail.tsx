@@ -754,16 +754,8 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
             <strong>{formatMinorCurrency(grossProfitAmountMinor, currency)}</strong>
           </div>
           <div className="data-card">
-            <span className="muted">Reward expenses</span>
+            <span className="muted">Total rewards</span>
             <strong>{formatMinorCurrency(rewardExpenseMinor, currency)}</strong>
-          </div>
-          <div className="data-card">
-            <span className="muted">Referral rewards</span>
-            <strong>{formatMinorCurrency(referralRewardExpenseMinor, currency)}</strong>
-          </div>
-          <div className="data-card">
-            <span className="muted">Bonus rewards</span>
-            <strong>{formatMinorCurrency(bonusRewardExpenseMinor, currency)}</strong>
           </div>
           <div className="data-card">
             <span className="muted">Penalty profit</span>
