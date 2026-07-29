@@ -46,6 +46,16 @@ function getProgressToneColor(tone: DashboardProgressSegment['tone']) {
   }
 }
 
+export type DashboardPortfolioChartProps = {
+  caption: string
+  centerKicker: string
+  centerSubvalue: string
+  centerValue?: string
+  centerValueMinor: number
+  currency: string
+  segments: DashboardProgressSegment[]
+}
+
 export function DashboardPortfolioChart({
   caption,
   centerKicker,
@@ -54,15 +64,7 @@ export function DashboardPortfolioChart({
   centerValueMinor,
   currency,
   segments,
-}: {
-  caption: string
-  centerKicker: string
-  centerSubvalue: string
-  centerValue?: string
-  centerValueMinor: number
-  currency: string
-  segments: DashboardProgressSegment[]
-}) {
+}: DashboardPortfolioChartProps) {
   const ariaLabel = segments
     .map((segment) => `${segment.label}: ${segment.percentage.toFixed(2)}%, ${formatCurrency(segment.valueMinor / 100, currency)}`)
     .join('. ')
@@ -97,7 +99,10 @@ export function DashboardPortfolioChart({
   }, [])
 
   return (
-    <figure className={dashboardClass('dashboard-overview__progressChartPanel')} aria-label={ariaLabel}>
+    <figure
+      className={dashboardClass('dashboard-overview__progressChartPanel')}
+      aria-label={ariaLabel}
+    >
       <div ref={canvasRef} className={dashboardClass('dashboard-overview__progressChartCanvas')}>
         {chartSize.width > 0 && chartSize.height > 0 ? (
           <PieChart width={chartSize.width} height={chartSize.height}>

@@ -156,6 +156,10 @@ function formatMovementType(movement: TreasuryMovement) {
     return 'Loan payment'
   }
 
+  if (movement.type === 'lending_reward_expense') {
+    return 'Reward expense'
+  }
+
   if (movement.type === 'treasury_adjustment') {
     return movement.adjustmentDirection === 'debit' ? 'Reconciliation debit' : 'Reconciliation credit'
   }
@@ -195,6 +199,10 @@ function getMovementStatus(movement: TreasuryMovement) {
 
   if (movement.type === 'lending_payment') {
     return 'Settled'
+  }
+
+  if (movement.type === 'lending_reward_expense') {
+    return 'Paid'
   }
 
   if (movement.type === 'treasury_capital_movement') {

@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { classNames } from '@/utils/class-names'
 
 type AppLogoProps = {
@@ -9,16 +8,7 @@ type AppLogoProps = {
 export function AppLogo({ className, suffix }: AppLogoProps) {
   return (
     <span className={classNames('app-logo', className)}>
-      <Image
-        className="app-logo__mark"
-        src="/brand/fimana-mark.svg?v=2"
-        alt=""
-        aria-hidden="true"
-        width={1024}
-        height={1024}
-        style={{ width: 'var(--app-logo-mark-size)', height: 'var(--app-logo-mark-size)' }}
-        unoptimized
-      />
+      <span className="app-logo__mark" aria-hidden="true" />
 
       <span className="app-logo__wordmark">
         <span className="app-logo__name">FiMana</span>

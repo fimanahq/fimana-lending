@@ -46,7 +46,7 @@ export interface Treasury {
 
 export type TreasuryMovementDirection = 'in' | 'out' | 'neutral'
 
-export type TreasuryMovementType = 'lending_disbursement' | 'lending_payment' | 'treasury_interest_earned' | 'treasury_adjustment' | 'treasury_capital_movement' | 'treasury_profit_reclassification'
+export type TreasuryMovementType = 'lending_disbursement' | 'lending_payment' | 'treasury_interest_earned' | 'treasury_adjustment' | 'treasury_capital_movement' | 'treasury_profit_reclassification' | 'lending_reward_expense'
 
 export interface TreasuryMovement {
   id: string
@@ -80,6 +80,10 @@ export interface User {
   email: string
   firstName: string
   lastName: string
+  mobileNumber?: string
+  accountType: 'lender' | 'borrower'
+  emailVerified: boolean
+  emailVerifiedAt?: string | Date | null
   role: 'user' | 'admin'
   status: 'active' | 'suspended'
   signupSource?: UserAppCode | null

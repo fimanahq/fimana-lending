@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { AUTH_FETCH_TIMEOUT_MS, fetchWithTimeout } from '@/lib/fetch-timeout'
+import { cleanupDevelopmentServiceWorker } from '@/lib/service-worker-dev-cleanup'
 import type { User } from '@/lib/types/shared'
 
 interface AuthContextValue {
@@ -27,6 +28,10 @@ export function AuthProvider({
   const [user, setUser] = useState<User | null>(initialUser)
   const [loading, setLoading] = useState(initialUser ? false : shouldRefreshOnMount)
   const refreshInFlightRef = useRef<Promise<void> | null>(null)
+
+  useEffect(() => {
+    void cleanupDevelopmentServiceWorker()
+  }, [])
 
   const refresh = useCallback(() => {
     if (refreshInFlightRef.current) {

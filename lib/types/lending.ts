@@ -24,6 +24,8 @@ export type LoanAdjustmentType =
   | 'schedule_adjustment'
   | 'rounding_adjustment'
   | 'referral_adjustment'
+  | 'reward_adjustment'
+export type LoanRewardType = 'referral' | 'bonus'
 export type LoanAdjustmentComponent =
   | 'principal'
   | 'interest'
@@ -189,6 +191,7 @@ export interface LoanScheduleRow {
   outstandingTotalAmountMinor: number
   closingPrincipalBalanceMinor: number
   status: LoanScheduleRowStatus
+  paymentDate?: string | null
   lastAppliedPaymentAt?: string | null
   closedAt?: string | null
 }
@@ -214,6 +217,11 @@ export interface LoanRecord {
   maturityDate: string
   totalInterestAmountMinor: number
   totalPenaltyAmountMinor: number
+  grossProfitAmountMinor?: number
+  referralRewardExpenseMinor?: number
+  bonusRewardExpenseMinor?: number
+  rewardExpenseMinor?: number
+  netProfitAmountMinor?: number
   totalProfitAmountMinor: number
   lossAmountMinor: number
   defaultedAt?: string | null
@@ -319,8 +327,12 @@ export interface LoanAdjustmentRecord {
   type: LoanAdjustmentType
   component: LoanAdjustmentComponent
   direction: LoanAdjustmentDirection
+  rewardType?: LoanRewardType | null
+  rewardKind?: LoanRewardType | null
   isSystemGenerated: boolean
   relatedPaymentId?: string | null
+  accountId?: string | null
+  transactionId?: string | null
   scheduleRowId?: string | null
   penaltyRateBps?: number | null
   allocations: LoanAdjustmentAllocation[]
@@ -478,7 +490,11 @@ export interface DashboardMonthlyProfitSource {
   penaltyCollectedMinor: number
   excessProfitMinor?: number
   treasuryInterestEarnedMinor?: number
+  referralRewardExpenseMinor?: number
+  bonusRewardExpenseMinor?: number
+  rewardExpenseMinor?: number
   totalProfitMinor: number
+  netProfitMinor?: number
   paymentCount: number
 }
 
@@ -495,7 +511,11 @@ export interface DashboardMonthlyProfitDetailSummary {
   penaltyCollectedMinor: number
   excessProfitMinor: number
   treasuryInterestEarnedMinor: number
+  referralRewardExpenseMinor?: number
+  bonusRewardExpenseMinor?: number
+  rewardExpenseMinor?: number
   totalProfitMinor: number
+  netProfitMinor?: number
   paymentCount: number
 }
 
@@ -547,6 +567,13 @@ export interface LoanDashboardSummary {
   collectedProfitMinor: number
   collectedExcessProfitMinor: number
   treasuryInterestEarnedMinor: number
+  referralRewardExpenseMinor: number
+  bonusRewardExpenseMinor: number
+  rewardExpenseMinor: number
+  netCollectedProfitMinor: number
+  netTotalProjectedProfitMinor: number
+  netCollectedProfitVsCapitalBps: number
+  netProjectedProfitVsCapitalBps: number
   capitalDepositsMinor: number
   capitalWithdrawalsMinor: number
   netCapitalMovementMinor: number
@@ -596,6 +623,13 @@ export interface LoanDashboardSummary {
   profitOutlookTotalProjectedInterestMinor: number
   profitOutlookTotalPenaltyMinor: number
   profitOutlookTotalProjectedProfitMinor: number
+  profitOutlookReferralRewardExpenseMinor: number
+  profitOutlookBonusRewardExpenseMinor: number
+  profitOutlookRewardExpenseMinor: number
+  profitOutlookNetCollectedProfitMinor: number
+  profitOutlookNetTotalProjectedProfitMinor: number
+  profitOutlookNetCollectedProfitVsCapitalBps: number
+  profitOutlookNetProjectedProfitVsCapitalBps: number
   profitOutlookCollectedProfitVsCapitalBps: number
   profitOutlookProjectedProfitVsCapitalBps: number
   activeLoanCount: number

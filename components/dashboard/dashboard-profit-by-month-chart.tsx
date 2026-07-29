@@ -1,5 +1,6 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import {
   Bar,
   CartesianGrid,
@@ -12,6 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import type { TooltipContentProps } from 'recharts'
 import { formatCurrency } from '@/lib/format'
 import type { DashboardMonthlyProfitRow } from '@/lib/types/lending'
 import dashboardStyles from './dashboard.module.css'
@@ -19,11 +21,52 @@ import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
 
-const tooltipContentStyle = {
+const tooltipContentStyle: CSSProperties = {
   border: '1px solid rgba(97, 84, 62, 0.14)',
   borderRadius: '18px',
   backgroundColor: 'rgba(255, 252, 245, 0.96)',
   boxShadow: '0 18px 30px rgba(29, 28, 18, 0.08)',
+  minWidth: '15rem',
+  padding: '0.75rem',
+}
+
+const tooltipTitleStyle: CSSProperties = {
+  color: '#17140f',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  margin: '0 0 0.5rem',
+}
+
+const tooltipListStyle: CSSProperties = {
+  display: 'grid',
+  gap: '0.35rem',
+  margin: 0,
+}
+
+const tooltipRowStyle: CSSProperties = {
+  alignItems: 'baseline',
+  display: 'flex',
+  gap: '1rem',
+  justifyContent: 'space-between',
+}
+
+const tooltipTotalRowStyle: CSSProperties = {
+  ...tooltipRowStyle,
+  borderTop: '1px solid rgba(97, 84, 62, 0.12)',
+  marginTop: '0.2rem',
+  paddingTop: '0.45rem',
+}
+
+const tooltipLabelStyle: CSSProperties = {
+  color: '#6f6656',
+  fontSize: '0.78rem',
+}
+
+const tooltipValueStyle: CSSProperties = {
+  color: '#17140f',
+  fontSize: '0.82rem',
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
 }
 
 function formatMinorCurrency(valueMinor: number, currency: string) {
@@ -40,19 +83,69 @@ function formatCompactMinorCurrency(valueMinor: number, currency: string) {
   }).format(valueMinor / 100)
 }
 
+type ProfitGrowthTooltipProps = TooltipContentProps & {
+  currency: string
+  showInterestDue: boolean
+}
+
+function ProfitGrowthTooltip({
+  active,
+  currency,
+  payload,
+  showInterestDue,
+}: ProfitGrowthTooltipProps) {
+  if (!active || !payload?.length) {
+    return null
+  }
+
+  const row = payload[0]?.payload as DashboardMonthlyProfitRow | undefined
+
+  if (!row) {
+    return null
+  }
+
+  const rewardExpenseMinor = row.rewardExpenseMinor ?? 0
+  const netProfitMinor = row.netProfitMinor ?? row.totalProfitMinor
+
+  const renderRow = (label: string, valueMinor: number, style: CSSProperties = tooltipRowStyle) => (
+    <div style={style}>
+      <span style={tooltipLabelStyle}>{label}</span>
+      <strong style={tooltipValueStyle}>{formatMinorCurrency(valueMinor, currency)}</strong>
+    </div>
+  )
+
+  return (
+    <div style={tooltipContentStyle}>
+      <p style={tooltipTitleStyle}>{row.monthLabel}</p>
+      <div style={tooltipListStyle}>
+        {renderRow('Interest collected', row.interestCollectedMinor)}
+        {renderRow('Penalty collected', row.penaltyCollectedMinor)}
+        {renderRow('Excess profit', row.excessProfitMinor ?? 0)}
+        {renderRow('Treasury interest', row.treasuryInterestEarnedMinor ?? 0)}
+        {renderRow('Gross profit', row.totalProfitMinor, tooltipTotalRowStyle)}
+        {renderRow('Reward expenses', rewardExpenseMinor)}
+        {renderRow('Net profit', netProfitMinor, tooltipTotalRowStyle)}
+        {showInterestDue ? renderRow('Interest due', row.interestDueMinor) : null}
+      </div>
+    </div>
+  )
+}
+
+export type DashboardProfitByMonthChartProps = {
+  averageMonthlyProfitMinor?: number
+  currency: string
+  rows: DashboardMonthlyProfitRow[]
+  showInterestDue?: boolean
+}
+
 export function DashboardProfitByMonthChart({
   averageMonthlyProfitMinor,
   currency,
   rows,
   showInterestDue = true,
-}: {
-  averageMonthlyProfitMinor?: number
-  currency: string
-  rows: DashboardMonthlyProfitRow[]
-  showInterestDue?: boolean
-}) {
+}: DashboardProfitByMonthChartProps) {
   const ariaLabel = rows.map((row) => (
-    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.totalProfitMinor, currency)} total profit`
+    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)} reward expenses, ${formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)} net profit`
   )).join('. ')
 
   return (
@@ -72,9 +165,13 @@ export function DashboardProfitByMonthChart({
             width={78}
           />
           <Tooltip
-            formatter={(value, name) => [formatMinorCurrency(Number(value), currency), name]}
-            labelFormatter={(label) => String(label)}
-            contentStyle={tooltipContentStyle}
+            content={(props) => (
+              <ProfitGrowthTooltip
+                {...props}
+                currency={currency}
+                showInterestDue={showInterestDue}
+              />
+            )}
             wrapperStyle={{ zIndex: 8 }}
           />
           <Legend />
@@ -137,8 +234,8 @@ export function DashboardProfitByMonthChart({
             />
           ) : null}
           <Line
-            dataKey="totalProfitMinor"
-            name="Total profit"
+            dataKey="netProfitMinor"
+            name="Net profit"
             type="monotone"
             stroke="#17140f"
             strokeWidth={2.5}

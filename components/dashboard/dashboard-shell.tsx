@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { AppLogo } from '@/components/shared/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
+import { switchAccountMode } from '@/services/auth'
 import { classNames } from '@/utils/class-names'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -77,7 +78,6 @@ const pathLabels: Record<string, string> = {
 }
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
-
 const icons = {
   overview: LayoutDashboard,
   borrowers: UsersRound,
@@ -192,11 +192,19 @@ function getPageTitle(pathname: string) {
   return pathLabels[lastSegment] || formatPathSegment(lastSegment)
 }
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({
+  children,
+  copyrightYear,
+}: {
+  children: React.ReactNode
+  copyrightYear: number
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const { loading, user, setUser } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isSwitchingMode, setIsSwitchingMode] = useState(false)
+  const [modeError, setModeError] = useState('')
   const [isNavCollapsed, setIsNavCollapsed] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
@@ -214,6 +222,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setIsAccountMenuOpen(false)
+    setModeError('')
   }, [pathname])
 
   useEffect(() => {
@@ -254,6 +263,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null)
       window.location.replace('/login')
+    }
+  }
+
+  const handleSwitchToBorrowerMode = async () => {
+    if (isSwitchingMode) {
+      return
+    }
+
+    setIsSwitchingMode(true)
+    setModeError('')
+
+    try {
+      const payload = await switchAccountMode('borrower')
+      setUser(payload.user)
+      window.location.replace('/portal')
+    } catch (caughtError) {
+      setModeError(caughtError instanceof Error ? caughtError.message : 'Unable to switch to borrower mode')
+      setIsSwitchingMode(false)
     }
   }
 
@@ -369,12 +396,30 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                       </span>
                     </div>
 
+                    {user?.role === 'admin' ? (
+                      <button
+                        className={dashboardClass('dashboard-shell__modeSwitch')}
+                        type="button"
+                        role="menuitem"
+                        onClick={handleSwitchToBorrowerMode}
+                        disabled={isSwitchingMode || isLoggingOut}
+                      >
+                        {isSwitchingMode ? 'Switching mode...' : 'Switch to borrower mode'}
+                      </button>
+                    ) : null}
+
+                    {modeError ? (
+                      <div className={dashboardClass('dashboard-shell__modeError')} role="alert">
+                        {modeError}
+                      </div>
+                    ) : null}
+
                     <button
                       className={dashboardClass('dashboard-shell__logout', 'dashboard-shell__logout--dropdown')}
                       type="button"
                       role="menuitem"
                       onClick={handleLogout}
-                      disabled={isLoggingOut}
+                      disabled={isLoggingOut || isSwitchingMode}
                     >
                       {isLoggingOut ? 'Logging out...' : 'Logout'}
                     </button>
@@ -390,7 +435,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </main>
 
         <footer className={dashboardClass('dashboard-shell__footer')}>
-          <span>&copy; {new Date().getFullYear()} FiMana Lending. All rights reserved.</span>
+          <span>&copy; {copyrightYear} FiMana Lending. All rights reserved.</span>
           <div className={dashboardClass('dashboard-shell__footerLinks')}>
             <Link href="/">Internal Privacy Policy</Link>
           </div>

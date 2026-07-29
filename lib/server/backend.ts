@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
-import { hasLoanAppAccess } from '@/lib/access'
+import { hasFiManaSessionAccess } from '@/lib/access'
 import { ACCESS_COOKIE_NAME, API_BASE_URL, REFRESH_COOKIE_NAME } from '@/lib/constants'
 import {
   API_UNAVAILABLE_MESSAGE,
@@ -195,7 +195,7 @@ async function refreshBackendSession(refreshToken: string): Promise<RefreshResul
       }
     }
 
-    if (!hasLoanAppAccess(authPayload.user)) {
+    if (!hasFiManaSessionAccess(authPayload.user)) {
       return {
         ok: false,
         clearCookies: true,

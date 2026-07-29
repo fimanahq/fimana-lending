@@ -2,7 +2,7 @@
   "name": "fimana-lending",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/write-dev-service-worker.mjs && next dev",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
