@@ -833,39 +833,6 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
         </div>
       </Card>
 
-      <Card title="Referral">
-        {loan.referral.status === 'none' ? (
-          <p className="notice">No referral reward has been recorded for this loan.</p>
-        ) : (
-          <div className="application-summary-grid">
-            <div className="data-card">
-              <span className="muted">Referrer</span>
-              <strong>{loan.referral.referrerDisplayName || 'Not selected'}</strong>
-            </div>
-            <div className="data-card">
-              <span className="muted">Reward</span>
-              <strong>{formatMinorCurrency(loan.referral.rewardAmountMinor, currency)}</strong>
-            </div>
-            <div className="data-card">
-              <span className="muted">Applied</span>
-              <strong>{formatMinorCurrency(loan.referral.appliedAmountMinor, currency)}</strong>
-            </div>
-            <div className="data-card">
-              <span className="muted">Unapplied</span>
-              <strong>{formatMinorCurrency(loan.referral.unappliedAmountMinor, currency)}</strong>
-            </div>
-            <div className="data-card">
-              <span className="muted">Status</span>
-              <strong>{loan.referral.status.replaceAll('_', ' ')}</strong>
-            </div>
-            <div className="data-card">
-              <span className="muted">Adjustment</span>
-              <strong>{loan.referral.appliedAdjustmentId || 'Not applied'}</strong>
-            </div>
-          </div>
-        )}
-      </Card>
-
       <Card
         title="Remarks"
         actions={!editingRemarks ? (

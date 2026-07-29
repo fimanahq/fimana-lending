@@ -17,16 +17,6 @@ export function updateLoan(loanId: string, input: { status?: LoanStatus; remarks
   })
 }
 
-export function applyLoanReferral(
-  loanId: string,
-  input: { referrerBorrowerId: string; referralRewardAmountMinor: number },
-) {
-  return apiRequest<LoanRecord>(`/api/loans/${loanId}/referral`, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  })
-}
-
 export function postLoanReward(
   loanId: string,
   input: { rewardType: LoanRewardType; rewardAmountMinor: number; notes?: string },

@@ -762,8 +762,6 @@ export interface LoanApplicationDraftInput {
   postInterestOnlyMethod?: PostInterestOnlyMethod | null
   simpleInterestMethod?: SimpleInterestMethod | null
   purpose?: string
-  referrerBorrowerId?: string | null
-  referralRewardAmountMinor?: number
 }
 
 export interface LoanApplicationPreviewSnapshot {
