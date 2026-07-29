@@ -48,8 +48,6 @@ export const loanApplicationLabels = {
   fixedTotalInterestRate: 'Whole-loan interest rate (%)',
   interestOnlyPeriod: 'Interest-Only Cutoffs',
   postInterestOnlyMethod: 'After Interest-Only',
-  referralReward: 'Referral reward',
-  referrer: 'Referrer',
   simpleInterestMethod: 'Simple Interest Type',
   secondPaymentDay: 'Second Payment Day',
   startDate: 'Start Date',
@@ -68,8 +66,6 @@ export interface LoanApplicationFormValues {
   postInterestOnlyMethod: PostInterestOnlyMethod
   simpleInterestMethod: SimpleInterestMethod
   purpose: string
-  referrerBorrowerId: string
-  referralRewardAmount: string
 }
 
 interface LoanApplicationFormProps {
@@ -96,8 +92,6 @@ const initialFormValues: LoanApplicationFormValues = {
   postInterestOnlyMethod: 'bullet',
   simpleInterestMethod: 'equal_principal',
   purpose: '',
-  referrerBorrowerId: '',
-  referralRewardAmount: '',
 }
 
 const paymentFrequencyOptions: SearchableSelectOption[] = [
@@ -228,8 +222,6 @@ function getDraftPayload(form: LoanApplicationFormValues) {
       ? form.simpleInterestMethod
       : null,
     purpose: form.purpose.trim() || undefined,
-    referrerBorrowerId: form.referrerBorrowerId || null,
-    referralRewardAmountMinor: pesosToMinor(form.referralRewardAmount || '0'),
   })
 }
 
@@ -270,21 +262,6 @@ function validateForm(form: LoanApplicationFormValues) {
     }
   }
 
-  if (form.referrerBorrowerId && form.referrerBorrowerId === form.borrowerId) {
-    return 'Referrer cannot be the application borrower'
-  }
-
-  if (form.referralRewardAmount.trim()) {
-    const referralRewardAmountMinor = pesosToMinor(form.referralRewardAmount)
-    if (!Number.isFinite(referralRewardAmountMinor) || referralRewardAmountMinor < 0) {
-      return 'Referral reward must be zero or greater'
-    }
-
-    if (referralRewardAmountMinor > 0 && !form.referrerBorrowerId) {
-      return 'Referrer is required when referral reward is greater than zero'
-    }
-  }
-
   if (form.calculationMethod === 'interest_only') {
     const interestOnlyPeriod = Number(form.interestOnlyPeriod)
     if (!Number.isInteger(interestOnlyPeriod) || interestOnlyPeriod < 0) {
@@ -321,8 +298,6 @@ export function getLoanApplicationFormValues(application: LoanApplication): Loan
     postInterestOnlyMethod: (application.postInterestOnlyMethod as PostInterestOnlyMethod) || 'bullet',
     simpleInterestMethod: (application.simpleInterestMethod as SimpleInterestMethod) || 'equal_principal',
     purpose: application.purpose || application.notes || '',
-    referrerBorrowerId: application.referral?.referrerBorrowerId ?? '',
-    referralRewardAmount: minorToPesos(application.referral?.rewardAmountMinor ?? 0),
   }
 }
 
@@ -428,7 +403,6 @@ export function LoanApplicationForm({
 
     updateForm({
       borrowerId: nextBorrowerId,
-      referrerBorrowerId: form.referrerBorrowerId === nextBorrowerId ? '' : form.referrerBorrowerId,
       borrowerIncome: mode === 'edit'
         ? formatOptionalIncome(nextBorrower?.income)
         : form.borrowerIncome,
@@ -500,15 +474,6 @@ export function LoanApplicationForm({
     })),
     [borrowers],
   )
-  const referrerOptions = useMemo<SearchableSelectOption[]>(
-    () => borrowers
-      .filter((borrower) => borrower.id !== form.borrowerId)
-      .map((borrower) => ({
-        label: `${borrower.fullName} (${borrower.borrowerNumber})`,
-        value: borrower.id,
-      })),
-    [borrowers, form.borrowerId],
-  )
 
   const formContent = (
     <>
@@ -555,32 +520,6 @@ export function LoanApplicationForm({
               onChange={(event) => updateForm({ borrowerIncome: event.target.value })}
             />
           ) : null}
-
-          <div className="grid two">
-            <SearchableSelect
-              id={`${mode}ApplicationReferrer`}
-              label={loanApplicationLabels.referrer}
-              placeholder="No referrer"
-              options={referrerOptions}
-              value={form.referrerBorrowerId}
-              loading={loadingBorrowers}
-              disabled={loadingBorrowers}
-              emptyMessage="No borrowers match your search"
-              onChange={(nextValue) => updateForm({ referrerBorrowerId: nextValue })}
-            />
-            <Input
-              id={`${mode}ApplicationReferralReward`}
-              label={loanApplicationLabels.referralReward}
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              inputClassName="input-no-spinner"
-              value={form.referralRewardAmount}
-              onWheel={preventWheelValueChange}
-              onChange={(event) => updateForm({ referralRewardAmount: event.target.value })}
-            />
-          </div>
 
           <div className="grid two">
             <Input
