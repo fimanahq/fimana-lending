@@ -16,6 +16,10 @@ export interface LoanApplicationValidationInput {
   income?: number | null
 }
 
+interface LoanApplicationValidationOptions {
+  requireEmail?: boolean
+}
+
 export interface ValidatedLoanApplicationInput {
   firstName: string
   lastName: string
@@ -119,7 +123,10 @@ function getFirstValidationError(errors: LoanApplicationValidationErrors) {
   )
 }
 
-export function getLoanApplicationValidationResult(input: LoanApplicationValidationInput): LoanApplicationValidationResult {
+export function getLoanApplicationValidationResult(
+  input: LoanApplicationValidationInput,
+  options: LoanApplicationValidationOptions = {},
+): LoanApplicationValidationResult {
   const paymentFrequency = normalizeIncomingPaymentFrequency(input.paymentFrequency)
   const firstName = input.firstName.trim()
   const lastName = input.lastName.trim()
@@ -139,7 +146,9 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
     errors.lastName = 'Last name is required'
   }
 
-  if (email && !isValidEmail(email)) {
+  if (options.requireEmail && !email) {
+    errors.email = 'Email address is required'
+  } else if (email && !isValidEmail(email)) {
     errors.email = 'Enter a valid email address'
   }
 
@@ -147,7 +156,7 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
     errors.phone = 'Phone number must be 10 digits'
   }
 
-  if (!email && !phone) {
+  if (!options.requireEmail && !email && !phone) {
     errors.phone = 'Provide an email address or phone number'
   }
 
@@ -211,8 +220,11 @@ export function getLoanApplicationValidationResult(input: LoanApplicationValidat
   }
 }
 
-export function validateLoanApplicationInput(input: LoanApplicationValidationInput): ValidatedLoanApplicationInput {
-  const validation = getLoanApplicationValidationResult(input)
+export function validateLoanApplicationInput(
+  input: LoanApplicationValidationInput,
+  options: LoanApplicationValidationOptions = {},
+): ValidatedLoanApplicationInput {
+  const validation = getLoanApplicationValidationResult(input, options)
   const firstError = getFirstValidationError(validation.errors)
 
   if (firstError) {

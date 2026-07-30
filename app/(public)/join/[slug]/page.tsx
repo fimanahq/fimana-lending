@@ -78,7 +78,7 @@ export default async function JoinLenderPage({ params }: JoinLenderPageProps) {
             </div>
 
             <h1 className="signin-page__title">
-              Apply with <span>{invitation.displayName}.</span>
+              Continue with <span>your lender.</span>
             </h1>
 
             <p className="signin-page__lede">

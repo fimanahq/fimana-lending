@@ -13,6 +13,14 @@ import { PaginatedResponse } from '@/types'
 export type CreateLoanApplicationInput = LoanApplicationDraftInput
 export type UpdateLoanApplicationDraftInput = Partial<LoanApplicationDraftInput>
 export type UpdateLoanApplicationInput = Partial<LoanApplicationDraftInput>
+export type PublicLoanApplicationInput = ValidatedLoanApplicationInput & {
+  emailVerificationCode: string
+}
+
+export interface PublicApplicationEmailVerificationResponse {
+  message: string
+  expiresInSeconds: number
+}
 
 // export function listLoanApplications() {
 //   return apiRequest<LoanApplication[]>('/api/loan-applications')
@@ -47,7 +55,18 @@ export function createLoanApplication(input: CreateLoanApplicationInput) {
   })
 }
 
-export function createPublicLoanApplication(slug: string, input: ValidatedLoanApplicationInput) {
+export function sendPublicApplicationEmailVerification(slug: string, email: string) {
+  return apiRequest<PublicApplicationEmailVerificationResponse>(
+    `/api/request-loan/${encodeURIComponent(slug)}/email-verification/send`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      timeoutMs: REQUEST_LOAN_FETCH_TIMEOUT_MS,
+    },
+  )
+}
+
+export function createPublicLoanApplication(slug: string, input: PublicLoanApplicationInput) {
   return apiRequest<LoanApplication>(`/api/request-loan/${encodeURIComponent(slug)}`, {
     method: 'POST',
     body: JSON.stringify(input),

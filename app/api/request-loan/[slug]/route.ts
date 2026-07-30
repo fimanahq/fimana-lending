@@ -36,6 +36,7 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
   const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : ''
   const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : ''
   const email = typeof body.email === 'string' ? body.email.trim() : ''
+  const emailVerificationCode = typeof body.emailVerificationCode === 'string' ? body.emailVerificationCode.trim() : ''
   const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
   const purpose = typeof body.purpose === 'string'
     ? body.purpose.trim()
@@ -56,8 +57,12 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
     return jsonError('Borrower first and last name are required', 400)
   }
 
-  if (!email && !phone) {
-    return jsonError('Provide at least an email address or phone number', 400)
+  if (!email) {
+    return jsonError('Email address is required', 400)
+  }
+
+  if (!/^\d{6}$/.test(emailVerificationCode)) {
+    return jsonError('Email verification code is required', 400)
   }
 
   if (!Number.isFinite(principal) || principal <= 0) {
@@ -85,20 +90,23 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
   }
 
   try {
-    const validated = validateLoanApplicationInput({
-      firstName,
-      lastName,
-      email,
-      phone,
-      principal,
-      gives,
-      paymentFrequency,
-      firstDay,
-      secondDay,
-      firstPaymentDate,
-      purpose,
-      income,
-    })
+    const validated = {
+      ...validateLoanApplicationInput({
+        firstName,
+        lastName,
+        email,
+        phone,
+        principal,
+        gives,
+        paymentFrequency,
+        firstDay,
+        secondDay,
+        firstPaymentDate,
+        purpose,
+        income,
+      }, { requireEmail: true }),
+      emailVerificationCode,
+    }
 
     const response = await fetchWithTimeout(`${API_BASE_URL}/loan-applications/public/${encodeURIComponent(slug)}`, {
       method: 'POST',
