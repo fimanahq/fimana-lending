@@ -2,6 +2,7 @@ import type { CollectionsSection, DashboardCutoffReceivable } from '@/lib/types/
 
 export type CollectionSection = CollectionsSection
 export type LoanCollectionStatus = 'unpaid' | 'partial' | 'paid'
+type CutoffLoan = DashboardCutoffReceivable['loans'][number]
 
 export const collectionSections: CollectionSection[] = [
   'current-upcoming',
@@ -39,10 +40,13 @@ export function getLoanCollectionStatusLabel(status: LoanCollectionStatus) {
 }
 
 export function sortCutoffLoans(loans: DashboardCutoffReceivable['loans']) {
-  const order: Record<LoanCollectionStatus, number> = { unpaid: 0, partial: 1, paid: 2 }
+  const collectionStatusOrder: Record<LoanCollectionStatus, number> = { unpaid: 0, partial: 1, paid: 2 }
+  const loanStatusOrder: Record<CutoffLoan['loanStatus'], number> = { active: 0, completed: 1 }
   return [...loans].sort((left, right) => {
-    const statusOrder = order[getLoanCollectionStatus(left)] - order[getLoanCollectionStatus(right)]
-    return statusOrder || left.loanNumber.localeCompare(right.loanNumber)
+    const collectionStatusSort =
+      collectionStatusOrder[getLoanCollectionStatus(left)] - collectionStatusOrder[getLoanCollectionStatus(right)]
+    const loanStatusSort = loanStatusOrder[left.loanStatus] - loanStatusOrder[right.loanStatus]
+    return collectionStatusSort || loanStatusSort || left.loanNumber.localeCompare(right.loanNumber)
   })
 }
 
