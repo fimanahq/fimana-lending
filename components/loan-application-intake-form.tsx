@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getLoanApplicationValidationResult, validateLoanApplicationInput } from '@/lib/loan-application-validation'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
 import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import type { LoanApplication } from '@/lib/types/lending'
-import { createPublicLoanApplication } from '@/services'
+import { createPublicLoanApplication, sendPublicApplicationEmailVerification } from '@/services'
+import { Button, Dialog } from '@/components/shared'
 
 const PHONE_PREFIX = '+63 '
 const REQUIRED_ERROR_SUFFIX = 'is required'
@@ -124,8 +125,16 @@ export function LoanApplicationIntakeForm({
     gives: false,
   })
   const [submitting, setSubmitting] = useState(false)
+  const [sendingVerificationCode, setSendingVerificationCode] = useState(false)
+  const [emailVerificationCode, setEmailVerificationCode] = useState('')
+  const [verificationEmail, setVerificationEmail] = useState('')
+  const [verificationMessage, setVerificationMessage] = useState('')
+  const [verificationDialogOpen, setVerificationDialogOpen] = useState(false)
+  const [pendingPublicApplication, setPendingPublicApplication] = useState<ValidatedLoanApplicationInput | null>(null)
+  const [pendingSubmittedForm, setPendingSubmittedForm] = useState<LoanApplicationIntakeFormState | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const requiresPublicEmailVerification = Boolean(publicLoanRequestSlug) && !onSubmitApplication
   const validation = useMemo(
     () =>
       getLoanApplicationValidationResult({
@@ -136,8 +145,8 @@ export function LoanApplicationIntakeForm({
         paymentFrequency: BORROWER_REQUEST_PAYMENT_FREQUENCY,
         firstDay: BORROWER_REQUEST_FIRST_DAY,
         secondDay: BORROWER_REQUEST_SECOND_DAY,
-      }),
-    [form],
+      }, { requireEmail: requiresPublicEmailVerification }),
+    [form, requiresPublicEmailVerification],
   )
   const emailValue = form.email.trim()
   const emailIsDirty = touchedFields.email && emailValue.length > 0 && Boolean(validation.errors.email) && !isRequiredError(validation.errors.email)
@@ -150,6 +159,17 @@ export function LoanApplicationIntakeForm({
     successMessage
       ? successMessage(application, submittedForm)
       : `Loan application submitted for ${application.borrower?.displayName || `${submittedForm.firstName} ${submittedForm.lastName}`.trim()}. Reference: ${application.applicationNumber || application.id}`
+
+  useEffect(() => {
+    if (verificationEmail && emailValue.toLowerCase() !== verificationEmail) {
+      setVerificationEmail('')
+      setEmailVerificationCode('')
+      setVerificationMessage('')
+      setVerificationDialogOpen(false)
+      setPendingPublicApplication(null)
+      setPendingSubmittedForm(null)
+    }
+  }, [emailValue, verificationEmail])
 
   const markTouched = (field: keyof typeof touchedFields) => {
     setTouchedFields((current) => (current[field] ? current : { ...current, [field]: true }))
@@ -196,6 +216,67 @@ export function LoanApplicationIntakeForm({
     return fieldError
   }
 
+  const resetSubmittedForm = () => {
+    setForm(buildInitialForm(initialValues))
+    setTouchedFields({
+      firstName: false,
+      lastName: false,
+      email: false,
+      phone: false,
+      principal: false,
+      income: false,
+      purpose: false,
+      gives: false,
+    })
+    setEmailVerificationCode('')
+    setVerificationEmail('')
+    setVerificationMessage('')
+    setVerificationDialogOpen(false)
+    setPendingPublicApplication(null)
+    setPendingSubmittedForm(null)
+  }
+
+  const requestVerificationCode = async (email: string) => {
+    if (!publicLoanRequestSlug) {
+      throw new Error('Unable to send verification code')
+    }
+
+    const response = await sendPublicApplicationEmailVerification(publicLoanRequestSlug, email)
+    setVerificationEmail(email.toLowerCase())
+    setEmailVerificationCode('')
+    setVerificationMessage(response.message || 'Verification code sent')
+  }
+
+  const handleResendVerificationCode = async () => {
+    if (!publicLoanRequestSlug || disabled) {
+      return
+    }
+
+    markTouched('email')
+    setError('')
+    setSuccess('')
+    setVerificationMessage('')
+
+    if (!emailValue) {
+      setError('Email address is required')
+      return
+    }
+
+    if (validation.errors.email) {
+      setError(validation.errors.email)
+      return
+    }
+
+    setSendingVerificationCode(true)
+    try {
+      await requestVerificationCode(emailValue)
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to send verification code')
+    } finally {
+      setSendingVerificationCode(false)
+    }
+  }
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (disabled) {
@@ -216,14 +297,35 @@ export function LoanApplicationIntakeForm({
         paymentFrequency: BORROWER_REQUEST_PAYMENT_FREQUENCY,
         firstDay: BORROWER_REQUEST_FIRST_DAY,
         secondDay: BORROWER_REQUEST_SECOND_DAY,
-      })
+      }, { requireEmail: requiresPublicEmailVerification })
+
+      if (requiresPublicEmailVerification) {
+        if (!validated.email) {
+          throw new Error('Email address is required')
+        }
+
+        const submittedForm = form
+        setPendingPublicApplication(validated)
+        setPendingSubmittedForm(submittedForm)
+        if (verificationEmail === validated.email.toLowerCase()) {
+          setVerificationDialogOpen(true)
+          return
+        }
+
+        await requestVerificationCode(validated.email)
+        setVerificationDialogOpen(true)
+        return
+      }
 
       const submittedForm = form
       attemptedSubmission = true
       const created = onSubmitApplication
         ? await onSubmitApplication(validated)
         : publicLoanRequestSlug
-          ? await createPublicLoanApplication(publicLoanRequestSlug, validated)
+          ? await createPublicLoanApplication(publicLoanRequestSlug, {
+            ...validated,
+            emailVerificationCode: emailVerificationCode.trim(),
+          })
           : null
 
       if (!created) {
@@ -232,17 +334,7 @@ export function LoanApplicationIntakeForm({
 
       const submittedMessage = await onSubmitted?.(created)
       setSuccess(submittedMessage || resolvedSuccessMessage(created, submittedForm))
-      setForm(buildInitialForm(initialValues))
-      setTouchedFields({
-        firstName: false,
-        lastName: false,
-        email: false,
-        phone: false,
-        principal: false,
-        income: false,
-        purpose: false,
-        gives: false,
-      })
+      resetSubmittedForm()
     } catch (caughtError) {
       const submitError = caughtError instanceof Error ? caughtError : new Error('Unable to submit loan application')
       setError(submitError.message)
@@ -254,8 +346,39 @@ export function LoanApplicationIntakeForm({
     }
   }
 
+  const handleConfirmVerification = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!publicLoanRequestSlug || !pendingPublicApplication || !pendingSubmittedForm) {
+      return
+    }
+
+    setError('')
+    setSuccess('')
+
+    if (emailVerificationCode.trim().length !== 6) {
+      setError('Email verification code is required')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const created = await createPublicLoanApplication(publicLoanRequestSlug, {
+        ...pendingPublicApplication,
+        emailVerificationCode: emailVerificationCode.trim(),
+      })
+      const submittedMessage = await onSubmitted?.(created)
+      setSuccess(submittedMessage || resolvedSuccessMessage(created, pendingSubmittedForm))
+      resetSubmittedForm()
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to submit loan application')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
-    <form className="request-loan-form" onSubmit={handleSubmit} noValidate>
+    <>
+      <form className="request-loan-form" onSubmit={handleSubmit} noValidate>
       <div className="request-loan-form__grid">
         <div className="request-loan-form__field">
           <label htmlFor={`${idPrefix}FirstName`}>First Name</label>
@@ -424,8 +547,9 @@ export function LoanApplicationIntakeForm({
         ) : null}
       </div>
 
-      {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
+      {error && !verificationDialogOpen ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
       {disabled && disabledMessage ? <div className="notice danger request-loan-form__notice">{disabledMessage}</div> : null}
+      {verificationMessage && !verificationDialogOpen ? <div className="notice request-loan-form__notice">{verificationMessage}</div> : null}
       {success ? <div className="notice request-loan-form__notice">{success}</div> : null}
 
       <button
@@ -433,11 +557,70 @@ export function LoanApplicationIntakeForm({
         type="submit"
         disabled={disabled || submitting || !validation.isValid}
       >
-        <span>{submitting ? submittingLabel : submitLabel}</span>
+        <span>
+          {submitting
+            ? requiresPublicEmailVerification
+              ? 'Sending verification code...'
+              : submittingLabel
+            : submitLabel}
+        </span>
         <span className="request-loan-form__submitArrow" aria-hidden="true">→</span>
       </button>
 
-      {finePrint ? <p className="request-loan-form__finePrint">{finePrint}</p> : null}
-    </form>
+        {finePrint ? <p className="request-loan-form__finePrint">{finePrint}</p> : null}
+      </form>
+      {requiresPublicEmailVerification ? (
+        <Dialog
+          id={`${idPrefix}EmailVerificationDialog`}
+          open={verificationDialogOpen}
+          title="Verify your email"
+          description={verificationEmail ? `Enter the 6-digit code sent to ${verificationEmail}.` : 'Enter the 6-digit code sent to your email.'}
+          onClose={() => {
+            if (!submitting) {
+              setVerificationDialogOpen(false)
+            }
+          }}
+          actions={(
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={submitting || sendingVerificationCode}
+                onClick={handleResendVerificationCode}
+              >
+                {sendingVerificationCode ? 'Sending...' : 'Send new code'}
+              </Button>
+              <Button
+                type="submit"
+                form={`${idPrefix}EmailVerificationForm`}
+                disabled={submitting || emailVerificationCode.trim().length !== 6}
+              >
+                {submitting ? 'Submitting...' : 'Verify and submit'}
+              </Button>
+            </>
+          )}
+        >
+          <form id={`${idPrefix}EmailVerificationForm`} className="request-loan-form" onSubmit={handleConfirmVerification} noValidate>
+            {verificationMessage ? <div className="notice request-loan-form__notice">{verificationMessage}</div> : null}
+            {error ? <div className="notice danger request-loan-form__notice">{error}</div> : null}
+            <div className="request-loan-form__field">
+              <label htmlFor={`${idPrefix}EmailVerificationCode`}>Email Verification Code</label>
+              <input
+                id={`${idPrefix}EmailVerificationCode`}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="000000"
+                value={emailVerificationCode}
+                onChange={(event) => {
+                  setEmailVerificationCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+                }}
+              />
+            </div>
+          </form>
+        </Dialog>
+      ) : null}
+    </>
   )
 }
