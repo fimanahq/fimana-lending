@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'FiMana Lending',
     short_name: 'FiMana',
     description: 'Lending operations, payment schedules, reminders, and borrower tracking for FiMana.',
-    start_url: '/dashboard',
+    start_url: '/',
     scope: '/',
     display: 'standalone',
     background_color: '#f8f1e2',
