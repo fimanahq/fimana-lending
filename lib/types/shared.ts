@@ -24,6 +24,10 @@ export interface Settings {
   excludeOwnerLoanInterestFromProfit?: boolean
   includeLoanPaymentsInTreasuryByDefault: boolean
   treasuryAccountId: string | null
+  emailSentCount: number
+  emailSentCurrentMonthCount: number
+  emailSentCurrentMonthKey: string
+  emailSentLastAt: string | Date | null
   createdAt: string | Date
   updatedAt?: string | Date
 }

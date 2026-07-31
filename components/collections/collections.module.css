@@ -41,6 +41,11 @@
   text-align: right !important;
 }
 
+.cutoffActionColumn,
+.detailActionColumn {
+  width: 1%;
+}
+
 .detailBackLink {
   display: inline-flex;
   align-items: center;
@@ -184,6 +189,27 @@
 .detailLedgerItem p {
   margin: 0;
   font-size: 0.8rem;
+}
+
+@media (max-width: 980px) {
+  .cutoffActionColumn {
+    display: none !important;
+  }
+
+  .detailActionColumn {
+    width: auto;
+    text-align: left !important;
+  }
+
+  .detailActionColumn :global(.table-action-icon) {
+    justify-self: end;
+  }
+
+  .cutoffRowLink:hover td,
+  .cutoffRowLink:focus-visible td {
+    background: transparent;
+    box-shadow: none;
+  }
 }
 
 @media (max-width: 900px) {
