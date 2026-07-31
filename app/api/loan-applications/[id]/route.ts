@@ -79,3 +79,17 @@ export async function PATCH(
     return backendErrorResponse(caughtError, 'Unable to update application')
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params
+
+  try {
+    await authorizedBackendRequest(`/loan-applications/${id}`, { method: 'DELETE' })
+    return NextResponse.json({ success: true })
+  } catch (caughtError) {
+    return backendErrorResponse(caughtError, 'Unable to delete application')
+  }
+}

@@ -5,9 +5,9 @@ import { useCallback, useEffect, useState, type KeyboardEvent } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types/lending'
-import { listLoanApplications } from '@/services'
-import { Button, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, ProtectedLink as Link, TableShell } from '@/components/shared'
-import { ViewIcon } from '@/components/shared/table-icons'
+import { deleteLoanApplication, listLoanApplications } from '@/services'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
+import { DeleteIcon, ViewIcon } from '@/components/shared/table-icons'
 import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 
@@ -36,6 +36,7 @@ function getApplicationSchedule(application: LoanApplication) {
 
 export function LoanApplicationList() {
   const router = useRouter()
+  const { dismiss, loading: showLoading, update } = useToast()
   const [applications, setApplications] = useState<LoanApplication[]>([])
   const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('all')
   const [query, setQuery] = useState('')
@@ -44,6 +45,8 @@ export function LoanApplicationList() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalApplications, setTotalApplications] = useState(0)
   const [error, setError] = useState('')
+  const [deleteApplicationId, setDeleteApplicationId] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -91,6 +94,35 @@ export function LoanApplicationList() {
       openApplication(applicationId)
     }
   }
+
+  const handleDeleteApplication = async () => {
+    if (!deleteApplicationId) {
+      return
+    }
+
+    setDeleting(true)
+    setError('')
+    const toastId = showLoading('Deleting application...')
+
+    try {
+      await deleteLoanApplication(deleteApplicationId)
+      setDeleteApplicationId('')
+      update(toastId, 'Application deleted.', { tone: 'success', title: 'Success' })
+
+      if (applications.length === 1 && page > 1) {
+        setPage((currentPage) => Math.max(currentPage - 1, 1))
+      } else {
+        await loadApplications()
+      }
+    } catch (caughtError) {
+      dismiss(toastId)
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to delete application')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const selectedDeleteApplication = applications.find((application) => application.id === deleteApplicationId) || null
 
   return (
     <div className="stack">
@@ -201,15 +233,33 @@ export function LoanApplicationList() {
                     </td>
                     <td>{formatDate(application.createdAt)}</td>
                     <td>
-                      <Link
-                        href={`/loan-applications/${application.id}`}
-                        className="button-ghost table-action-icon"
-                        aria-label={`View application details for ${getApplicantName(application)}`}
-                        title="View details"
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        <ViewIcon />
-                      </Link>
+                      <div className="inline-actions">
+                        <Link
+                          href={`/loan-applications/${application.id}`}
+                          className="button-ghost table-action-icon"
+                          aria-label={`View application details for ${getApplicantName(application)}`}
+                          title="View details"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <ViewIcon />
+                        </Link>
+
+                        {application.status === 'submitted' ? (
+                          <button
+                            type="button"
+                            className="button-ghost table-action-icon ui-button--danger"
+                            aria-label={`Delete application for ${getApplicantName(application)}`}
+                            title="Delete application"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setDeleteApplicationId(application.id)
+                            }}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
+                            <DeleteIcon />
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -227,6 +277,26 @@ export function LoanApplicationList() {
           />
         </>
       ) : null}
+
+      <ConfirmationDialog
+        open={Boolean(deleteApplicationId)}
+        title={selectedDeleteApplication ? `Delete ${selectedDeleteApplication.applicationNumber || 'application'}` : 'Delete application'}
+        message={
+          selectedDeleteApplication
+            ? `Delete submitted application for ${getApplicantName(selectedDeleteApplication)}? This action cannot be undone.`
+            : 'Delete this submitted application? This action cannot be undone.'
+        }
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        cancelLabel="Cancel"
+        destructive
+        confirmDisabled={deleting}
+        onConfirm={() => void handleDeleteApplication()}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteApplicationId('')
+          }
+        }}
+      />
     </div>
   )
 }

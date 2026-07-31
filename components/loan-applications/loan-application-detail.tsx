@@ -9,10 +9,11 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
 import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
-import { getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
+import { deleteLoanApplication, getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
 import {
   Button,
   Card,
+  ConfirmationDialog,
   Dialog,
   EmptyState,
   ErrorState,
@@ -55,6 +56,8 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const [borrowers, setBorrowers] = useState<Borrower[]>([])
   const [decisionNotes, setDecisionNotes] = useState('')
   const [error, setError] = useState('')
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingBorrowers, setLoadingBorrowers] = useState(true)
@@ -165,6 +168,28 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
     }
   }
 
+  const handleDeleteApplication = async () => {
+    if (!application) {
+      return
+    }
+
+    setDeleting(true)
+    setError('')
+    const toastId = showLoading('Deleting application...')
+
+    try {
+      await deleteLoanApplication(application.id)
+      setDeleteDialogOpen(false)
+      update(toastId, 'Application deleted.', { tone: 'success', title: 'Success' })
+      router.push('/loan-applications')
+    } catch (caughtError) {
+      dismiss(toastId)
+      setError(caughtError instanceof Error ? caughtError.message : 'Unable to delete application')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const amount = application ? (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1) : 0
   const cutoffs = application?.numberOfCutoffs ?? application?.gives ?? 0
   const frequency = application?.paymentType || application?.paymentFrequency
@@ -204,6 +229,7 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const proposedMonthlyPayment = calculateApplicationPreviewMonthlyPayment(preview)
   const canReview = normalizedStatus === 'submitted' || normalizedStatus === 'under_review'
   const canEdit = editableStatuses.includes(normalizedStatus)
+  const canDelete = normalizedStatus === 'submitted' && !application.loanId
   const canUndoApproval = normalizedStatus === 'approved'
   const reviewDisabled = terminal || !hasPreview || !canReview || Boolean(savingStatus) || isEditing
   const referral = application.referral
@@ -243,6 +269,15 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
             {canEdit && !isEditing ? (
               <Button variant="secondary" onClick={() => setIsEditing(true)}>
                 Edit
+              </Button>
+            ) : null}
+            {canDelete ? (
+              <Button
+                variant="danger"
+                onClick={() => setDeleteDialogOpen(true)}
+                disabled={Boolean(savingStatus) || deleting || isEditing}
+              >
+                Delete
               </Button>
             ) : null}
           </div>
@@ -419,6 +454,22 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         borrowerName={getApplicantName(application)}
         calculationMethod={application.calculationMethod}
         preview={preview}
+      />
+
+      <ConfirmationDialog
+        open={deleteDialogOpen}
+        title={application.applicationNumber ? `Delete ${application.applicationNumber}` : 'Delete application'}
+        message={`Delete submitted application for ${getApplicantName(application)}? This action cannot be undone.`}
+        confirmLabel={deleting ? 'Deleting...' : 'Delete'}
+        cancelLabel="Cancel"
+        destructive
+        confirmDisabled={deleting}
+        onConfirm={() => void handleDeleteApplication()}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteDialogOpen(false)
+          }
+        }}
       />
     </div>
   )
