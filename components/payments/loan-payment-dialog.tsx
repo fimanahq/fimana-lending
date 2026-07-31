@@ -10,7 +10,7 @@ import type {
   LoanPaymentMethod,
   LoanRecord,
 } from '@/lib/types/lending'
-import { getLoanPaymentDetail, getSettings, postLoanPayment } from '@/services'
+import { getLoanPaymentDetail, postLoanPayment } from '@/services'
 import styles from './loan-dialogs.module.css'
 
 const PAYMENT_TOLERANCE_MINOR = 500
@@ -161,7 +161,6 @@ export function LoanPaymentDialog({
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<LoanPaymentMethod>('cash')
   const [referenceNo, setReferenceNo] = useState('')
-  const [includeInTreasury, setIncludeInTreasury] = useState(true)
   const [confirmExcessProfit, setConfirmExcessProfit] = useState(false)
   const submitLockRef = useRef(false)
 
@@ -175,13 +174,9 @@ export function LoanPaymentDialog({
     setDetailError('')
 
     try {
-      const [nextDetail, settings] = await Promise.all([
-        getLoanPaymentDetail(loanId),
-        getSettings(),
-      ])
+      const nextDetail = await getLoanPaymentDetail(loanId)
       setDetail(nextDetail)
       setAmount(getCurrentCutoffOutstandingValue(nextDetail.loan))
-      setIncludeInTreasury(settings.includeLoanPaymentsInTreasuryByDefault ?? true)
     } catch (caughtError) {
       setDetailError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan payment detail')
     } finally {
@@ -204,7 +199,6 @@ export function LoanPaymentDialog({
       setAmount('')
       setMethod('cash')
       setReferenceNo('')
-      setIncludeInTreasury(true)
       setConfirmExcessProfit(false)
       setSubmitError('')
     }
@@ -243,7 +237,6 @@ export function LoanPaymentDialog({
         amountMinor,
         method,
         referenceNo: referenceNo.trim() || undefined,
-        includeInTreasury,
         treatExcessAsProfit: confirmExcessProfit,
       })
 
@@ -365,19 +358,6 @@ export function LoanPaymentDialog({
                   placeholder="Optional"
                 />
               </div>
-
-              <Switch
-                id="payment-include-in-treasury"
-                label="Record payment in Treasury"
-                checked={includeInTreasury}
-                onChange={(event) => setIncludeInTreasury(event.target.checked)}
-              />
-
-              {!includeInTreasury ? (
-                <div className="notice danger">
-                  This payment will update the loan but not Treasury, creating a cash reconciliation variance.
-                </div>
-              ) : null}
 
               {hasLargeOverpayment ? (
                 <Switch

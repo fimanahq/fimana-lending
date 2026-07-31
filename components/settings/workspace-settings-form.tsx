@@ -428,8 +428,8 @@ export function WorkspaceSettingsForm() {
           <CardWrapper title="Treasury payment defaults">
             <Switch
               id="workspace-include-loan-payments-in-treasury"
-              label="Include posted payments in Treasury by default"
-              description="When enabled, new payment forms start with Treasury inclusion selected. You can override this for each payment before posting."
+              label="Include posted payments in Treasury automatically"
+              description="When enabled, new posted payments are credited to Treasury without a per-payment prompt."
               checked={form.includeLoanPaymentsInTreasuryByDefault}
               onChange={(event) => updateField('includeLoanPaymentsInTreasuryByDefault', event.target.checked)}
             />
