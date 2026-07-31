@@ -285,7 +285,6 @@ export interface PostLoanPaymentInput {
   amountMinor: number
   method: LoanPaymentMethod
   referenceNo?: string
-  includeInTreasury?: boolean
   treatExcessAsProfit?: boolean
 }
 
