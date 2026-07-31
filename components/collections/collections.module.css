@@ -205,10 +205,14 @@
     justify-self: end;
   }
 
-  .cutoffRowLink:hover td,
-  .cutoffRowLink:focus-visible td {
+  .cutoffRowLink:hover td {
     background: transparent;
     box-shadow: none;
+  }
+
+  .cutoffRowLink:focus-visible {
+    outline: 2px solid rgba(146, 75, 16, 0.38);
+    outline-offset: 3px;
   }
 }
 
