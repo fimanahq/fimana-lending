@@ -138,7 +138,9 @@ function ProfitOutlookPanel({
   const collectedProfitVsCapitalBps = summary.profitOutlookNetCollectedProfitVsCapitalBps ?? summary.profitOutlookCollectedProfitVsCapitalBps ?? summary.collectedProfitVsCapitalBps
   const projectedProfitVsCapitalBps = summary.profitOutlookNetProjectedProfitVsCapitalBps ?? summary.profitOutlookProjectedProfitVsCapitalBps ?? summary.projectedProfitVsCapitalBps
   const rewardExpenseMinor = summary.profitOutlookRewardExpenseMinor ?? summary.rewardExpenseMinor ?? 0
-  const hasProfitOutlook = grossTotalProjectedProfitMinor > 0 || rewardExpenseMinor > 0
+  const businessExpenseMinor = summary.profitOutlookBusinessExpenseMinor ?? summary.businessExpenseMinor ?? 0
+  const totalExpenseMinor = rewardExpenseMinor + businessExpenseMinor
+  const hasProfitOutlook = grossTotalProjectedProfitMinor > 0 || totalExpenseMinor > 0
   const hasPositiveNetProfit = totalProjectedProfitMinor > 0
 
   return (
@@ -176,7 +178,7 @@ function ProfitOutlookPanel({
               </span>
               <div>
                 <strong>Net projected profit is below zero</strong>
-                <p>Reward expenses are higher than projected profit.</p>
+                <p>Booked expenses are higher than projected profit.</p>
               </div>
             </div>
           )}
@@ -193,10 +195,10 @@ function ProfitOutlookPanel({
               value={formatMinorCurrency(summary.collectedExcessProfitMinor, currency)}
             />
           ) : null}
-          {rewardExpenseMinor > 0 ? (
+          {totalExpenseMinor > 0 ? (
             <MixContext
               label="Gross projected profit"
-              meta="Profit before referral and bonus rewards"
+              meta="Profit before expenses"
               value={formatMinorCurrency(grossTotalProjectedProfitMinor, currency)}
             />
           ) : null}
@@ -205,6 +207,13 @@ function ProfitOutlookPanel({
               label="Reward expenses"
               meta="Referral and bonus rewards paid from Treasury"
               value={formatMinorCurrency(rewardExpenseMinor, currency)}
+            />
+          ) : null}
+          {businessExpenseMinor > 0 ? (
+            <MixContext
+              label="Business expenses"
+              meta="Business costs paid from Treasury"
+              value={formatMinorCurrency(businessExpenseMinor, currency)}
             />
           ) : null}
           {!hasPositiveNetProfit ? (
@@ -537,8 +546,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
   const projectedNetWorthAfterWriteOffMinor = summary.projectedNetWorthMinor
   const projectedNetWorthMeta = summary.ownerLoanInterestExcluded
-    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Booked rewards are reflected in cash; owner loan interest is excluded only from Profit Outlook.'
-    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit. Booked rewards are reflected in cash.'
+    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Booked expenses are reflected in cash; owner loan interest is excluded only from Profit Outlook.'
+    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit. Booked expenses are reflected in cash.'
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
@@ -588,7 +597,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.treasuryCashOnHandMinor !== null
                 ? `Calculated lending cash: ${formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency)}`
-                : 'Current capital basis less active principal and write-offs, net of booked rewards'}
+                : 'Current capital basis less active principal and write-offs, net of booked expenses'}
             </span>
             <StatInfoDisclosure id="cash-on-hand-info" label="Show cash on hand details">
               {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury.' : 'Calculated amount available to lend.'}

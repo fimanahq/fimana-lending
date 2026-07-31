@@ -492,6 +492,7 @@ export interface DashboardMonthlyProfitSource {
   referralRewardExpenseMinor?: number
   bonusRewardExpenseMinor?: number
   rewardExpenseMinor?: number
+  businessExpenseMinor?: number
   totalProfitMinor: number
   netProfitMinor?: number
   paymentCount: number
@@ -513,6 +514,7 @@ export interface DashboardMonthlyProfitDetailSummary {
   referralRewardExpenseMinor?: number
   bonusRewardExpenseMinor?: number
   rewardExpenseMinor?: number
+  businessExpenseMinor?: number
   totalProfitMinor: number
   netProfitMinor?: number
   paymentCount: number
@@ -569,6 +571,7 @@ export interface LoanDashboardSummary {
   referralRewardExpenseMinor: number
   bonusRewardExpenseMinor: number
   rewardExpenseMinor: number
+  businessExpenseMinor: number
   netCollectedProfitMinor: number
   netTotalProjectedProfitMinor: number
   netCollectedProfitVsCapitalBps: number
@@ -625,6 +628,7 @@ export interface LoanDashboardSummary {
   profitOutlookReferralRewardExpenseMinor: number
   profitOutlookBonusRewardExpenseMinor: number
   profitOutlookRewardExpenseMinor: number
+  profitOutlookBusinessExpenseMinor: number
   profitOutlookNetCollectedProfitMinor: number
   profitOutlookNetTotalProjectedProfitMinor: number
   profitOutlookNetCollectedProfitVsCapitalBps: number

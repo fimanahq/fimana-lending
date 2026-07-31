@@ -17,6 +17,18 @@ export function formatDate(value: string | Date) {
   }).format(date)
 }
 
+export function formatDateTime(value: string | Date) {
+  const date = typeof value === 'string' ? new Date(value) : value
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'Asia/Manila',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
 export function formatPaymentDay(value: string) {
   if (value === 'month_end') {
     return 'Month end'

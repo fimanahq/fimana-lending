@@ -96,6 +96,9 @@ export function buildDashboardProfitGrowthData(
   const rows = Array.from({ length: 12 }, (_, monthIndex): DashboardMonthlyProfitRow => {
     const monthKey = `${monthlyProfit.year}-${String(monthIndex + 1).padStart(2, '0')}`
     const source = rowsByMonth.get(monthKey)
+    const totalProfitMinor = source?.totalProfitMinor ?? 0
+    const rewardExpenseMinor = source?.rewardExpenseMinor ?? 0
+    const businessExpenseMinor = source?.businessExpenseMinor ?? 0
 
     return {
       monthKey,
@@ -107,9 +110,10 @@ export function buildDashboardProfitGrowthData(
       treasuryInterestEarnedMinor: source?.treasuryInterestEarnedMinor ?? 0,
       referralRewardExpenseMinor: source?.referralRewardExpenseMinor ?? 0,
       bonusRewardExpenseMinor: source?.bonusRewardExpenseMinor ?? 0,
-      rewardExpenseMinor: source?.rewardExpenseMinor ?? 0,
-      totalProfitMinor: source?.totalProfitMinor ?? 0,
-      netProfitMinor: source?.netProfitMinor ?? source?.totalProfitMinor ?? 0,
+      rewardExpenseMinor,
+      businessExpenseMinor,
+      totalProfitMinor,
+      netProfitMinor: source?.netProfitMinor ?? totalProfitMinor - rewardExpenseMinor - businessExpenseMinor,
       paymentCount: source?.paymentCount ?? 0,
     }
   })
@@ -161,6 +165,7 @@ export function buildDashboardProfitGrowthData(
       || row.excessProfitMinor !== 0
       || row.treasuryInterestEarnedMinor !== 0
       || (row.rewardExpenseMinor ?? 0) !== 0
+      || (row.businessExpenseMinor ?? 0) !== 0
       || row.totalProfitMinor !== 0
       || (row.netProfitMinor ?? 0) !== 0
     )),
@@ -211,6 +216,7 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     referralRewardExpenseMinor: 0,
     bonusRewardExpenseMinor: 0,
     rewardExpenseMinor: 0,
+    businessExpenseMinor: 0,
     netCollectedProfitMinor: 0,
     netTotalProjectedProfitMinor: 0,
     netCollectedProfitVsCapitalBps: 0,
@@ -267,6 +273,7 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     profitOutlookReferralRewardExpenseMinor: 0,
     profitOutlookBonusRewardExpenseMinor: 0,
     profitOutlookRewardExpenseMinor: 0,
+    profitOutlookBusinessExpenseMinor: 0,
     profitOutlookNetCollectedProfitMinor: 0,
     profitOutlookNetTotalProjectedProfitMinor: 0,
     profitOutlookNetCollectedProfitVsCapitalBps: 0,
@@ -296,10 +303,13 @@ export function buildDashboardOverviewData({
   mergedSummary.ownerLoanInterestExcluded = mergedSummary.ownerLoanInterestExcluded ?? false
   mergedSummary.ownerLoanInterestExcludedAmountMinor = mergedSummary.ownerLoanInterestExcludedAmountMinor ?? 0
   mergedSummary.rewardExpenseMinor = mergedSummary.rewardExpenseMinor ?? 0
+  mergedSummary.businessExpenseMinor = mergedSummary.businessExpenseMinor ?? 0
   mergedSummary.referralRewardExpenseMinor = mergedSummary.referralRewardExpenseMinor ?? 0
   mergedSummary.bonusRewardExpenseMinor = mergedSummary.bonusRewardExpenseMinor ?? 0
-  mergedSummary.netCollectedProfitMinor = mergedSummary.netCollectedProfitMinor ?? mergedSummary.collectedProfitMinor
-  mergedSummary.netTotalProjectedProfitMinor = mergedSummary.netTotalProjectedProfitMinor ?? mergedSummary.totalProjectedProfitMinor
+  mergedSummary.netCollectedProfitMinor = mergedSummary.netCollectedProfitMinor
+    ?? mergedSummary.collectedProfitMinor - mergedSummary.rewardExpenseMinor - mergedSummary.businessExpenseMinor
+  mergedSummary.netTotalProjectedProfitMinor = mergedSummary.netTotalProjectedProfitMinor
+    ?? mergedSummary.totalProjectedProfitMinor - mergedSummary.rewardExpenseMinor - mergedSummary.businessExpenseMinor
   mergedSummary.netCollectedProfitVsCapitalBps = mergedSummary.netCollectedProfitVsCapitalBps ?? mergedSummary.collectedProfitVsCapitalBps
   mergedSummary.netProjectedProfitVsCapitalBps = mergedSummary.netProjectedProfitVsCapitalBps ?? mergedSummary.projectedProfitVsCapitalBps
   mergedSummary.profitOutlookCollectedInterestMinor = mergedSummary.profitOutlookCollectedInterestMinor ?? mergedSummary.collectedInterestMinor
@@ -314,8 +324,15 @@ export function buildDashboardOverviewData({
   mergedSummary.profitOutlookReferralRewardExpenseMinor = mergedSummary.profitOutlookReferralRewardExpenseMinor ?? mergedSummary.referralRewardExpenseMinor
   mergedSummary.profitOutlookBonusRewardExpenseMinor = mergedSummary.profitOutlookBonusRewardExpenseMinor ?? mergedSummary.bonusRewardExpenseMinor
   mergedSummary.profitOutlookRewardExpenseMinor = mergedSummary.profitOutlookRewardExpenseMinor ?? mergedSummary.rewardExpenseMinor
-  mergedSummary.profitOutlookNetCollectedProfitMinor = mergedSummary.profitOutlookNetCollectedProfitMinor ?? mergedSummary.profitOutlookCollectedProfitMinor
-  mergedSummary.profitOutlookNetTotalProjectedProfitMinor = mergedSummary.profitOutlookNetTotalProjectedProfitMinor ?? mergedSummary.profitOutlookTotalProjectedProfitMinor
+  mergedSummary.profitOutlookBusinessExpenseMinor = mergedSummary.profitOutlookBusinessExpenseMinor ?? mergedSummary.businessExpenseMinor
+  mergedSummary.profitOutlookNetCollectedProfitMinor = mergedSummary.profitOutlookNetCollectedProfitMinor
+    ?? mergedSummary.profitOutlookCollectedProfitMinor
+      - mergedSummary.profitOutlookRewardExpenseMinor
+      - mergedSummary.profitOutlookBusinessExpenseMinor
+  mergedSummary.profitOutlookNetTotalProjectedProfitMinor = mergedSummary.profitOutlookNetTotalProjectedProfitMinor
+    ?? mergedSummary.profitOutlookTotalProjectedProfitMinor
+      - mergedSummary.profitOutlookRewardExpenseMinor
+      - mergedSummary.profitOutlookBusinessExpenseMinor
   mergedSummary.profitOutlookNetCollectedProfitVsCapitalBps = mergedSummary.profitOutlookNetCollectedProfitVsCapitalBps ?? mergedSummary.profitOutlookCollectedProfitVsCapitalBps
   mergedSummary.profitOutlookNetProjectedProfitVsCapitalBps = mergedSummary.profitOutlookNetProjectedProfitVsCapitalBps ?? mergedSummary.profitOutlookProjectedProfitVsCapitalBps
   mergedSummary.profitOutlookCollectedProfitVsCapitalBps = mergedSummary.profitOutlookCollectedProfitVsCapitalBps ?? mergedSummary.collectedProfitVsCapitalBps
@@ -388,7 +405,7 @@ export function buildDashboardOverviewData({
     {
       key: 'collected_interest',
       label: 'Collected net profit',
-      description: 'Realized profit after referral and bonus reward expenses.',
+      description: 'Realized profit after booked expenses.',
       valueMinor: netCollectedProfitMinor,
       percentage: interestOutlookBaseMinor > 0 ? (netCollectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'green',
@@ -396,7 +413,7 @@ export function buildDashboardOverviewData({
     {
       key: 'remaining_projected_interest',
       label: 'Remaining net projected profit',
-      description: 'Expected future profit after booked reward expenses.',
+      description: 'Expected future profit after booked expenses.',
       valueMinor: netRemainingProjectedProfitMinor,
       percentage: interestOutlookBaseMinor > 0 ? (netRemainingProjectedProfitMinor / interestOutlookBaseMinor) * 100 : 0,
       tone: 'olive',
