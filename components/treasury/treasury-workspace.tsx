@@ -22,7 +22,7 @@ import {
   useToast,
 } from '@/components/shared'
 import { DeleteIcon } from '@/components/shared/table-icons'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency, formatDateTime } from '@/lib/format'
 import type { Treasury, TreasuryMovement } from '@/lib/types/shared'
 import {
   createTreasuryAdjustment,
@@ -54,8 +54,10 @@ interface AdjustmentFormState {
   reason: string
 }
 
+type CapitalMovementDirection = 'deposit' | 'withdrawal' | 'expense'
+
 interface CapitalMovementFormState {
-  direction: 'deposit' | 'withdrawal'
+  direction: CapitalMovementDirection
   amount: string
   occurredAt: string
   reason: string
@@ -82,6 +84,12 @@ function buildInitialAdjustmentForm(): AdjustmentFormState {
 
 function buildInitialCapitalMovementForm(): CapitalMovementFormState {
   return { direction: 'deposit', amount: '', occurredAt: toDateInputValue(new Date()), reason: '' }
+}
+
+function getCapitalMovementActionLabel(direction: CapitalMovementDirection) {
+  if (direction === 'deposit') return 'capital deposit'
+  if (direction === 'withdrawal') return 'capital withdrawal'
+  return 'business expense'
 }
 
 function toDateInputValue(date: Date) {
@@ -165,6 +173,7 @@ function formatMovementType(movement: TreasuryMovement) {
   }
 
   if (movement.type === 'treasury_capital_movement') {
+    if (movement.capitalMovementDirection === 'expense') return 'Business expense'
     return movement.capitalMovementDirection === 'withdrawal' ? 'Capital withdrawal' : 'Capital deposit'
   }
 
@@ -206,6 +215,7 @@ function getMovementStatus(movement: TreasuryMovement) {
   }
 
   if (movement.type === 'treasury_capital_movement') {
+    if (movement.capitalMovementDirection === 'expense') return 'Paid'
     return movement.capitalMovementDirection === 'withdrawal' ? 'Withdrawn' : 'Deposited'
   }
 
@@ -442,17 +452,17 @@ export function TreasuryWorkspace() {
 
   const handleCapitalMovement = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const parsedAmount = parsePositiveAmount(capitalMovementForm.amount, 'Capital movement amount')
+    const parsedAmount = parsePositiveAmount(capitalMovementForm.amount, 'Treasury movement amount')
     const parsedDate = parsePostingDate(capitalMovementForm.occurredAt)
     if (parsedAmount.error || parsedDate.error || !capitalMovementForm.reason.trim()) {
-      setCapitalMovementError(parsedAmount.error || parsedDate.error || 'Capital movement reason is required.')
+      setCapitalMovementError(parsedAmount.error || parsedDate.error || 'Treasury movement reason is required.')
       return
     }
 
     setMovingCapital(true)
     setCapitalMovementError('')
-    const action = capitalMovementForm.direction === 'deposit' ? 'deposit' : 'withdrawal'
-    const toastId = showLoading(`Posting capital ${action}...`)
+    const actionLabel = getCapitalMovementActionLabel(capitalMovementForm.direction)
+    const toastId = showLoading(`Posting ${actionLabel}...`)
     try {
       await createTreasuryCapitalMovement({
         direction: capitalMovementForm.direction,
@@ -463,10 +473,10 @@ export function TreasuryWorkspace() {
       await loadTreasuryData()
       setCapitalMovementForm(buildInitialCapitalMovementForm())
       setCapitalMovementOpen(false)
-      update(toastId, `Capital ${action} posted.`, { tone: 'success', title: 'Success' })
+      update(toastId, `${actionLabel.charAt(0).toUpperCase()}${actionLabel.slice(1)} posted.`, { tone: 'success', title: 'Success' })
     } catch (caughtError) {
       dismiss(toastId)
-      setCapitalMovementError(caughtError instanceof Error ? caughtError.message : 'Unable to post capital movement.')
+      setCapitalMovementError(caughtError instanceof Error ? caughtError.message : 'Unable to post Treasury movement.')
     } finally {
       setMovingCapital(false)
     }
@@ -669,8 +679,8 @@ export function TreasuryWorkspace() {
             <Button
               className={`${styles.bankActionButton} ${styles.bankActionCapital} ${styles.iconButton}`}
               onClick={openCapitalMovement}
-              aria-label="Capital movement"
-              title="Deposit or withdraw capital"
+              aria-label="Treasury movement"
+              title="Deposit capital, withdraw capital, or post a business expense"
             >
               <ArrowLeftRight aria-hidden="true" size={16} />
             </Button>
@@ -758,7 +768,7 @@ export function TreasuryWorkspace() {
               <table>
                 <thead>
                   <tr>
-                    <th>Date</th>
+                    <th>Recorded</th>
                     <th>Description</th>
                     <th>Type</th>
                     <th className={styles.amountColumn}>Amount</th>
@@ -769,7 +779,9 @@ export function TreasuryWorkspace() {
                 <tbody>
                   {movements.map((movement) => (
                     <tr key={movement.id}>
-                      <td>{formatDate(movement.occurredAt)}</td>
+                      <td>
+                        <div>{formatDateTime(movement.createdAt)}</div>
+                      </td>
                       <td>
                         <div className={styles.movementDescription}>
                           {movement.description || formatMovementType(movement)}
@@ -889,19 +901,23 @@ export function TreasuryWorkspace() {
           <Dialog
             id="treasury-capital-movement-dialog"
             open={capitalMovementOpen}
-            title="Capital movement"
-            description="Record owner capital entering or leaving the lending fund. This updates calculated lending cash."
+            title="Treasury movement"
+            description="Record owner capital or business expenses moving through the lending fund. This updates calculated lending cash."
             onClose={closeCapitalMovement}
           >
             <form className="stack" onSubmit={(event) => void handleCapitalMovement(event)}>
-              {capitalMovementError ? <ErrorBanner title="Capital movement failed" message={capitalMovementError} /> : null}
+              {capitalMovementError ? <ErrorBanner title="Treasury movement failed" message={capitalMovementError} /> : null}
               <div className="grid two">
                 <SearchableSelect
                   id="treasury-capital-movement-direction"
-                  label="Action"
-                  options={[{ value: 'deposit', label: 'Deposit capital' }, { value: 'withdrawal', label: 'Withdraw capital' }]}
+                  label="Type"
+                  options={[
+                    { value: 'deposit', label: 'Deposit capital' },
+                    { value: 'withdrawal', label: 'Withdraw capital' },
+                    { value: 'expense', label: 'Business expense' },
+                  ]}
                   value={capitalMovementForm.direction}
-                  onChange={(value) => setCapitalMovementForm((current) => ({ ...current, direction: value as 'deposit' | 'withdrawal' }))}
+                  onChange={(value) => setCapitalMovementForm((current) => ({ ...current, direction: value as CapitalMovementDirection }))}
                 />
                 <Input
                   id="treasury-capital-movement-amount"
@@ -930,7 +946,7 @@ export function TreasuryWorkspace() {
               />
               <div className={`ui-card__actions ${styles.modalActions}`}>
                 <Button type="button" variant="secondary" disabled={movingCapital} onClick={closeCapitalMovement}>Cancel</Button>
-                <Button type="submit" disabled={movingCapital}>{movingCapital ? 'Posting…' : 'Post capital movement'}</Button>
+                <Button type="submit" disabled={movingCapital}>{movingCapital ? 'Posting…' : 'Post Treasury movement'}</Button>
               </div>
             </form>
           </Dialog>

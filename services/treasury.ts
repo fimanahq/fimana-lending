@@ -22,7 +22,7 @@ export interface CreateTreasuryAdjustmentInput {
 }
 
 export interface CreateTreasuryCapitalMovementInput {
-  direction: 'deposit' | 'withdrawal'
+  direction: 'deposit' | 'withdrawal' | 'expense'
   amount: number
   occurredAt: string
   reason: string

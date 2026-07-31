@@ -105,6 +105,7 @@ function ProfitGrowthTooltip({
   }
 
   const rewardExpenseMinor = row.rewardExpenseMinor ?? 0
+  const businessExpenseMinor = row.businessExpenseMinor ?? 0
   const netProfitMinor = row.netProfitMinor ?? row.totalProfitMinor
 
   const renderRow = (label: string, valueMinor: number, style: CSSProperties = tooltipRowStyle) => (
@@ -124,6 +125,7 @@ function ProfitGrowthTooltip({
         {renderRow('Treasury interest', row.treasuryInterestEarnedMinor ?? 0)}
         {renderRow('Gross profit', row.totalProfitMinor, tooltipTotalRowStyle)}
         {renderRow('Reward expenses', rewardExpenseMinor)}
+        {renderRow('Business expenses', businessExpenseMinor)}
         {renderRow('Net profit', netProfitMinor, tooltipTotalRowStyle)}
         {showInterestDue ? renderRow('Interest due', row.interestDueMinor) : null}
       </div>
@@ -145,7 +147,7 @@ export function DashboardProfitByMonthChart({
   showInterestDue = true,
 }: DashboardProfitByMonthChartProps) {
   const ariaLabel = rows.map((row) => (
-    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)} reward expenses, ${formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)} net profit`
+    `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)} reward expenses, ${formatMinorCurrency(row.businessExpenseMinor ?? 0, currency)} business expenses, ${formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)} net profit`
   )).join('. ')
 
   return (
