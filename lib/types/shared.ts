@@ -58,7 +58,7 @@ export interface TreasuryMovement {
   type: TreasuryMovementType
   direction: TreasuryMovementDirection
   adjustmentDirection?: 'credit' | 'debit'
-  capitalMovementDirection?: 'deposit' | 'withdrawal'
+  capitalMovementDirection?: 'deposit' | 'withdrawal' | 'expense'
   reclassificationCashEffect?: 'credit' | 'debit' | 'neutral'
   amount: number
   amountMinor: number
