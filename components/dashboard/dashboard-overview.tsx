@@ -554,9 +554,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
   const projectedNetWorthAfterWriteOffMinor = summary.projectedNetWorthMinor
-  const projectedNetWorthMeta = summary.ownerLoanInterestExcluded
-    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Booked expenses are reflected in cash; owner loan interest is excluded only from Profit Outlook.'
-    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit. Booked expenses are reflected in cash.'
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
@@ -689,7 +686,28 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               {formatBasisPointsPercentage(summary.netProjectedProfitVsCapitalBps)} net projected profit vs starting capital
             </span>
             <StatInfoDisclosure id="projected-net-worth-info" label="Show projected total net worth details">
-              {projectedNetWorthMeta}
+              <span>Formula: cash on hand - unallocated payments + active principal + remaining projected profit.</span>
+              <br />
+              <br />
+              <span>Cash on hand: {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Unallocated payments: {formatMinorCurrency(summary.historicalUnallocatedAmountMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Active principal: {formatMinorCurrency(summary.outstandingPrincipalMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Remaining projected profit: {formatMinorCurrency(summary.remainingProjectedProfitMinor, dashboardCurrency)}</span>
+              <br />
+              <br />
+              <span>Projected total net worth: {formatMinorCurrency(summary.projectedNetWorthMinor, dashboardCurrency)}</span>
+              <br />
+              <br />
+              <span>Booked expenses are already reflected in cash.</span>
+              {summary.ownerLoanInterestExcluded ? (
+                <>
+                  <br />
+                  <span>Owner loan interest is excluded only from Profit Outlook.</span>
+                </>
+              ) : null}
             </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="note" />
