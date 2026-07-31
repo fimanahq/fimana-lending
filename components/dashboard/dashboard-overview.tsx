@@ -140,6 +140,7 @@ function ProfitOutlookPanel({
   const rewardExpenseMinor = summary.profitOutlookRewardExpenseMinor ?? summary.rewardExpenseMinor ?? 0
   const businessExpenseMinor = summary.profitOutlookBusinessExpenseMinor ?? summary.businessExpenseMinor ?? 0
   const totalExpenseMinor = rewardExpenseMinor + businessExpenseMinor
+  const capitalLossesMinor = summary.writtenOffPrincipalMinor + summary.principalWriteOffLossMinor
   const hasProfitOutlook = grossTotalProjectedProfitMinor > 0 || totalExpenseMinor > 0
   const hasPositiveNetProfit = totalProjectedProfitMinor > 0
 
@@ -221,6 +222,13 @@ function ProfitOutlookPanel({
               label="Net projected profit"
               meta={`${formatBasisPointsPercentage(projectedProfitVsCapitalBps)} vs capital`}
               value={formatMinorCurrency(totalProjectedProfitMinor, currency)}
+            />
+          ) : null}
+          {capitalLossesMinor > 0 ? (
+            <MixContext
+              label="Capital losses"
+              meta="Excluded from Profit Outlook; reflected in Current capital basis"
+              value={formatMinorCurrency(capitalLossesMinor, currency)}
             />
           ) : null}
         </div>
@@ -541,13 +549,11 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
-  const hasPrincipalWriteOff = summary.writtenOffPrincipalMinor > 0
+  const capitalLossesMinor = summary.writtenOffPrincipalMinor + summary.principalWriteOffLossMinor
+  const hasCapitalLosses = capitalLossesMinor > 0
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
   const projectedNetWorthAfterWriteOffMinor = summary.projectedNetWorthMinor
-  const projectedNetWorthMeta = summary.ownerLoanInterestExcluded
-    ? 'Cash on hand less unallocated payment liabilities, plus outstanding principal and raw projected unpaid profit. Booked expenses are reflected in cash; owner loan interest is excluded only from Profit Outlook.'
-    : 'Cash on hand less unallocated payment liabilities, plus outstanding principal and projected unpaid profit. Booked expenses are reflected in cash.'
 
   return (
     <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
@@ -579,10 +585,24 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)} net movements · {formatBasisPointsPercentage(summary.netCollectedProfitVsCapitalBps)} net profit vs capital
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} realized profit · {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} capital losses
             </span>
             <StatInfoDisclosure id="current-capital-basis-info" label="Show current capital basis details">
-              Formula: starting capital + net capital movements + net realized profit - capital losses.
+              <span>Formula: starting capital + realized profit - capital losses.</span>
+              <br />
+              <br />
+              <span>Starting capital: {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Realized profit: {formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} from collected interest, penalties, excess-payment profit, and Treasury interest.</span>
+              <br />
+              <span>Capital losses: {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} total.</span>
+              <br />
+              <span>Defaulted principal: {formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Principal write-offs / rounding write-offs: {formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}</span>
+              <br />
+              <br />
+              <span>Treasury capital deposits, withdrawals, reward expenses, and business expenses stay in cash reconciliation, not capital basis.</span>
             </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="money" />
@@ -666,7 +686,28 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               {formatBasisPointsPercentage(summary.netProjectedProfitVsCapitalBps)} net projected profit vs starting capital
             </span>
             <StatInfoDisclosure id="projected-net-worth-info" label="Show projected total net worth details">
-              {projectedNetWorthMeta}
+              <span>Formula: cash on hand - unallocated payments + active principal + remaining projected profit.</span>
+              <br />
+              <br />
+              <span>Cash on hand: {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Unallocated payments: {formatMinorCurrency(summary.historicalUnallocatedAmountMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Active principal: {formatMinorCurrency(summary.outstandingPrincipalMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Remaining projected profit: {formatMinorCurrency(summary.remainingProjectedProfitMinor, dashboardCurrency)}</span>
+              <br />
+              <br />
+              <span>Projected total net worth: {formatMinorCurrency(summary.projectedNetWorthMinor, dashboardCurrency)}</span>
+              <br />
+              <br />
+              <span>Booked expenses are already reflected in cash.</span>
+              {summary.ownerLoanInterestExcluded ? (
+                <>
+                  <br />
+                  <span>Owner loan interest is excluded only from Profit Outlook.</span>
+                </>
+              ) : null}
             </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="note" />
@@ -703,33 +744,44 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         />
 
         <section className="grid two">
-          {hasPrincipalWriteOff ? (
+          {hasCapitalLosses ? (
             <article className={dashboardClass('dashboard-overview__progressCard')}>
               <div className={dashboardClass('dashboard-overview__progressHeader')}>
                 <div>
                   <span className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</span>
-                  <h2>Defaulted principal and net loss</h2>
+                  <h2>Capital losses</h2>
                   <p>
-                    Defaulted loans are excluded from active receivables. This section keeps the written-off principal and recovered profit visible separately from live capital.
+                    Defaulted principal and principal write-offs are excluded from active receivables and deducted from current capital basis.
                   </p>
                 </div>
               </div>
               <div className={dashboardClass('dashboard-overview__miniGrid')}>
-                <MiniMetric
-                  label="Defaulted principal"
-                  value={formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}
-                  meta={`Across ${defaultedLoanLabel}`}
-                />
-                <MiniMetric
-                  label="Collected profit"
-                  value={formatMinorCurrency(summary.defaultedCollectedProfitMinor, dashboardCurrency)}
-                  meta="Interest and penalties collected before default"
-                />
-                <MiniMetric
-                  label="Net default loss"
-                  value={formatMinorCurrency(summary.netDefaultLossMinor, dashboardCurrency)}
-                  meta="Defaulted principal less collected profit"
-                />
+                {summary.writtenOffPrincipalMinor > 0 ? (
+                  <>
+                    <MiniMetric
+                      label="Defaulted principal"
+                      value={formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}
+                      meta={`Across ${defaultedLoanLabel}`}
+                    />
+                    <MiniMetric
+                      label="Collected profit"
+                      value={formatMinorCurrency(summary.defaultedCollectedProfitMinor, dashboardCurrency)}
+                      meta="Interest and penalties collected before default"
+                    />
+                    <MiniMetric
+                      label="Net default loss"
+                      value={formatMinorCurrency(summary.netDefaultLossMinor, dashboardCurrency)}
+                      meta="Defaulted principal less collected profit"
+                    />
+                  </>
+                ) : null}
+                {summary.principalWriteOffLossMinor > 0 ? (
+                  <MiniMetric
+                    label="Principal write-offs"
+                    value={formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}
+                    meta="Rounding and explicit principal write-off adjustments"
+                  />
+                ) : null}
               </div>
             </article>
           ) : null}
