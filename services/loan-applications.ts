@@ -106,3 +106,9 @@ export function undoLoanApplicationApproval(applicationId: string) {
     method: 'PATCH',
   })
 }
+
+export function deleteLoanApplication(applicationId: string) {
+  return apiRequest<void>(`/api/loan-applications/${applicationId}`, {
+    method: 'DELETE',
+  })
+}
