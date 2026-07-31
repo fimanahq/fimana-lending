@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button, CardWrapper, Checkbox, ErrorBanner, ErrorState, Input, LoadingState, PageContainer, SearchableSelect, Switch, useToast } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
+import { formatDate } from '@/lib/format'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types/shared'
 import { getSettings, updateSettings } from '@/services'
 
@@ -68,6 +69,10 @@ function parseDefaultPenaltyRate(value: string) {
   }
 
   return { value: Math.round(parsed * 100) }
+}
+
+function formatCount(value: number) {
+  return new Intl.NumberFormat('en-PH').format(value)
 }
 
 function validateForm(form: SettingsFormState): SettingsFormErrors {
@@ -428,6 +433,26 @@ export function WorkspaceSettingsForm() {
               checked={form.includeLoanPaymentsInTreasuryByDefault}
               onChange={(event) => updateField('includeLoanPaymentsInTreasuryByDefault', event.target.checked)}
             />
+          </CardWrapper>
+
+          <CardWrapper title="Email usage">
+            <div className="stack">
+              <div className="data-card">
+                <div className="muted">Current month</div>
+                <strong>{formatCount(settings.emailSentCurrentMonthCount ?? 0)}</strong>
+                <div className="muted">{settings.emailSentCurrentMonthKey ? `${settings.emailSentCurrentMonthKey} UTC` : 'Current UTC month'}</div>
+              </div>
+
+              <div className="data-card">
+                <div className="muted">Lifetime sent</div>
+                <strong>{formatCount(settings.emailSentCount ?? 0)}</strong>
+              </div>
+
+              <div className="data-card">
+                <div className="muted">Last sent</div>
+                <strong>{settings.emailSentLastAt ? formatDate(settings.emailSentLastAt) : 'Never'}</strong>
+              </div>
+            </div>
           </CardWrapper>
         </div>
 

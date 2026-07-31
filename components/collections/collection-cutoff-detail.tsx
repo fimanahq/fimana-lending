@@ -108,7 +108,7 @@ export function CollectionCutoffDetail({
               <th>Remaining</th>
               <th>Cutoff status</th>
               <th>Loan status</th>
-              <th><span className="ui-sr-only">Actions</span></th>
+              <th className={styles.detailActionColumn}><span className="ui-sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -128,7 +128,7 @@ export function CollectionCutoffDetail({
                   <td>{formatMinorCurrency(loan.remainingMinor, currency)}</td>
                   <td><span className={`status-pill ${collectionStatus}`}>{getLoanCollectionStatusLabel(collectionStatus)}</span></td>
                   <td><span className={`status-pill ${loan.loanStatus}`}>{loan.loanStatus === 'completed' ? 'Completed' : 'Active'}</span></td>
-                  <td className={styles.actions}>
+                  <td className={`${styles.actions} ${styles.detailActionColumn}`}>
                     <button
                       type="button"
                       className="button-ghost table-action-icon"

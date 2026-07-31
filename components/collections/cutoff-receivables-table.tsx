@@ -3,6 +3,7 @@ import { DataTable, EmptyState, Pagination, TableShell } from '@/components/shar
 import { ViewIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { CollectionsPagination, DashboardCutoffReceivable } from '@/lib/types/lending'
+import { classNames } from '@/utils/class-names'
 import { getReceivableStatusLabel } from './collections-data'
 import styles from './collections.module.css'
 
@@ -57,14 +58,14 @@ export function CutoffReceivablesTable({
               <th>Borrowers</th>
               <th>Unpaid borrowers</th>
               <th>Status</th>
-              {onSelectCutoff ? <th><span className="ui-sr-only">Actions</span></th> : null}
+              {onSelectCutoff ? <th className={styles.cutoffActionColumn}><span className="ui-sr-only">Actions</span></th> : null}
             </tr>
           </thead>
           <tbody>
             {receivables.map((entry) => (
               <tr
                 key={entry.cutoffDate}
-                className={onSelectCutoff ? 'table-row-link' : undefined}
+                className={classNames(onSelectCutoff && 'table-row-link', onSelectCutoff && styles.cutoffRowLink)}
                 tabIndex={onSelectCutoff ? 0 : undefined}
                 role={onSelectCutoff ? 'link' : undefined}
                 aria-label={onSelectCutoff ? `View loans in cutoff on ${formatDate(entry.cutoffDate)}` : undefined}
@@ -81,7 +82,7 @@ export function CutoffReceivablesTable({
                 <td>{entry.unpaidBorrowerCount.toLocaleString('en-PH')}</td>
                 <td><span className={`status-pill ${entry.status}`}>{getReceivableStatusLabel(entry.status)}</span></td>
                 {onSelectCutoff ? (
-                  <td className={styles.actions}>
+                  <td className={`${styles.actions} ${styles.cutoffActionColumn}`}>
                     <button
                       type="button"
                       className="button-ghost table-action-icon"
