@@ -10,6 +10,7 @@ import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, L
 import { DeleteIcon, ViewIcon } from '@/components/shared/table-icons'
 import { classNames } from '@/utils/class-names'
 import toolbarStyles from '@/components/shared/list-toolbar.module.css'
+import styles from './loan-application-list.module.css'
 
 type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
 
@@ -247,7 +248,7 @@ export function LoanApplicationList() {
                         {application.status === 'submitted' ? (
                           <button
                             type="button"
-                            className="button-ghost table-action-icon ui-button--danger"
+                            className={classNames('button-ghost table-action-icon', styles.deleteButton)}
                             aria-label={`Delete application for ${getApplicantName(application)}`}
                             title="Delete application"
                             onClick={(event) => {
