@@ -271,12 +271,20 @@ export function LoanAdjustmentDialog({
             <Card title={`${loan.borrower.displayName} · ${loan.loanNumber}`}>
               <div className="application-summary-grid">
                 <div className="data-card">
+                  <span className="muted">Outstanding principal</span>
+                  <strong>{formatMinorCurrency(loan.balances.principalOutstandingAmountMinor, currency)}</strong>
+                </div>
+                <div className="data-card">
                   <span className="muted">Outstanding interest</span>
                   <strong>{formatMinorCurrency(loan.balances.interestOutstandingAmountMinor, currency)}</strong>
                 </div>
                 <div className="data-card">
                   <span className="muted">Outstanding total</span>
                   <strong>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, currency)}</strong>
+                </div>
+                <div className="data-card">
+                  <span className="muted">Outstanding penalty</span>
+                  <strong>{formatMinorCurrency(loan.balances.penaltyOutstandingAmountMinor ?? 0, currency)}</strong>
                 </div>
                 <div className="data-card">
                   <span className="muted">Next due</span>
