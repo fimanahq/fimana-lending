@@ -106,10 +106,16 @@ function ProgressSegmentLedger({
 }
 
 function MixContext({
+  breakdown,
   label,
   meta,
   value,
 }: {
+  breakdown?: Array<{
+    label: string
+    value: string
+    meta?: string
+  }>
   label: string
   meta: string
   value: string
@@ -119,6 +125,19 @@ function MixContext({
       <span>{label}</span>
       <strong>{value}</strong>
       <span>{meta}</span>
+      {breakdown && breakdown.length > 0 ? (
+        <div className={dashboardClass('dashboard-overview__mixContextBreakdown')} aria-label={`${label} breakdown`}>
+          {breakdown.map((item) => (
+            <div className={dashboardClass('dashboard-overview__mixContextBreakdownRow')} key={item.label}>
+              <span className={dashboardClass('dashboard-overview__mixContextBreakdownLabel')}>
+                <span>{item.label}</span>
+                {item.meta ? <span>{item.meta}</span> : null}
+              </span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -141,6 +160,23 @@ function ProfitOutlookPanel({
   const businessExpenseMinor = summary.profitOutlookBusinessExpenseMinor ?? summary.businessExpenseMinor ?? 0
   const totalExpenseMinor = rewardExpenseMinor + businessExpenseMinor
   const capitalLossesMinor = summary.writtenOffPrincipalMinor + summary.principalWriteOffLossMinor
+  const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
+  const capitalLossBreakdown = [
+    summary.writtenOffPrincipalMinor > 0
+      ? {
+        label: 'Defaulted principal',
+        value: formatMinorCurrency(summary.writtenOffPrincipalMinor, currency),
+        meta: `Across ${defaultedLoanLabel}`,
+      }
+      : null,
+    summary.principalWriteOffLossMinor > 0
+      ? {
+        label: 'Principal capital losses',
+        value: formatMinorCurrency(summary.principalWriteOffLossMinor, currency),
+        meta: 'Principal write-offs and principal rounding write-offs',
+      }
+      : null,
+  ].filter((item): item is { label: string; value: string; meta: string } => item !== null)
   const hasProfitOutlook = grossTotalProjectedProfitMinor > 0 || totalExpenseMinor > 0
   const hasPositiveNetProfit = totalProjectedProfitMinor > 0
 
@@ -226,6 +262,7 @@ function ProfitOutlookPanel({
           ) : null}
           {capitalLossesMinor > 0 ? (
             <MixContext
+              breakdown={capitalLossBreakdown}
               label="Capital losses"
               meta="Excluded from Profit Outlook; reflected in Current capital basis"
               value={formatMinorCurrency(capitalLossesMinor, currency)}
@@ -487,8 +524,8 @@ function CurrentCapitalPositionPanel({
   const availableCapitalPercentage = availableCapitalSegment?.percentage ?? 0
 
   return (
-    <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard')}>
-      <div className={dashboardClass('dashboard-overview__progressHeader')}>
+    <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard', 'dashboard-overview__currentCapitalCard')}>
+      <div className={dashboardClass('dashboard-overview__progressHeader', 'dashboard-overview__currentCapitalHeader')}>
         <div>
           <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
           <h2>Where current capital sits</h2>
