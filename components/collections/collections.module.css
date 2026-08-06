@@ -192,10 +192,6 @@
 }
 
 @media (max-width: 980px) {
-  .cutoffActionColumn {
-    display: none !important;
-  }
-
   .detailActionColumn {
     width: auto;
     text-align: left !important;
@@ -203,16 +199,6 @@
 
   .detailActionColumn :global(.table-action-icon) {
     justify-self: end;
-  }
-
-  .cutoffRowLink:hover td {
-    background: transparent;
-    box-shadow: none;
-  }
-
-  .cutoffRowLink:focus-visible {
-    outline: 2px solid rgba(146, 75, 16, 0.38);
-    outline-offset: 3px;
   }
 }
 

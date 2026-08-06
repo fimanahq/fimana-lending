@@ -58,14 +58,14 @@ export function CutoffReceivablesTable({
               <th>Borrowers</th>
               <th>Unpaid borrowers</th>
               <th>Status</th>
-              {onSelectCutoff ? <th className={styles.cutoffActionColumn}><span className="ui-sr-only">Actions</span></th> : null}
+              {onSelectCutoff ? <th className={classNames(styles.cutoffActionColumn, 'mobile-table-action-cell--view-only')}><span className="ui-sr-only">Actions</span></th> : null}
             </tr>
           </thead>
           <tbody>
             {receivables.map((entry) => (
               <tr
                 key={entry.cutoffDate}
-                className={classNames(onSelectCutoff && 'table-row-link', onSelectCutoff && styles.cutoffRowLink)}
+                className={classNames(onSelectCutoff && 'table-row-link')}
                 tabIndex={onSelectCutoff ? 0 : undefined}
                 role={onSelectCutoff ? 'link' : undefined}
                 aria-label={onSelectCutoff ? `View loans in cutoff on ${formatDate(entry.cutoffDate)}` : undefined}
@@ -82,7 +82,7 @@ export function CutoffReceivablesTable({
                 <td>{entry.unpaidBorrowerCount.toLocaleString('en-PH')}</td>
                 <td><span className={`status-pill ${entry.status}`}>{getReceivableStatusLabel(entry.status)}</span></td>
                 {onSelectCutoff ? (
-                  <td className={`${styles.actions} ${styles.cutoffActionColumn}`}>
+                  <td className={classNames(styles.actions, styles.cutoffActionColumn, 'mobile-table-action-cell--view-only')}>
                     <button
                       type="button"
                       className="button-ghost table-action-icon"

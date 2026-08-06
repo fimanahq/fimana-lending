@@ -336,7 +336,7 @@ export function LoansList({ listState }: LoansListProps) {
                       <div className={styles.actions}>
                         <Link
                           href={buildLoanDetailPath(loan.id, currentListPath)}
-                          className={classNames('button-ghost table-action-icon', styles.iconAction)}
+                          className={classNames('button-ghost table-action-icon mobile-table-action--duplicate-view', styles.iconAction)}
                           aria-label={`View details for ${loan.loanNumber}`}
                           title="View details"
                           onClick={(event) => event.stopPropagation()}
