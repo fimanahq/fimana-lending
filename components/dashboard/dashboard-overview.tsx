@@ -585,24 +585,33 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} realized profit · {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} capital losses
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)} net capital movement · {formatMinorCurrency(summary.netCollectedProfitMinor, dashboardCurrency)} net realized profit · {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} capital losses
             </span>
             <StatInfoDisclosure id="current-capital-basis-info" label="Show current capital basis details">
-              <span>Formula: starting capital + realized profit - capital losses.</span>
+              <span>Formula: starting capital + net capital movement + net realized profit - capital losses.</span>
               <br />
               <br />
               <span>Starting capital: {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)}</span>
               <br />
+              <span>Capital deposits: {formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Capital withdrawals: {formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Net capital movement: {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)}</span>
+              <br />
               <span>Realized profit: {formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} from collected interest, penalties, excess-payment profit, and Treasury interest.</span>
+              <br />
+              <span>Reward expenses: {formatMinorCurrency(summary.rewardExpenseMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Business expenses: {formatMinorCurrency(summary.businessExpenseMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Net realized profit: {formatMinorCurrency(summary.netCollectedProfitMinor, dashboardCurrency)}</span>
               <br />
               <span>Capital losses: {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} total.</span>
               <br />
               <span>Defaulted principal: {formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}</span>
               <br />
-              <span>Principal write-offs / rounding write-offs: {formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}</span>
-              <br />
-              <br />
-              <span>Treasury capital deposits, withdrawals, reward expenses, and business expenses stay in cash reconciliation, not capital basis.</span>
+              <span>Principal capital losses: {formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}</span>
             </StatInfoDisclosure>
             <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
               <OverviewGlyph name="money" />
@@ -617,7 +626,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <span className={dashboardClass('dashboard-overview__statSubvalue')}>
               {summary.treasuryCashOnHandMinor !== null
                 ? `Calculated lending cash: ${formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency)}`
-                : 'Current capital basis less active principal and write-offs, net of booked expenses'}
+                : 'Current capital basis less active principal'}
             </span>
             <StatInfoDisclosure id="cash-on-hand-info" label="Show cash on hand details">
               {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury.' : 'Calculated amount available to lend.'}
@@ -751,7 +760,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                   <span className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</span>
                   <h2>Capital losses</h2>
                   <p>
-                    Defaulted principal and principal write-offs are excluded from active receivables and deducted from current capital basis.
+                    Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
                   </p>
                 </div>
               </div>
@@ -777,9 +786,9 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 ) : null}
                 {summary.principalWriteOffLossMinor > 0 ? (
                   <MiniMetric
-                    label="Principal write-offs"
+                    label="Principal capital losses"
                     value={formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}
-                    meta="Rounding and explicit principal write-off adjustments"
+                    meta="Principal write-offs and principal rounding write-offs"
                   />
                 ) : null}
               </div>
