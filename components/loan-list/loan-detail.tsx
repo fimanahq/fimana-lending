@@ -725,7 +725,14 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
 
       <Card
         title={loan.loanNumber}
-        description={`Application ${loan.loanApplicationId}`}
+        description={(
+          <>
+            Application{' '}
+            <Link href={`/loan-applications/${loan.loanApplicationId}`} className="data-card__titleLink">
+              {loan.loanApplicationId}
+            </Link>
+          </>
+        )}
         actions={<span className={getStatusClassName(loan.status)}>{formatLoanStatus(loan.status)}</span>}
       >
         <div className="application-summary-grid">

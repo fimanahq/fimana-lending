@@ -286,7 +286,15 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
         <div className="application-summary-grid">
           <div className="data-card">
             <span className="muted">Borrower</span>
-            <strong>{getApplicantName(application)}</strong>
+            <strong>
+              {application.borrower?.id ? (
+                <Link href={`/borrowers/${application.borrower.id}`} className="data-card__titleLink">
+                  {getApplicantName(application)}
+                </Link>
+              ) : (
+                getApplicantName(application)
+              )}
+            </strong>
           </div>
           <div className="data-card">
             <span className="muted">{loanApplicationLabels.loanAmount}</span>

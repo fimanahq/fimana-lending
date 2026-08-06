@@ -10,7 +10,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 export interface CardProps extends HTMLAttributes<HTMLElement> {
   actions?: ReactNode
-  description?: string
+  description?: ReactNode
   title?: string
   variant?: 'default' | 'flat'
 }

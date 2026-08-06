@@ -249,6 +249,26 @@ h4 {
   font-family: var(--font-heading), sans-serif;
   font-weight: 700;
 }
+
+a:where(
+  :not(.button):not(.button-secondary):not(.button-ghost):not(.table-action-icon):not(.data-card__titleLink):not(.text-link-hover-exempt):not([class*='ui-pagination__control']):not([class*='dashboard-shell__navLink']):not([class*='dashboard-shell__sidebarBrand']):not([class*='dashboard-overview__clientCell']):not([class*='dashboard-overview__recentApplicationTileHeader']):not([class*='landing-homepage__']):not([class*='landing-nav-link']):not([class*='request-homepage__']):not([class*='signin-page__']):not([class*='public-site'])
+) {
+  text-decoration: none;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 160ms ease, color 160ms ease;
+}
+
+a:where(
+  :not(.button):not(.button-secondary):not(.button-ghost):not(.table-action-icon):not(.data-card__titleLink):not(.text-link-hover-exempt):not([class*='ui-pagination__control']):not([class*='dashboard-shell__navLink']):not([class*='dashboard-shell__sidebarBrand']):not([class*='dashboard-overview__clientCell']):not([class*='dashboard-overview__recentApplicationTileHeader']):not([class*='landing-homepage__']):not([class*='landing-nav-link']):not([class*='request-homepage__']):not([class*='signin-page__']):not([class*='public-site'])
+):hover,
+a:where(
+  :not(.button):not(.button-secondary):not(.button-ghost):not(.table-action-icon):not(.data-card__titleLink):not(.text-link-hover-exempt):not([class*='ui-pagination__control']):not([class*='dashboard-shell__navLink']):not([class*='dashboard-shell__sidebarBrand']):not([class*='dashboard-overview__clientCell']):not([class*='dashboard-overview__recentApplicationTileHeader']):not([class*='landing-homepage__']):not([class*='landing-nav-link']):not([class*='request-homepage__']):not([class*='signin-page__']):not([class*='public-site'])
+):focus-visible {
+  text-decoration: underline;
+  text-decoration-color: rgba(146, 75, 16, 0.34);
+}
+
 .data-card {
   display: grid;
   gap: 0.85rem;
