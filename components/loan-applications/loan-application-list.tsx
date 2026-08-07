@@ -233,11 +233,11 @@ export function LoanApplicationList() {
                       </span>
                     </td>
                     <td>{formatDate(application.createdAt)}</td>
-                    <td>
+                    <td className={application.status === 'submitted' ? undefined : 'mobile-table-action-cell--view-only'}>
                       <div className="inline-actions">
                         <Link
                           href={`/loan-applications/${application.id}`}
-                          className="button-ghost table-action-icon"
+                          className="button-ghost table-action-icon mobile-table-action--duplicate-view"
                           aria-label={`View application details for ${getApplicantName(application)}`}
                           title="View details"
                           onClick={(event) => event.stopPropagation()}

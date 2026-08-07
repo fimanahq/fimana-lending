@@ -245,7 +245,7 @@ export function BorrowerList() {
                       )}
                     </td>
 
-                    <td>
+                    <td className="mobile-table-action-cell--view-only">
                       <Link
                         href={`/borrowers/${borrower.id}`}
                         className="button-ghost table-action-icon"
