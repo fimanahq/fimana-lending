@@ -268,7 +268,7 @@ export function LoginForm({ lenderSlug, lenderName }: LoginFormProps = {}) {
           <span className={styles.submitArrow} aria-hidden="true">-&gt;</span>
         </Button>
 
-        <a className={styles.google} href={googleHref}>
+        <a className={classNames(styles.google, 'text-link-hover-exempt')} href={googleHref}>
           <span className={styles.googleIcon} aria-hidden="true">
             G
           </span>

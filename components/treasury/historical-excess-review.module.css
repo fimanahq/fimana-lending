@@ -24,15 +24,19 @@
 
 .loanLink {
   color: inherit;
+  font-family: var(--font-heading), sans-serif;
   font-weight: 700;
   text-decoration: none;
+  text-decoration-thickness: 2px;
   text-underline-offset: 0.2em;
+  transition: text-decoration-color 160ms ease, color 160ms ease;
 }
 
 .loanLink:hover,
 .loanLink:focus-visible {
-  color: #2563eb;
+  color: inherit;
   text-decoration: underline;
+  text-decoration-color: rgba(146, 75, 16, 0.34);
 }
 
 @media (max-width: 700px) {
