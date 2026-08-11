@@ -955,15 +955,172 @@
   margin-left: auto;
 }
 
+.dashboard-overview__interestChartFrame {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.dashboard-overview__interestChartToolbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dashboard-overview__interestChartToolbarCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.dashboard-overview__interestChartToolbarCopy strong {
+  color: #17140f;
+  font-family: var(--font-heading), sans-serif;
+  font-size: 0.88rem;
+}
+
+.dashboard-overview__interestChartToolbarCopy span {
+  color: rgba(84, 67, 57, 0.74);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.dashboard-overview__interestChartFullscreenButton {
+  width: 2.375rem;
+  min-width: 2.375rem;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.dashboard-overview__interestChartFullscreenButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dashboard-overview__interestChartToolbarPlaceholder {
+  width: 2.375rem;
+  height: 2.375rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(97, 84, 62, 0.09);
+}
+
+.dashboard-overview__interestChartRotateHint {
+  display: none;
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.85rem;
+  background: rgba(146, 75, 16, 0.1);
+  color: var(--accent-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dashboard-overview__interestChartLegend,
+.dashboard-overview__interestChartLegendPlaceholder {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  margin: 0;
+  padding: 0 0.5rem;
+}
+
+.dashboard-overview__interestChartLegend {
+  list-style: none;
+}
+
+.dashboard-overview__interestChartLegendItem {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+  color: rgba(84, 67, 57, 0.82);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.dashboard-overview__interestChartLegendSwatch {
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.dashboard-overview__interestChartLegendSwatch--bar {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 0.2rem;
+  background: currentColor;
+}
+
+.dashboard-overview__interestChartLegendSwatch--line,
+.dashboard-overview__interestChartLegendSwatch--line-dashed {
+  width: 1.15rem;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.dashboard-overview__interestChartLegendSwatch--line-dashed {
+  border-top-style: dashed;
+}
+
+.dashboard-overview__interestChartLegendPlaceholder span {
+  width: 6.5rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  background: rgba(97, 84, 62, 0.09);
+}
+
 .dashboard-overview__interestChart {
+  box-sizing: border-box;
   width: 100%;
   height: 22rem;
   min-height: 22rem;
   margin: 0;
   padding: 0.75rem 0.5rem 0.25rem;
+  overflow: hidden;
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.64);
   border: 1px solid rgba(97, 84, 62, 0.1);
+}
+
+.dashboard-overview__interestChartFrame--expanded,
+.dashboard-overview__interestChartFrame:fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  width: 100dvw;
+  height: 100dvh;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0.5rem;
+  overflow: hidden;
+  padding:
+    max(0.65rem, env(safe-area-inset-top))
+    max(0.75rem, env(safe-area-inset-right))
+    max(0.65rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+  background: #f8f1e2;
+}
+
+.dashboard-overview__interestChartFrame--expanded .dashboard-overview__interestChartToolbar,
+.dashboard-overview__interestChartFrame:fullscreen .dashboard-overview__interestChartToolbar {
+  display: flex;
+}
+
+.dashboard-overview__interestChartFrame--expanded .dashboard-overview__interestChartLegend,
+.dashboard-overview__interestChartFrame:fullscreen .dashboard-overview__interestChartLegend {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.dashboard-overview__interestChartFrame--expanded .dashboard-overview__interestChart,
+.dashboard-overview__interestChartFrame:fullscreen .dashboard-overview__interestChart {
+  height: 100%;
+  min-height: 0;
+  border-radius: 1rem;
 }
 
 .dashboard-overview__receivableTables {
@@ -2130,11 +2287,24 @@
   .dashboard-overview__interestChart {
     height: 18rem;
     min-height: 18rem;
+  }
+
+  .dashboard-overview__interestChartToolbar {
+    display: flex;
+  }
+
+  .dashboard-overview__interestChartLegend {
+    flex-wrap: nowrap;
     overflow-x: auto;
+    scrollbar-width: thin;
   }
 }
 
 @media (max-width: 560px) {
+  .dashboard-overview__interestChartToolbarCopy span {
+    display: none;
+  }
+
   .dashboard-shell__topbar {
     gap: 0.65rem;
     padding: 0.6rem 0.75rem 0.7rem;
@@ -2154,4 +2324,16 @@
     flex: 0 0 auto;
   }
 
+}
+
+@media (max-width: 980px) and (orientation: portrait) {
+  .dashboard-overview__interestChartFrame--expanded,
+  .dashboard-overview__interestChartFrame:fullscreen {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+
+  .dashboard-overview__interestChartFrame--expanded .dashboard-overview__interestChartRotateHint,
+  .dashboard-overview__interestChartFrame:fullscreen .dashboard-overview__interestChartRotateHint {
+    display: block;
+  }
 }
