@@ -773,7 +773,7 @@ export function TreasuryWorkspace() {
                     <th>Type</th>
                     <th className={styles.amountColumn}>Amount</th>
                     <th>Status</th>
-                    <th>Action</th>
+                    <th className={styles.actionColumn}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -809,32 +809,33 @@ export function TreasuryWorkspace() {
                       <td>
                         <span className={styles.statusText}>{getMovementStatus(movement)}</span>
                       </td>
-                      <td>
-                        {canReverseInterest(movement) ? (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => openInterestReversal(movement)}
-                            aria-label={`Reverse ${movement.description || 'interest posting'}`}
-                            title="Reverse interest posting"
-                          >
-                            <RotateCcw aria-hidden="true" size={15} />
-                          </Button>
-                        ) : null}
-                        {canDeleteMovement(movement) ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className={`table-action-icon ${styles.deleteIconButton}`}
-                            onClick={() => setSelectedDeleteMovement(movement)}
-                            aria-label={`Delete ${movement.description || formatMovementType(movement)}`}
-                            title="Delete Treasury movement"
-                          >
-                            <DeleteIcon />
-                          </Button>
-                        ) : null}
+                      <td className={styles.actionColumn}>
+                        <div className={styles.rowActions}>
+                          {canReverseInterest(movement) ? (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => openInterestReversal(movement)}
+                              aria-label={`Reverse ${movement.description || 'interest posting'}`}
+                              title="Reverse interest posting"
+                            >
+                              <RotateCcw aria-hidden="true" size={15} />
+                            </Button>
+                          ) : null}
+                          {canDeleteMovement(movement) ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className={`table-action-icon ${styles.deleteIconButton}`}
+                              onClick={() => setSelectedDeleteMovement(movement)}
+                              aria-label={`Delete ${movement.description || formatMovementType(movement)}`}
+                              title="Delete Treasury movement"
+                            >
+                              <DeleteIcon />
+                            </Button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
