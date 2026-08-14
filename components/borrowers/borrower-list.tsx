@@ -7,7 +7,7 @@ import {
   Button,
   EmptyState,
   ErrorState,
-  Input,
+  ListToolbar,
   LoadingState,
   PageContainer,
   Pagination,
@@ -17,8 +17,6 @@ import {
 import { ViewIcon } from '@/components/shared/table-icons'
 import type { Borrower } from '@/lib/types/lending'
 import { listBorrowersPaginated } from '@/services'
-import { classNames } from '@/utils/class-names'
-import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 
 type BorrowerListFilter = 'all' | 'defaulted'
 
@@ -41,21 +39,12 @@ export function BorrowerList() {
   const [loading, setLoading] = useState(true)
 
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<BorrowerListFilter>('all')
 
   const [page, setPage] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const [totalPages, setTotalPages] = useState(1)
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedQuery(query.trim())
-      setPage(1)
-    }, 300)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [query])
 
   const loadBorrowers = useCallback(async () => {
     setLoading(true)
@@ -65,7 +54,7 @@ export function BorrowerList() {
       const response = await listBorrowersPaginated({
         page,
         itemsPerPage: ITEMS_PER_PAGE,
-        search: debouncedQuery,
+        search: searchQuery,
         hasDefaultedLoan: activeFilter === 'defaulted' ? true : undefined,
       })
 
@@ -77,7 +66,7 @@ export function BorrowerList() {
     } finally {
       setLoading(false)
     }
-  }, [page, debouncedQuery, activeFilter])
+  }, [page, searchQuery, activeFilter])
 
   useEffect(() => {
     void loadBorrowers()
@@ -96,43 +85,37 @@ export function BorrowerList() {
 
   const clearSearch = () => {
     setQuery('')
-    setDebouncedQuery('')
+    setSearchQuery('')
+    setPage(1)
+  }
+
+  const applySearch = () => {
+    setSearchQuery(query.trim())
     setPage(1)
   }
 
   return (
     <PageContainer>
-      <div className={classNames('card panel', toolbarStyles.toolbar)}>
-        <Input
-          id="borrower-search"
-          label="Search borrowers"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, email, phone, or notes"
-        />
-
-        <div className={classNames('inline-actions', toolbarStyles.actions)}>
+      <ListToolbar
+        activeFilter={activeFilter}
+        filterLabel="Borrower list filters"
+        filters={BORROWER_FILTERS}
+        searchId="borrower-search"
+        searchLabel="Search borrowers"
+        searchPlaceholder="Name, email, phone, or notes"
+        searchValue={query}
+        onSearchChange={setQuery}
+        onSearchSubmit={applySearch}
+        onFilterChange={(filter) => {
+          setActiveFilter(filter)
+          setPage(1)
+        }}
+        actions={(
           <Link href="/borrowers/new" className="button">
             Add borrower
           </Link>
-        </div>
-      </div>
-
-      <div className="application-status-tabs" aria-label="Borrower list filters">
-        {BORROWER_FILTERS.map((filter) => (
-          <button
-            key={filter.value}
-            type="button"
-            className={activeFilter === filter.value ? 'is-active' : ''}
-            onClick={() => {
-              setActiveFilter(filter.value)
-              setPage(1)
-            }}
-          >
-            {filter.label}
-          </button>
-        ))}
-      </div>
+        )}
+      />
 
       {loading ? (
         <LoadingState title="Loading borrowers" description="Fetching borrower records from the service." />
@@ -150,7 +133,7 @@ export function BorrowerList() {
         />
       ) : null}
 
-      {!loading && !error && borrowers.length === 0 && !debouncedQuery && activeFilter === 'all' ? (
+      {!loading && !error && borrowers.length === 0 && !searchQuery && activeFilter === 'all' ? (
         <EmptyState
           title="No borrowers yet"
           description="Add the first borrower profile before issuing or tracking loans."
@@ -164,14 +147,14 @@ export function BorrowerList() {
 
       {!loading && !error && borrowers.length === 0 && activeFilter === 'defaulted' ? (
         <EmptyState
-          title={debouncedQuery ? 'No defaulted borrowers match your search' : 'No defaulted borrowers'}
+          title={searchQuery ? 'No defaulted borrowers match your search' : 'No defaulted borrowers'}
           description={
-            debouncedQuery
+            searchQuery
               ? 'Clear the search or return to all borrowers.'
               : 'Borrowers with defaulted loans will appear here.'
           }
           action={
-            debouncedQuery ? (
+            searchQuery ? (
               <Button variant="ghost" onClick={clearSearch}>
                 Clear search
               </Button>
@@ -180,7 +163,7 @@ export function BorrowerList() {
         />
       ) : null}
 
-      {!loading && !error && borrowers.length === 0 && debouncedQuery && activeFilter === 'all' ? (
+      {!loading && !error && borrowers.length === 0 && searchQuery && activeFilter === 'all' ? (
         <EmptyState
           title="No borrowers match your search"
           description="Clear the search to return to the full borrower list."

@@ -6,10 +6,9 @@ import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { LoanApplicationStatus, LoanApplication } from '@/lib/types/lending'
 import { deleteLoanApplication, listLoanApplications } from '@/services'
-import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, ListToolbar, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
 import { DeleteIcon, ViewIcon } from '@/components/shared/table-icons'
 import { classNames } from '@/utils/class-names'
-import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 import styles from './loan-application-list.module.css'
 
 type LoanApplicationQueueFilter = 'all' | Extract<LoanApplicationStatus, 'submitted' | 'approved' | 'rejected'>
@@ -41,7 +40,7 @@ export function LoanApplicationList() {
   const [applications, setApplications] = useState<LoanApplication[]>([])
   const [activeStatus, setActiveStatus] = useState<LoanApplicationQueueFilter>('all')
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalApplications, setTotalApplications] = useState(0)
@@ -50,15 +49,6 @@ export function LoanApplicationList() {
   const [deleting, setDeleting] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedQuery(query.trim())
-      setPage(1)
-    }, 300)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [query])
-
   const loadApplications = useCallback(async () => {
     setError('')
     setLoading(true)
@@ -66,7 +56,7 @@ export function LoanApplicationList() {
     try {
       const response = await listLoanApplications({
         status: activeStatus === 'all' ? undefined : activeStatus,
-        search: debouncedQuery,
+        search: searchQuery,
         page,
         itemsPerPage: PAGE_SIZE,
       })
@@ -79,7 +69,7 @@ export function LoanApplicationList() {
     } finally {
       setLoading(false)
     }
-  }, [activeStatus, debouncedQuery, page])
+  }, [activeStatus, searchQuery, page])
 
   useEffect(() => {
     void loadApplications()
@@ -125,37 +115,35 @@ export function LoanApplicationList() {
 
   const selectedDeleteApplication = applications.find((application) => application.id === deleteApplicationId) || null
 
+  const clearSearch = () => {
+    setQuery('')
+    setSearchQuery('')
+    setPage(1)
+  }
+
+  const applySearch = () => {
+    setSearchQuery(query.trim())
+    setPage(1)
+  }
+
   return (
     <div className="stack">
-      <div className={classNames('card panel', toolbarStyles.toolbar)}>
-        <Input
-          id="application-borrower-search"
-          label="Search borrowers"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Name, borrower number, mobile, or email"
-        />
-
-        <div className={classNames('inline-actions', toolbarStyles.actions)}>
-          <Link href="/loan-applications/new" className="button">New application</Link>
-        </div>
-      </div>
-
-      <div className="application-status-tabs" aria-label="Application status filters">
-        {STATUS_FILTERS.map((status) => (
-          <button
-            key={status.value}
-            type="button"
-            className={activeStatus === status.value ? 'is-active' : ''}
-            onClick={() => {
-              setActiveStatus(status.value)
-              setPage(1)
-            }}
-          >
-            {status.label}
-          </button>
-        ))}
-      </div>
+      <ListToolbar
+        activeFilter={activeStatus}
+        filterLabel="Application status filters"
+        filters={STATUS_FILTERS}
+        searchId="application-borrower-search"
+        searchLabel="Search loan applications"
+        searchPlaceholder="Name, borrower number, mobile, or email"
+        searchValue={query}
+        onSearchChange={setQuery}
+        onSearchSubmit={applySearch}
+        onFilterChange={(status) => {
+          setActiveStatus(status)
+          setPage(1)
+        }}
+        actions={<Link href="/loan-applications/new" className="button">New application</Link>}
+      />
 
       {error ? (
         <ErrorState
@@ -171,13 +159,19 @@ export function LoanApplicationList() {
 
       {!loading && !error && applications.length === 0 ? (
         <EmptyState
-          title={activeStatus === 'all' ? 'No applications yet' : 'No applications match this status'}
+          title={searchQuery
+            ? 'No applications match your search'
+            : activeStatus === 'all' ? 'No applications yet' : 'No applications match this status'}
           description={
-            activeStatus === 'all'
+            searchQuery
+              ? 'Clear the search or try a different status filter.'
+              : activeStatus === 'all'
               ? 'Create an application to preview terms and submit it for review.'
               : 'Try another status filter or create a new application.'
           }
-          action={<Link href="/loan-applications/new" className="button">New application</Link>}
+          action={searchQuery
+            ? <Button variant="ghost" onClick={clearSearch}>Clear search</Button>
+            : <Link href="/loan-applications/new" className="button">New application</Link>}
         />
       ) : null}
 

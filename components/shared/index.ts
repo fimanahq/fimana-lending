@@ -9,6 +9,7 @@ export {
 } from './page-patterns'
 export { Button, Checkbox, Input, Select, Switch, Textarea } from './forms'
 export { SearchableSelect, type SearchableSelectOption, type SearchableSelectProps } from './searchable-select'
+export { ListToolbar, type ListToolbarFilter, type ListToolbarProps } from './list-toolbar'
 export { Badge, Card, DataTable, ErrorBanner, Skeleton, TableShell } from './display'
 export { ConfirmationDialog, Dialog } from './dialog'
 export { Pagination } from './pagination/pagination'
