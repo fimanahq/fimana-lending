@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import styles from './loan-application-intake-form.module.css'
 import { getLoanApplicationValidationResult, validateLoanApplicationInput } from '@/lib/loan-application-validation'
 import type { ValidatedLoanApplicationInput } from '@/lib/loan-application-validation'
+import { getInstallmentTermGuidance } from '@/lib/installment-term-guidance'
 import { getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import type { LoanApplication } from '@/lib/types/lending'
 import { createPublicLoanApplication, sendPublicApplicationEmailVerification } from '@/services'
@@ -492,7 +494,7 @@ export function LoanApplicationIntakeForm({
         </div>
       </div>
 
-      <div className="request-loan-form__grid">
+      <div className={`request-loan-form__grid ${styles.installmentsRow}`}>
         <div className="request-loan-form__field">
           <label htmlFor={`${idPrefix}Gives`}>Number of Installments</label>
           <input
@@ -501,11 +503,15 @@ export function LoanApplicationIntakeForm({
             min="1"
             inputMode="numeric"
             className={showDirtyField('gives', validation.errors.gives) ? 'request-loan-form__input--dirty' : ''}
+            aria-describedby={`${idPrefix}GivesHint`}
             aria-invalid={Boolean(getVisibleError('gives', touchedFields.gives))}
             value={form.gives}
             onBlur={() => markTouched('gives')}
             onChange={(event) => setForm((current) => ({ ...current, gives: event.target.value }))}
           />
+          <p id={`${idPrefix}GivesHint`} className={styles.fieldHint}>
+            {getInstallmentTermGuidance(form.gives, BORROWER_REQUEST_PAYMENT_FREQUENCY)}
+          </p>
           {getVisibleError('gives', touchedFields.gives) ? (
             <p className="request-loan-form__error">{getVisibleError('gives', touchedFields.gives)}</p>
           ) : null}

@@ -8,6 +8,7 @@ import type { LoanApplicationStatus, LoanApplication } from '@/lib/types/lending
 import { deleteLoanApplication, listLoanApplications } from '@/services'
 import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, ListToolbar, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
 import { DeleteIcon, ViewIcon } from '@/components/shared/table-icons'
+import { NewLoanApplicationButton } from './new-loan-application-button'
 import { classNames } from '@/utils/class-names'
 import styles from './loan-application-list.module.css'
 
@@ -142,7 +143,7 @@ export function LoanApplicationList() {
           setActiveStatus(status)
           setPage(1)
         }}
-        actions={<Link href="/loan-applications/new" className="button">New application</Link>}
+        actions={<NewLoanApplicationButton />}
       />
 
       {error ? (
@@ -171,7 +172,7 @@ export function LoanApplicationList() {
           }
           action={searchQuery
             ? <Button variant="ghost" onClick={clearSearch}>Clear search</Button>
-            : <Link href="/loan-applications/new" className="button">New application</Link>}
+            : <NewLoanApplicationButton variant="secondary" />}
         />
       ) : null}
 
