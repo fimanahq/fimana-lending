@@ -50,6 +50,16 @@ export interface Treasury {
 
 export type TreasuryMovementDirection = 'in' | 'out' | 'neutral'
 
+export type TreasuryMovementCategory = 'loan_disbursement' | 'disbursement_reversal' | 'loan_payment' | 'payment_reversal' | 'interest_earned' | 'interest_reversal' | 'reconciliation_credit' | 'reconciliation_debit' | 'capital_deposit' | 'capital_withdrawal' | 'business_expense' | 'excess_profit_reclassification' | 'excess_profit_reversal' | 'reward_expense'
+
+export interface TreasuryMovementFilters {
+  categories?: TreasuryMovementCategory[]
+  directions?: TreasuryMovementDirection[]
+  from?: string
+  to?: string
+  search?: string
+}
+
 export type TreasuryMovementType = 'lending_disbursement' | 'lending_payment' | 'treasury_interest_earned' | 'treasury_adjustment' | 'treasury_capital_movement' | 'treasury_profit_reclassification' | 'lending_reward_expense'
 
 export interface TreasuryMovement {

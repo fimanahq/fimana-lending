@@ -1,7 +1,7 @@
 'use client'
 
-import { ArrowLeftRight, HandCoins, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SquarePen, X } from 'lucide-react'
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { ArrowLeftRight, HandCoins, ListChecks, PlusCircle, RefreshCw, RotateCcw, Save, Scale, SlidersHorizontal, SquarePen, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   Badge,
   Button,
@@ -17,13 +17,20 @@ import {
   Pagination,
   ProtectedLink,
   SearchableSelect,
+  Select,
   TableShell,
   Textarea,
   useToast,
 } from '@/components/shared'
 import { DeleteIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDateTime } from '@/lib/format'
-import type { Treasury, TreasuryMovement } from '@/lib/types/shared'
+import type {
+  Treasury,
+  TreasuryMovement,
+  TreasuryMovementCategory,
+  TreasuryMovementDirection,
+  TreasuryMovementFilters,
+} from '@/lib/types/shared'
 import {
   createTreasuryAdjustment,
   createTreasuryCapitalMovement,
@@ -242,6 +249,29 @@ function canDeleteMovement(movement: TreasuryMovement) {
     && !movement.reversedByTransactionId
 }
 
+const MOVEMENT_CATEGORY_OPTIONS: Array<{ label: string; value: TreasuryMovementCategory }> = [
+  { label: 'Loan disbursements', value: 'loan_disbursement' },
+  { label: 'Disbursement reversals', value: 'disbursement_reversal' },
+  { label: 'Loan payments', value: 'loan_payment' },
+  { label: 'Payment reversals', value: 'payment_reversal' },
+  { label: 'Interest earned', value: 'interest_earned' },
+  { label: 'Interest reversals', value: 'interest_reversal' },
+  { label: 'Reconciliation credits', value: 'reconciliation_credit' },
+  { label: 'Reconciliation debits', value: 'reconciliation_debit' },
+  { label: 'Capital deposits', value: 'capital_deposit' },
+  { label: 'Capital withdrawals', value: 'capital_withdrawal' },
+  { label: 'Business expenses', value: 'business_expense' },
+  { label: 'Profit reclassifications', value: 'excess_profit_reclassification' },
+  { label: 'Profit reclassification reversals', value: 'excess_profit_reversal' },
+  { label: 'Reward expenses', value: 'reward_expense' },
+]
+
+const MOVEMENT_DIRECTION_OPTIONS: Array<{ label: string; value: TreasuryMovementDirection }> = [
+  { label: 'Money in', value: 'in' },
+  { label: 'Money out', value: 'out' },
+  { label: 'Neutral', value: 'neutral' },
+]
+
 export function TreasuryWorkspace() {
   const { dismiss, loading: showLoading, update } = useToast()
   const [treasury, setTreasury] = useState<Treasury | null>(null)
@@ -278,11 +308,43 @@ export function TreasuryWorkspace() {
   const [interestAmountError, setInterestAmountError] = useState('')
   const [interestDateError, setInterestDateError] = useState('')
   const [reloadToken, setReloadToken] = useState(0)
+  const [movementCategory, setMovementCategory] = useState('all')
+  const [movementDirection, setMovementDirection] = useState('all')
+  const [movementFrom, setMovementFrom] = useState('')
+  const [movementTo, setMovementTo] = useState('')
+  const [movementSearchQuery, setMovementSearchQuery] = useState('')
+  const [movementSearch, setMovementSearch] = useState('')
+  const [movementFiltersOpen, setMovementFiltersOpen] = useState(false)
+
+  const movementFilters: TreasuryMovementFilters = useMemo(() => ({
+    categories: movementCategory !== 'all' ? [movementCategory as TreasuryMovementCategory] : undefined,
+    directions: movementDirection !== 'all' ? [movementDirection as TreasuryMovementDirection] : undefined,
+    from: movementFrom || undefined,
+    to: movementTo || undefined,
+    search: movementSearch || undefined,
+  }), [movementCategory, movementDirection, movementFrom, movementSearch, movementTo])
+  const activeMovementFilterCount = [
+    movementFilters.categories?.length,
+    movementFilters.directions?.length,
+    movementFilters.from,
+    movementFilters.to,
+    movementFilters.search,
+  ].filter(Boolean).length
+  const hasActiveMovementFilters = Boolean(
+    movementFilters.categories?.length
+    || movementFilters.directions?.length
+    || movementFilters.from
+    || movementFilters.to
+    || movementFilters.search,
+  )
+  const movementDateRangeError = movementFrom && movementTo && movementFrom > movementTo
+    ? 'Start date cannot be after the end date.'
+    : ''
 
   const loadTreasuryData = useCallback(async () => {
     const nextTreasury = await getTreasury()
-    const movementResult = nextTreasury.isConfigured && nextTreasury.account
-      ? await getTreasuryMovements(movementPage)
+    const movementResult = nextTreasury.isConfigured && nextTreasury.account && !movementDateRangeError
+      ? await getTreasuryMovements(movementPage, 25, movementFilters)
       : { items: [], total: 0, totalPages: 0 }
 
     setTreasury(nextTreasury)
@@ -292,7 +354,11 @@ export function TreasuryWorkspace() {
     setForm(buildInitialForm(nextTreasury))
     setNameError('')
     setOpeningBalanceError('')
-  }, [movementPage])
+  }, [
+    movementDateRangeError,
+    movementFilters,
+    movementPage,
+  ])
 
   useEffect(() => {
     let cancelled = false
@@ -330,6 +396,25 @@ export function TreasuryWorkspace() {
     if (field === 'openingBalance') {
       setOpeningBalanceError('')
     }
+  }
+
+  const changeMovementFilter = (apply: () => void) => {
+    apply()
+    setMovementPage(1)
+  }
+
+  const applyMovementSearch = () => {
+    changeMovementFilter(() => setMovementSearch(movementSearchQuery.trim()))
+  }
+
+  const resetMovementFilters = () => {
+    setMovementCategory('all')
+    setMovementDirection('all')
+    setMovementFrom('')
+    setMovementTo('')
+    setMovementSearchQuery('')
+    setMovementSearch('')
+    setMovementPage(1)
   }
 
   const updateInterestField = (field: keyof InterestFormState, value: string) => {
@@ -758,10 +843,101 @@ export function TreasuryWorkspace() {
 
       {isConfigured && account ? (
         <>
+          <div className={styles.movementToolbar}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-expanded={movementFiltersOpen}
+              onClick={() => setMovementFiltersOpen((open) => !open)}
+            >
+              <SlidersHorizontal aria-hidden="true" size={15} />
+              {activeMovementFilterCount > 0 ? `Filters (${activeMovementFilterCount})` : 'Filters'}
+            </Button>
+          </div>
+
+          {movementFiltersOpen ? (
+            <Card className={styles.filterCard}>
+              <form
+                className={styles.filterBar}
+                role="search"
+                aria-label="Filter Treasury transactions"
+                onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                  event.preventDefault()
+                  applyMovementSearch()
+                }}
+              >
+                <Select
+                  id="treasuryMovementCategory"
+                  label="Category"
+                  value={movementCategory}
+                  onChange={(event) => changeMovementFilter(() => setMovementCategory(event.target.value))}
+                >
+                  <option value="all">All categories</option>
+                  {MOVEMENT_CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </Select>
+                <Select
+                  id="treasuryMovementDirection"
+                  label="Direction"
+                  value={movementDirection}
+                  onChange={(event) => changeMovementFilter(() => setMovementDirection(event.target.value))}
+                >
+                  <option value="all">All directions</option>
+                  {MOVEMENT_DIRECTION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </Select>
+                <Input
+                  id="treasuryMovementFrom"
+                  label="From date"
+                  type="date"
+                  value={movementFrom}
+                  onChange={(event) => changeMovementFilter(() => setMovementFrom(event.target.value))}
+                />
+                <Input
+                  id="treasuryMovementTo"
+                  label="To date"
+                  type="date"
+                  value={movementTo}
+                  error={movementDateRangeError || undefined}
+                  onChange={(event) => changeMovementFilter(() => setMovementTo(event.target.value))}
+                />
+                <Input
+                  id="treasuryMovementSearch"
+                  label="Search description"
+                  type="search"
+                  autoComplete="off"
+                  placeholder="Description keyword"
+                  value={movementSearchQuery}
+                  onChange={(event) => setMovementSearchQuery(event.target.value)}
+                />
+                <div className={styles.filterActions}>
+                  <Button type="submit" variant="secondary" disabled={Boolean(movementDateRangeError)}>
+                    Apply filters
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={resetMovementFilters}>
+                    Reset
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          ) : null}
+
           {movements.length === 0 ? (
             <EmptyState
-              title="No Treasury movements yet"
-              description="Disbursements, payments, capital movements, reversals, and earned interest will appear here."
+              title={movementDateRangeError
+                ? 'Check your date range'
+                : hasActiveMovementFilters ? 'No movements match your filters' : 'No Treasury movements yet'}
+              description={movementDateRangeError
+                ? 'The selected start date is after the end date, so no results are shown.'
+                : hasActiveMovementFilters
+                  ? 'Adjust the category, direction, dates, or description search and try again.'
+                  : 'Disbursements, payments, capital movements, reversals, and earned interest will appear here.'}
+              action={movementDateRangeError || hasActiveMovementFilters
+                ? <Button variant="secondary" onClick={resetMovementFilters}>Clear filters</Button>
+                : undefined}
             />
           ) : (
             <TableShell label="Treasury transaction ledger" title="Transaction Ledger">
