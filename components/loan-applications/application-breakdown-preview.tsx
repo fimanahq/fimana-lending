@@ -163,7 +163,7 @@ export function ApplicationBreakdownPreview({
   return (
     <Card
       title="Computed breakdown preview"
-      description="Values below come from the backend calculation preview and are not recomputed in the UI."
+      description="Values below and the final schedule values come from the backend and are never recomputed in the UI."
     >
       <div className="application-summary-grid">
         <div className="data-card">

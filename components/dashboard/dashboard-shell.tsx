@@ -56,7 +56,7 @@ export const navItems: NavItem[] = [
   { href: '/loans', label: 'Loans', icon: 'loans', aliases: ['/active-loans'] },
   { href: '/collections', label: 'Collections', icon: 'payments' },
   { href: '/calculator', label: 'Calculator', icon: 'calculator' },
-  { href: '/rules', label: 'Pricing Guide', icon: 'rules' },
+  { href: '/rules', label: 'Guide Rules', icon: 'rules' },
   { href: '/treasury', label: 'Treasury', icon: 'treasury' },
   { href: '/settings', label: 'Settings', icon: 'settings' },
 ]
@@ -71,7 +71,7 @@ const pathLabels: Record<string, string> = {
   loans: 'Loans',
   new: 'New Application',
   payments: 'Payments',
-  rules: 'Pricing Guide',
+  rules: 'Guide Rules',
   schedule: 'Schedule',
   settings: 'Settings',
   treasury: 'Treasury',

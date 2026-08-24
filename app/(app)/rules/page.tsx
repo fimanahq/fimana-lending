@@ -14,10 +14,13 @@ export default function RulesPage() {
   return (
     <div className="stack">
       <section className="card panel stack">
-        <h1 className="section-title">Loan calculator pricing guide</h1>
+        <h1 className="section-title">Lending Guide Rules</h1>
         <p className="muted">
-          Reference for the automatic amount tiers, cutoff rates, rate reductions, and reducing-balance calculation used by the standalone calculator.
+          Reference for the automatic amount tiers, cutoff rates, rate reductions, and reducing-balance calculation used by the standalone calculator. These tables are display and reference guidance maintained in the frontend content.
         </p>
+        <div className="notice">
+          Actual loan computation uses the backend pricing rules, or the rules of the selected loan product. The tables on this page do not control or change any calculation.
+        </div>
         <div className="notice">
           The guide currently aligns only with the standalone calculator and not in request application and manual application creation.
         </div>
@@ -33,16 +36,16 @@ export default function RulesPage() {
             <thead>
               <tr>
                 <th>Term</th>
-                <th>Calculator rule</th>
+                <th>Guide rule</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td data-label="Term">Give / cutoff</td><td data-label="Calculator rule">One scheduled payment slot.</td></tr>
-              <tr><td data-label="Term">Automatic amount</td><td data-label="Calculator rule">₱{MIN_AUTO_LOAN_AMOUNT.toLocaleString()} to ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}.</td></tr>
-              <tr><td data-label="Term">Automatic term</td><td data-label="Calculator rule">{MIN_AUTO_CUTOFFS} to {MAX_AUTO_CUTOFFS} cutoffs.</td></tr>
-              <tr><td data-label="Term">Above ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}</td><td data-label="Calculator rule">Requires manual approval and custom terms.</td></tr>
-              <tr><td data-label="Term">Automatic calculation</td><td data-label="Calculator rule">Uses reducing-balance interest and the rate selected from this guide.</td></tr>
-              <tr><td data-label="Term">Manual what-if</td><td data-label="Calculator rule">Uses the manually entered rate and selected calculation method instead of these automatic pricing rules.</td></tr>
+              <tr><td data-label="Term">Give / cutoff</td><td data-label="Guide rule">One scheduled payment slot.</td></tr>
+              <tr><td data-label="Term">Automatic amount</td><td data-label="Guide rule">₱{MIN_AUTO_LOAN_AMOUNT.toLocaleString()} to ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}.</td></tr>
+              <tr><td data-label="Term">Automatic term</td><td data-label="Guide rule">{MIN_AUTO_CUTOFFS} to {MAX_AUTO_CUTOFFS} cutoffs.</td></tr>
+              <tr><td data-label="Term">Above ₱{MAX_AUTO_LOAN_AMOUNT.toLocaleString()}</td><td data-label="Guide rule">Requires manual approval and custom terms.</td></tr>
+              <tr><td data-label="Term">Automatic calculation</td><td data-label="Guide rule">In the standalone calculator only, uses reducing-balance interest and a rate picked from this guide. Real loans are priced by the backend instead.</td></tr>
+              <tr><td data-label="Term">Manual what-if</td><td data-label="Guide rule">Uses the manually entered rate and selected calculation method instead of these guide rates.</td></tr>
             </tbody>
           </table>
         </div>
@@ -99,7 +102,7 @@ export default function RulesPage() {
           </table>
         </div>
         <div className="notice">
-          The selected base rate is a per-cutoff rate used by the reducing-balance schedule.
+          The selected base rate is a per-cutoff rate applied to the calculator preview only. This table is not read by the backend and never sets real loan pricing.
         </div>
       </section>
 
@@ -150,6 +153,9 @@ export default function RulesPage() {
               <tr><td data-label="Step">7</td><td data-label="Rule">Sum schedule interest for total interest, then add principal for total payable.</td></tr>
             </tbody>
           </table>
+        </div>
+        <div className="notice">
+          This order describes the standalone calculator&apos;s what-if preview only. The final schedule is calculated by the backend.
         </div>
 
         <article className="formula-card">
