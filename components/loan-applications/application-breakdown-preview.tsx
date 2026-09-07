@@ -7,6 +7,7 @@ import type {
 } from '@/lib/types/lending'
 import { Card, DataTable, TableShell } from '@/components/shared'
 import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
+import styles from './application-breakdown-preview.module.css'
 
 interface ApplicationBreakdownPreviewProps {
   borrowerName?: string
@@ -44,6 +45,14 @@ function formatCalculationMethod(method?: string | null) {
   }[method ?? ''] ?? 'Reducing balance'
 }
 
+function formatTermMonths(cutoffs: number, frequency: string | undefined) {
+  const installmentsPerMonth = frequency === 'semi_monthly' ? 2 : 1
+  const months = cutoffs / installmentsPerMonth
+  const formattedMonths = Number.isInteger(months) ? String(months) : months.toFixed(1).replace(/\.0$/, '')
+
+  return `${formattedMonths} month${months === 1 ? '' : 's'}`
+}
+
 function getSchedule(preview: LoanApplicationComputedPreviewSnapshot | LoanApplicationPreviewSnapshot): LoanSchedulePreviewRow[] {
   if (isComputedPreview(preview)) {
     return preview.installments.map((installment) => ({
@@ -65,19 +74,21 @@ export function ApplicationBreakdownPreview({
   calculationMethod: requestedCalculationMethod,
   preview,
 }: ApplicationBreakdownPreviewProps) {
+  const [paymentSummaryCopyStatus, setPaymentSummaryCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [scheduleCopyStatus, setScheduleCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   useEffect(() => {
-    if (scheduleCopyStatus === 'idle') {
+    if (paymentSummaryCopyStatus === 'idle' && scheduleCopyStatus === 'idle') {
       return
     }
 
     const timeoutId = window.setTimeout(() => {
+      setPaymentSummaryCopyStatus('idle')
       setScheduleCopyStatus('idle')
     }, 2000)
 
     return () => window.clearTimeout(timeoutId)
-  }, [scheduleCopyStatus])
+  }, [paymentSummaryCopyStatus, scheduleCopyStatus])
 
   if (!preview) {
     return (
@@ -122,6 +133,21 @@ export function ApplicationBreakdownPreview({
   const processingFee = isComputedPreview(preview) ? preview.processingFeeAmountMinor : null
   const netDisbursement = isComputedPreview(preview) ? preview.netDisbursementAmountMinor : null
   const schedule = getSchedule(preview)
+  const paymentPerCutoff = totalPayment !== null && gives > 0 ? totalPayment / gives : null
+  const paymentTermMonths = gives > 0 ? formatTermMonths(gives, frequency) : null
+  const paymentSummary = paymentPerCutoff !== null && paymentTermMonths !== null
+    ? `${formatCurrency(paymentPerCutoff, currency)} per cutoff · ${gives} cutoff${gives === 1 ? '' : 's'} · ${paymentTermMonths}`
+    : null
+  const paymentSummaryCopyLabel = paymentSummaryCopyStatus === 'success'
+    ? 'Copied'
+    : paymentSummaryCopyStatus === 'error'
+      ? 'Copy failed'
+      : 'Copy payment summary'
+  const paymentSummaryCopyAnnouncement = paymentSummaryCopyStatus === 'success'
+    ? 'Payment summary copied to clipboard.'
+    : paymentSummaryCopyStatus === 'error'
+      ? 'Unable to copy payment summary.'
+      : ''
   const scheduleCopyLabel = scheduleCopyStatus === 'success'
     ? 'Copied'
     : scheduleCopyStatus === 'error'
@@ -160,10 +186,23 @@ export function ApplicationBreakdownPreview({
     }
   }
 
+  const handleCopyPaymentSummary = async () => {
+    if (!paymentSummary) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(paymentSummary)
+      setPaymentSummaryCopyStatus('success')
+    } catch {
+      setPaymentSummaryCopyStatus('error')
+    }
+  }
+
   return (
     <Card
       title="Computed breakdown preview"
-      description="Values below come from the backend calculation preview and are not recomputed in the UI."
+      description="Values below and the final schedule values come from the backend and are never recomputed in the UI."
     >
       <div className="application-summary-grid">
         <div className="data-card">
@@ -197,6 +236,23 @@ export function ApplicationBreakdownPreview({
             <strong>{schedule[0] ? formatCurrency(schedule[0].totalPayment, currency) : 'Not returned'}</strong>
           </div>
         ) : null}
+        <div className={`data-card ${styles.paymentSummary}`}>
+          <div className={styles.paymentSummaryHeader}>
+            <span className="muted">Average payment summary</span>
+            <button
+              type="button"
+              className={`button-ghost table-action-icon table-copy-button${paymentSummaryCopyStatus === 'success' ? ' is-success' : ''}${paymentSummaryCopyStatus === 'error' ? ' is-error' : ''}`}
+              aria-label={paymentSummaryCopyLabel}
+              title={paymentSummaryCopyLabel}
+              onClick={() => void handleCopyPaymentSummary()}
+              disabled={!paymentSummary}
+            >
+              {paymentSummaryCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
+            </button>
+          </div>
+          <strong>{paymentSummary ?? 'Not returned'}</strong>
+          <span className="ui-sr-only" aria-live="polite">{paymentSummaryCopyAnnouncement}</span>
+        </div>
       </div>
 
       {processingFee !== null && netDisbursement !== null ? (

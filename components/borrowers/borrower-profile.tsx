@@ -13,6 +13,7 @@ import {
   TableShell,
 } from '@/components/shared'
 import { BorrowerForm } from '@/components/borrowers/borrower-form'
+import { NewLoanApplicationButton } from '@/components/loan-applications/new-loan-application-button'
 import { EditIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { buildLoanDetailPath } from '@/lib/loan-navigation'
@@ -164,7 +165,7 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
     <PageContainer>
       <div className="inline-actions">
         <Link href="/borrowers" className="button-secondary">Back to borrowers</Link>
-        <Link href="/loan-applications/new" className="button">New application</Link>
+        <NewLoanApplicationButton />
       </div>
       <div className={borrowerStyles.profileGrid}>
         <Card

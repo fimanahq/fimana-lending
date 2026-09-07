@@ -1,8 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, Input, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, ListToolbar, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
 import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
 import { LoanPaymentDialog } from '@/components/payments'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
@@ -16,7 +16,6 @@ import { getStatusClassName } from '@/lib/status'
 import type { LoanRecord, LoanStatus } from '@/lib/types/lending'
 import { deleteLoan, listLoanRecords } from '@/services'
 import { classNames } from '@/utils/class-names'
-import toolbarStyles from '@/components/shared/list-toolbar.module.css'
 import styles from './loan-list.module.css'
 
 const PAGE_SIZE = 20
@@ -75,47 +74,11 @@ export function LoansList({ listState }: LoansListProps) {
   const [paymentLoanId, setPaymentLoanId] = useState('')
   const [deleteLoanId, setDeleteLoanId] = useState('')
   const [deleting, setDeleting] = useState(false)
-  const searchNavigationTimeoutRef = useRef<number | null>(null)
   const loanRequestSequenceRef = useRef(0)
-
-  const cancelPendingSearchNavigation = useCallback(() => {
-    if (searchNavigationTimeoutRef.current === null) {
-      return
-    }
-
-    window.clearTimeout(searchNavigationTimeoutRef.current)
-    searchNavigationTimeoutRef.current = null
-  }, [])
 
   useEffect(() => {
     setQuery(search)
   }, [search])
-
-  useEffect(() => {
-    cancelPendingSearchNavigation()
-
-    const normalizedQuery = query.trim()
-    if (normalizedQuery === search) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      searchNavigationTimeoutRef.current = null
-      router.replace(buildLoanListPath({
-        page: 1,
-        status: activeFilter,
-        search: normalizedQuery,
-      }), { scroll: false })
-    }, 300)
-    searchNavigationTimeoutRef.current = timeoutId
-
-    return () => {
-      window.clearTimeout(timeoutId)
-      if (searchNavigationTimeoutRef.current === timeoutId) {
-        searchNavigationTimeoutRef.current = null
-      }
-    }
-  }, [activeFilter, cancelPendingSearchNavigation, page, query, router, search])
 
   const loadLoans = useCallback(async () => {
     const requestSequence = ++loanRequestSequenceRef.current
@@ -136,7 +99,6 @@ export function LoansList({ listState }: LoansListProps) {
 
       const nextTotalPages = Math.max(response.totalPages, 1)
       if (page > nextTotalPages) {
-        cancelPendingSearchNavigation()
         router.replace(buildLoanListPath({
           page: nextTotalPages,
           status: activeFilter,
@@ -159,7 +121,7 @@ export function LoansList({ listState }: LoansListProps) {
         setLoading(false)
       }
     }
-  }, [activeFilter, cancelPendingSearchNavigation, page, router, search])
+  }, [activeFilter, page, router, search])
 
   const handleDeleteLoan = async () => {
     if (!deleteLoanId) return
@@ -173,7 +135,6 @@ export function LoansList({ listState }: LoansListProps) {
       update(toastId, 'Loan deleted.', { tone: 'success', title: 'Success' })
 
       if (loans.length === 1 && page > 1) {
-        cancelPendingSearchNavigation()
         router.replace(buildLoanListPath({
           page: page - 1,
           status: activeFilter,
@@ -203,7 +164,6 @@ export function LoansList({ listState }: LoansListProps) {
   const currentListPath = buildLoanListPath(listState)
 
   const openLoan = (loanId: string) => {
-    cancelPendingSearchNavigation()
     router.push(buildLoanDetailPath(loanId, currentListPath))
   }
 
@@ -214,47 +174,43 @@ export function LoansList({ listState }: LoansListProps) {
     }
   }
 
-  const handleLinkNavigationCapture = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return
-    }
+  const applySearch = () => {
+    router.push(buildLoanListPath({
+      page: 1,
+      status: activeFilter,
+      search: query.trim(),
+    }), { scroll: false })
+  }
 
-    if ((event.target as Element).closest('a[href]')) {
-      cancelPendingSearchNavigation()
-    }
+  const clearSearch = () => {
+    setQuery('')
+    router.push(buildLoanListPath({
+      page: 1,
+      status: activeFilter,
+      search: '',
+    }), { scroll: false })
   }
 
   return (
-    <div className="stack" onClickCapture={handleLinkNavigationCapture}>
-      <div className={classNames('card panel', toolbarStyles.toolbar)}>
-        <Input
-          id="loan-borrower-search"
-          label="Search loans"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Loan number, borrower name, mobile, or email"
-        />
-      </div>
-
-      <div className="application-status-tabs" aria-label="Loan status filters">
-        {STATUS_FILTERS.map((status) => (
-          <button
-            key={status.value}
-            type="button"
-            className={activeFilter === status.value ? 'is-active' : ''}
-            onClick={() => {
-              cancelPendingSearchNavigation()
-              router.push(buildLoanListPath({
-                page: 1,
-                status: status.value,
-                search: query,
-              }), { scroll: false })
-            }}
-          >
-            {status.label}
-          </button>
-        ))}
-      </div>
+    <div className="stack">
+      <ListToolbar
+        activeFilter={activeFilter}
+        filterLabel="Loan status filters"
+        filters={STATUS_FILTERS}
+        searchId="loan-borrower-search"
+        searchLabel="Search loans"
+        searchPlaceholder="Loan number, borrower name, mobile, or email"
+        searchValue={query}
+        onSearchChange={setQuery}
+        onSearchSubmit={applySearch}
+        onFilterChange={(status) => {
+          router.push(buildLoanListPath({
+            page: 1,
+            status,
+            search,
+          }), { scroll: false })
+        }}
+      />
 
       {error ? (
         <ErrorState
@@ -270,13 +226,17 @@ export function LoansList({ listState }: LoansListProps) {
 
       {!loading && !error && loans.length === 0 ? (
         <EmptyState
-          title={activeFilter === 'all' ? 'No loans yet' : 'No loans match this status'}
+          title={search ? 'No loans match your search' : activeFilter === 'all' ? 'No loans yet' : 'No loans match this status'}
           description={
-            activeFilter === 'all'
+            search
+              ? 'Clear the search or try a different status filter.'
+              : activeFilter === 'all'
               ? 'Approved applications appear here after they are converted and auto-disbursed.'
               : 'Try another status filter or check loan applications.'
           }
-          action={<Link href="/loan-applications" className="button-secondary">Go to applications</Link>}
+          action={search
+            ? <Button variant="ghost" onClick={clearSearch}>Clear search</Button>
+            : <Link href="/loan-applications" className="button-secondary">Go to applications</Link>}
         />
       ) : null}
 

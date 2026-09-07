@@ -543,7 +543,7 @@ export function LoanCalculator() {
             Reductions are percentage points from the table rate. The final rate cannot go below 5%.
           </div>
           <div className="inline-actions">
-            <Link href="/rules" className="button-secondary">View full pricing guide</Link>
+            <Link href="/rules" className="button-secondary">View full guide rules</Link>
           </div>
         </section>
       ) : null}
@@ -585,6 +585,9 @@ export function LoanCalculator() {
             ? ' Automatic pricing uses reducing balance interest with the selected tiered rate.'
             : ' Manual what-if uses your selected interest and calculation method.'}
         </p>
+        <div className="notice">
+          Guide tables may drive this standalone preview and its automatic tiered pricing only. They never control real loan pricing, which the backend computes from default or selected loan-product rules.
+        </div>
 
         {calculation.error ? <div className="notice danger">{calculation.error}</div> : null}
 

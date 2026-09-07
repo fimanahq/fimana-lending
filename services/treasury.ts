@@ -1,6 +1,6 @@
 import { apiRequest } from '@/lib/client-api'
 import type { LoanPaymentHistory } from '@/lib/types/lending'
-import type { Treasury, TreasuryMovement, TreasuryMovementsPage } from '@/lib/types/shared'
+import type { Treasury, TreasuryMovement, TreasuryMovementFilters, TreasuryMovementsPage } from '@/lib/types/shared'
 
 export interface UpdateTreasuryInput {
   name?: string
@@ -51,8 +51,29 @@ export function updateTreasury(input: UpdateTreasuryInput) {
   })
 }
 
-export function getTreasuryMovements(page = 1, itemsPerPage = 25) {
-  return apiRequest<TreasuryMovementsPage>(`/api/treasury/movements?page=${page}&itemsPerPage=${itemsPerPage}`)
+export function getTreasuryMovements(page = 1, itemsPerPage = 25, filters: TreasuryMovementFilters = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    itemsPerPage: String(itemsPerPage),
+  })
+
+  if (filters.categories?.length) {
+    params.set('categories', filters.categories.join(','))
+  }
+  if (filters.directions?.length) {
+    params.set('directions', filters.directions.join(','))
+  }
+  if (filters.from) {
+    params.set('from', filters.from)
+  }
+  if (filters.to) {
+    params.set('to', filters.to)
+  }
+  if (filters.search?.trim()) {
+    params.set('search', filters.search.trim())
+  }
+
+  return apiRequest<TreasuryMovementsPage>(`/api/treasury/movements?${params.toString()}`)
 }
 
 export function deleteTreasuryMovement(transactionId: string) {
