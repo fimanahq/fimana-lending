@@ -1,5 +1,5 @@
-import { LoanApplicationForm } from '@/components/loan-applications/loan-application-form'
+import { redirect } from 'next/navigation'
 
 export default function NewLoanApplicationPage() {
-  return <LoanApplicationForm />
+  redirect('/loan-applications')
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type WheelEvent } from 'react'
 import { useRouter } from 'next/navigation'
+import styles from './loan-application-form.module.css'
 import type {
   Borrower,
   LoanCalculationMethod,
@@ -11,6 +12,7 @@ import type {
   SimpleInterestMethod,
 } from '@/lib/types/lending'
 import { buildDraftLoanApplicationInput } from '@/lib/loan-application-draft'
+import { getInstallmentTermGuidance } from '@/lib/installment-term-guidance'
 import { buildLoanDueDates, buildPaymentDays, getBorrowerRequestSemiMonthlyFirstPaymentDate } from '@/lib/loan-schedule'
 import { formatDate } from '@/lib/format'
 import {
@@ -76,6 +78,7 @@ interface LoanApplicationFormProps {
   mode?: 'create' | 'edit'
   onCancel?: () => void
   onSaved?: (application: LoanApplication) => void
+  onSubmittingChange?: (submitting: boolean) => void
   showCard?: boolean
 }
 
@@ -309,6 +312,7 @@ export function LoanApplicationForm({
   mode = 'create',
   onCancel,
   onSaved,
+  onSubmittingChange,
   showCard = true,
 }: LoanApplicationFormProps) {
   const router = useRouter()
@@ -398,6 +402,11 @@ export function LoanApplicationForm({
     setError('')
   }
 
+  const updateSubmitting = (nextSubmitting: boolean) => {
+    setSubmitting(nextSubmitting)
+    onSubmittingChange?.(nextSubmitting)
+  }
+
   const handleBorrowerChange = (nextBorrowerId: string) => {
     const nextBorrower = borrowers.find((borrower) => borrower.id === nextBorrowerId)
 
@@ -418,7 +427,7 @@ export function LoanApplicationForm({
       return
     }
 
-    setSubmitting(true)
+    updateSubmitting(true)
     const toastId = loading(mode === 'edit' ? 'Updating loan application...' : 'Creating loan application...')
 
     try {
@@ -453,7 +462,7 @@ export function LoanApplicationForm({
         : 'Unable to create loan application'
       setError(caughtError instanceof Error ? caughtError.message : fallbackMessage)
     } finally {
-      setSubmitting(false)
+      updateSubmitting(false)
     }
   }
 
@@ -521,7 +530,7 @@ export function LoanApplicationForm({
             />
           ) : null}
 
-          <div className="grid two">
+          <div className={`grid two ${styles.installmentFields}`}>
             <Input
               id={`${mode}ApplicationLoanAmount`}
               label={loanApplicationLabels.loanAmount}
@@ -542,6 +551,7 @@ export function LoanApplicationForm({
               step="1"
               inputMode="numeric"
               inputClassName="input-no-spinner"
+              hint={getInstallmentTermGuidance(form.numberOfInstallments, form.paymentType)}
               value={form.numberOfInstallments}
               onWheel={preventWheelValueChange}
               onChange={(event) => updateForm({ numberOfInstallments: event.target.value })}
