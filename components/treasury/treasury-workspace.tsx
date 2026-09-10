@@ -846,13 +846,7 @@ export function TreasuryWorkspace() {
       {isConfigured && account && capitalSummary ? (
         <>
           <section className={styles.capitalOverview} aria-label="Capital overview">
-            <div className={styles.capitalOverviewHeader}>
-              <div>
-                <span className={styles.capitalOverviewEyebrow}>Capital overview</span>
-                <p>Lifetime contributed capital, separate from the available Treasury balance.</p>
-              </div>
-              <span className={styles.capitalOverviewFormula}>Original + deposits − withdrawals</span>
-            </div>
+            <span className={styles.capitalOverviewEyebrow}>Capital overview</span>
             <dl className={styles.capitalSummaryGrid}>
               <div>
                 <dt>Original capital</dt>
