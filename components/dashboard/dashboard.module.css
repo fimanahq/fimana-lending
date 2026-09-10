@@ -615,8 +615,8 @@
   align-items: stretch;
 }
 
-.dashboard-overview__kpiGrid--six {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.dashboard-overview__statCard--capitalBasis {
+  grid-column: span 2;
 }
 
 .dashboard-overview--loading :global(.ui-skeleton__line) {
@@ -2010,6 +2010,10 @@
   .dashboard-overview__activeLoansBody,
   .dashboard-overview__activeLoansMix {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-overview__statCard--capitalBasis {
+    grid-column: auto;
   }
 
 .dashboard-shell {

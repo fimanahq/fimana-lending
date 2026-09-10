@@ -221,6 +221,7 @@ function getDefaultSummary(): DashboardSummaryMetrics {
     netTotalProjectedProfitMinor: 0,
     netCollectedProfitVsCapitalBps: 0,
     netProjectedProfitVsCapitalBps: 0,
+    currentContributedCapitalMinor: 0,
     capitalDepositsMinor: 0,
     capitalWithdrawalsMinor: 0,
     netCapitalMovementMinor: 0,

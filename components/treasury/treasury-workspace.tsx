@@ -716,11 +716,12 @@ export function TreasuryWorkspace() {
 
   const isConfigured = Boolean(treasury?.isConfigured && treasury.account)
   const account = treasury?.account ?? null
+  const capitalSummary = treasury?.capitalSummary ?? null
   const hasNameChange = isConfigured && account ? form.name.trim() !== account.name : true
 
   return (
     <PageContainer className="stack">
-      {isConfigured && account ? (
+      {isConfigured && account && capitalSummary ? (
         <section className={styles.bankTile} aria-label="Treasury fund account">
           <div className={styles.bankTileContent}>
             <div>
@@ -822,6 +823,7 @@ export function TreasuryWorkspace() {
                   step="0.01"
                   value={form.openingBalance}
                   error={openingBalanceError}
+                  hint="Initial cash on hand for Treasury. This is separate from the Original capital accounting baseline in Settings."
                   onChange={(event) => updateField('openingBalance', event.target.value)}
                 />
               </div>
@@ -841,8 +843,36 @@ export function TreasuryWorkspace() {
         </Card>
       )}
 
-      {isConfigured && account ? (
+      {isConfigured && account && capitalSummary ? (
         <>
+          <section className={styles.capitalOverview} aria-label="Capital overview">
+            <div className={styles.capitalOverviewHeader}>
+              <div>
+                <span className={styles.capitalOverviewEyebrow}>Capital overview</span>
+                <p>Lifetime contributed capital, separate from the available Treasury balance.</p>
+              </div>
+              <span className={styles.capitalOverviewFormula}>Original + deposits − withdrawals</span>
+            </div>
+            <dl className={styles.capitalSummaryGrid}>
+              <div>
+                <dt>Original capital</dt>
+                <dd>{formatCurrency(capitalSummary.originalCapitalMinor / 100, account.currency)}</dd>
+              </div>
+              <div>
+                <dt>Capital deposits</dt>
+                <dd>{formatCurrency(capitalSummary.capitalDepositsMinor / 100, account.currency)}</dd>
+              </div>
+              <div>
+                <dt>Capital withdrawals</dt>
+                <dd>{formatCurrency(capitalSummary.capitalWithdrawalsMinor / 100, account.currency)}</dd>
+              </div>
+              <div className={styles.currentContributedCapital}>
+                <dt>Current contributed capital</dt>
+                <dd>{formatCurrency(capitalSummary.currentContributedCapitalMinor / 100, account.currency)}</dd>
+              </div>
+            </dl>
+          </section>
+
           <div className={styles.movementToolbar}>
             <Button
               type="button"
