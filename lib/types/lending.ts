@@ -576,6 +576,7 @@ export interface LoanDashboardSummary {
   netTotalProjectedProfitMinor: number
   netCollectedProfitVsCapitalBps: number
   netProjectedProfitVsCapitalBps: number
+  currentContributedCapitalMinor: number
   capitalDepositsMinor: number
   capitalWithdrawalsMinor: number
   netCapitalMovementMinor: number

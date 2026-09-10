@@ -615,8 +615,8 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
           </div>
         ) : null}
 
-        <section className={dashboardClass('dashboard-overview__kpiGrid', 'dashboard-overview__kpiGrid--six')}>
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warm', 'dashboard-overview__statCard--hasInfo')}>
+        <section className={dashboardClass('dashboard-overview__kpiGrid')}>
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warm', 'dashboard-overview__statCard--hasInfo', 'dashboard-overview__statCard--capitalBasis')}>
             <span className={dashboardClass('dashboard-overview__statLabel')}>Current capital basis</span>
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
@@ -650,9 +650,28 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
               <br />
               <span>Principal capital losses: {formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}</span>
             </StatInfoDisclosure>
-            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-              <OverviewGlyph name="money" />
-            </div>
+          </article>
+
+          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
+            <span className={dashboardClass('dashboard-overview__statLabel')}>Current contributed capital</span>
+            <strong className={dashboardClass('dashboard-overview__statValue')}>
+              {formatMinorCurrency(summary.currentContributedCapitalMinor, dashboardCurrency)}
+            </strong>
+            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
+              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} original · {formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency)} deposits · {formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency)} withdrawals
+            </span>
+            <StatInfoDisclosure id="current-contributed-capital-info" label="Show current contributed capital details">
+              <span>Formula: original capital + capital deposits - capital withdrawals.</span>
+              <br />
+              <br />
+              <span>Original capital: {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Capital deposits: {formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Capital withdrawals: {formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency)}</span>
+              <br />
+              <span>Current contributed capital: {formatMinorCurrency(summary.currentContributedCapitalMinor, dashboardCurrency)}</span>
+            </StatInfoDisclosure>
           </article>
 
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--sage', 'dashboard-overview__statCard--hasInfo')}>
@@ -668,9 +687,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <StatInfoDisclosure id="cash-on-hand-info" label="Show cash on hand details">
               {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury.' : 'Calculated amount available to lend.'}
             </StatInfoDisclosure>
-            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-              <OverviewGlyph name="shield" />
-            </div>
           </article>
 
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--ink', 'dashboard-overview__statCard--hasInfo')}>
@@ -686,9 +702,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <StatInfoDisclosure id="money-with-borrowers-info" label="Show money with borrowers details" contrast>
               Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}.
             </StatInfoDisclosure>
-            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-              <OverviewGlyph name="applications" />
-            </div>
           </article>
 
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
@@ -702,9 +715,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <StatInfoDisclosure id="next-cutoff-receivable-info" label="Show next cutoff receivable details">
               Expected collection on the nearest cutoff date.
             </StatInfoDisclosure>
-            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-              <OverviewGlyph name="trend" />
-            </div>
           </article>
 
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warningSoft', 'dashboard-overview__statCard--hasInfo')}>
@@ -718,9 +728,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <StatInfoDisclosure id="overdue-receivable-info" label="Show overdue receivable details">
               Past due unpaid schedules.
             </StatInfoDisclosure>
-            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-              <OverviewGlyph name="alert" />
-            </div>
           </article>
 
           <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
@@ -755,9 +762,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
                 </>
               ) : null}
             </StatInfoDisclosure>
-            <div className={dashboardClass('dashboard-overview__statArtwork')} aria-hidden="true">
-              <OverviewGlyph name="note" />
-            </div>
           </article>
         </section>
 

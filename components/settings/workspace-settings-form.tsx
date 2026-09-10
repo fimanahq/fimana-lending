@@ -35,17 +35,17 @@ function parseStartingCapital(value: string) {
   const trimmed = value.trim()
 
   if (!trimmed) {
-    return { error: 'Starting capital is required.' }
+    return { error: 'Original capital is required.' }
   }
 
   const parsed = Number(trimmed)
 
   if (!Number.isFinite(parsed)) {
-    return { error: 'Enter a valid amount for starting capital.' }
+    return { error: 'Enter a valid amount for original capital.' }
   }
 
   if (parsed < 0) {
-    return { error: 'Starting capital cannot be negative.' }
+    return { error: 'Original capital cannot be negative.' }
   }
 
   return { value: parsed }
@@ -341,13 +341,13 @@ export function WorkspaceSettingsForm() {
 
               <Input
                 id="workspace-starting-capital"
-                label="Starting capital"
+                label="Original capital"
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.startingCapital}
                 error={errors.startingCapital}
-                hint="This is the original capital pool before any collected interest is added back."
+                hint="This is the accounting baseline before capital movements or collected interest are added back."
                 inputClassName="input-no-spinner"
                 onChange={(event) => updateField('startingCapital', event.target.value)}
                 required

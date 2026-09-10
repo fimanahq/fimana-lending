@@ -46,6 +46,14 @@ export interface TreasuryAccount {
 export interface Treasury {
   isConfigured: boolean
   account: TreasuryAccount | null
+  capitalSummary: TreasuryCapitalSummary
+}
+
+export interface TreasuryCapitalSummary {
+  originalCapitalMinor: number
+  capitalDepositsMinor: number
+  capitalWithdrawalsMinor: number
+  currentContributedCapitalMinor: number
 }
 
 export type TreasuryMovementDirection = 'in' | 'out' | 'neutral'
