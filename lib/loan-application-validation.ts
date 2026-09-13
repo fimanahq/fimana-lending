@@ -1,5 +1,6 @@
 import { buildLoanDueDates, buildPaymentDays } from '@/lib/loan-schedule'
 import type { PaymentFrequency } from '@/lib/types/shared'
+import type { AddressDetails } from '@/lib/types/lending'
 
 export interface LoanApplicationValidationInput {
   firstName: string
@@ -14,10 +15,12 @@ export interface LoanApplicationValidationInput {
   firstPaymentDate: string
   purpose: string
   income?: number | null
+  addressDetails?: AddressDetails
 }
 
 interface LoanApplicationValidationOptions {
   requireEmail?: boolean
+  requireAddress?: boolean
 }
 
 export interface ValidatedLoanApplicationInput {
@@ -33,6 +36,7 @@ export interface ValidatedLoanApplicationInput {
   purpose: string
   income: number
   source?: 'public'
+  addressDetails?: AddressDetails
 }
 
 export interface LoanApplicationValidationErrors {
@@ -46,6 +50,11 @@ export interface LoanApplicationValidationErrors {
   gives: string
   paymentDays: string
   firstPaymentDate: string
+  line1: string
+  line2: string
+  city: string
+  province: string
+  postalCode: string
 }
 
 export interface LoanApplicationValidationResult {
@@ -59,6 +68,7 @@ export interface LoanApplicationValidationResult {
     income: number | null
     firstPaymentDate: string
     paymentDays: string[]
+    addressDetails: AddressDetails | null
   }
   isValid: boolean
 }
@@ -74,6 +84,11 @@ const EMPTY_ERRORS: LoanApplicationValidationErrors = {
   gives: '',
   paymentDays: '',
   firstPaymentDate: '',
+  line1: '',
+  line2: '',
+  city: '',
+  province: '',
+  postalCode: '',
 }
 
 export function isPaymentFrequency(value: unknown): value is PaymentFrequency {
@@ -120,6 +135,11 @@ function getFirstValidationError(errors: LoanApplicationValidationErrors) {
     errors.gives ||
     errors.paymentDays ||
     errors.firstPaymentDate
+    || errors.line1
+    || errors.line2
+    || errors.city
+    || errors.province
+    || errors.postalCode
   )
 }
 
@@ -135,6 +155,15 @@ export function getLoanApplicationValidationResult(
   const purpose = input.purpose.trim()
   const income = input.income ?? null
   const firstPaymentDate = input.firstPaymentDate
+  const addressDetails = input.addressDetails
+    ? {
+        line1: input.addressDetails.line1.trim(),
+        line2: input.addressDetails.line2.trim(),
+        city: input.addressDetails.city.trim(),
+        province: input.addressDetails.province.trim(),
+        postalCode: input.addressDetails.postalCode?.trim() || undefined,
+      }
+    : null
   const errors = { ...EMPTY_ERRORS }
   let paymentDays: string[] = []
 
@@ -182,6 +211,22 @@ export function getLoanApplicationValidationResult(
     errors.firstPaymentDate = 'Start date is required'
   }
 
+  if (options.requireAddress && !addressDetails?.line1) {
+    errors.line1 = 'Street address is required'
+  }
+  if (options.requireAddress && !addressDetails?.line2) {
+    errors.line2 = 'Barangay or district is required'
+  }
+  if (options.requireAddress && !addressDetails?.city) {
+    errors.city = 'City or municipality is required'
+  }
+  if (options.requireAddress && !addressDetails?.province) {
+    errors.province = 'Province is required'
+  }
+  if (addressDetails?.postalCode && !/^\d{4}$/.test(addressDetails.postalCode)) {
+    errors.postalCode = 'Postal code must be 4 digits'
+  }
+
   if (paymentFrequency === 'semi_monthly' && input.firstDay === input.secondDay) {
     errors.paymentDays = 'Choose two different payment days for a semi-monthly schedule'
   }
@@ -215,6 +260,7 @@ export function getLoanApplicationValidationResult(
       income,
       firstPaymentDate,
       paymentDays,
+      addressDetails,
     },
     isValid: !getFirstValidationError(errors),
   }
@@ -244,5 +290,6 @@ export function validateLoanApplicationInput(
     purpose: validation.normalized.purpose,
     income: validation.normalized.income!,
     source: 'public',
+    addressDetails: validation.normalized.addressDetails ?? undefined,
   }
 }

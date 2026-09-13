@@ -212,6 +212,10 @@ export function BorrowerProfile({ borrowerId }: BorrowerProfileProps) {
                 <span>Monthly Income</span>
                 <strong>{borrower.income !== null ? formatCurrency(borrower.income, borrowerCurrency) : 'Not set'}</strong>
               </div>
+              <div className={borrowerStyles.fact}>
+                <span>Address</span>
+                <strong>{borrower.address || 'Not set'}</strong>
+              </div>
             </div>
 
             <div className={borrowerStyles.notes}>
