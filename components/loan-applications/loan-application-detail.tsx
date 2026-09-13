@@ -8,7 +8,7 @@ import { ApiRequestError } from '@/lib/client-api'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { buildLoanDetailPath } from '@/lib/loan-navigation'
 import { formatLoanApplicationStatus, getStatusClassName, normalizeLoanApplicationStatus } from '@/lib/status'
-import type { Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
+import type { AddressDetails, Borrower, LoanApplication, LoanApplicationStatus } from '@/lib/types/lending'
 import { deleteLoanApplication, getLoanApplication, listLoanBorrowers, undoLoanApplicationApproval, updateLoanApplicationStatus } from '@/services'
 import {
   Button,
@@ -41,6 +41,16 @@ function getApplicantName(application: LoanApplication) {
 
 function formatApplicationSource(source: LoanApplication['source']) {
   return source === 'public' ? 'Public' : 'Internal'
+}
+
+function formatAddress(address?: AddressDetails | null) {
+  if (!address) {
+    return ''
+  }
+
+  return [address.line1, address.line2, address.city, address.province, address.postalCode]
+    .filter(Boolean)
+    .join(', ')
 }
 
 function isTerminalStatus(status: LoanApplicationStatus) {
@@ -233,6 +243,9 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
   const canUndoApproval = normalizedStatus === 'approved'
   const reviewDisabled = terminal || !hasPreview || !canReview || Boolean(savingStatus) || isEditing
   const referral = application.referral
+  const applicationAddress = formatAddress(application.addressSnapshot)
+    || formatAddress(application.borrower?.addressDetails)
+    || 'Not provided'
 
   const cancelEditing = () => {
     setIsEditing(false)
@@ -329,6 +342,10 @@ export function LoanApplicationDetail({ applicationId }: LoanApplicationDetailPr
           <div>
             <div className="muted">Phone Number</div>
             <strong>{application.borrower?.mobileNumber || application.phone || 'Not provided'}</strong>
+          </div>
+          <div>
+            <div className="muted">Application Address</div>
+            <strong>{applicationAddress}</strong>
           </div>
           <div>
             <div className="muted">Monthly Income</div>

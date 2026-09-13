@@ -26,6 +26,11 @@ interface RequestLoanRouteContext {
   }>
 }
 
+function getTrimmedStringField(value: Record<string, unknown>, key: string) {
+  const field = value[key]
+  return typeof field === 'string' ? field.trim() : ''
+}
+
 export async function POST(request: NextRequest, context: RequestLoanRouteContext) {
   const { slug } = await context.params
   const body = await readJsonBody<Record<string, unknown>>(request)
@@ -38,6 +43,16 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
   const email = typeof body.email === 'string' ? body.email.trim() : ''
   const emailVerificationCode = typeof body.emailVerificationCode === 'string' ? body.emailVerificationCode.trim() : ''
   const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
+  const rawAddressDetails = body.addressDetails
+  const addressDetails = rawAddressDetails && typeof rawAddressDetails === 'object'
+    ? {
+        line1: getTrimmedStringField(rawAddressDetails as Record<string, unknown>, 'line1'),
+        line2: getTrimmedStringField(rawAddressDetails as Record<string, unknown>, 'line2'),
+        city: getTrimmedStringField(rawAddressDetails as Record<string, unknown>, 'city'),
+        province: getTrimmedStringField(rawAddressDetails as Record<string, unknown>, 'province'),
+        postalCode: getTrimmedStringField(rawAddressDetails as Record<string, unknown>, 'postalCode'),
+      }
+    : undefined
   const purpose = typeof body.purpose === 'string'
     ? body.purpose.trim()
     : typeof body.notes === 'string'
@@ -104,7 +119,8 @@ export async function POST(request: NextRequest, context: RequestLoanRouteContex
         firstPaymentDate,
         purpose,
         income,
-      }, { requireEmail: true }),
+        addressDetails,
+      }, { requireEmail: true, requireAddress: true }),
       emailVerificationCode,
     }
 

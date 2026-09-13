@@ -17,7 +17,7 @@ import {
 } from '@/lib/push-notifications'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { BorrowerPortalSummary } from '@/lib/types/borrower-portal'
-import type { LoanApplication, LoanRecord } from '@/lib/types/lending'
+import type { AddressDetails, LoanApplication, LoanRecord } from '@/lib/types/lending'
 import { createBorrowerPortalApplication, getBorrowerPortalSummary } from '@/services/borrower-portal'
 import { switchAccountMode, updateCurrentUserProfile } from '@/services/auth'
 import { classNames } from '@/utils/class-names'
@@ -53,12 +53,18 @@ const scheduleStatusClassNames: Record<ScheduleStatusTone, string> = {
 
 function buildApplicationInitialValues(
   user?: { email: string; firstName: string; lastName: string; mobileNumber?: string } | null,
+  addressDetails?: AddressDetails | null,
 ) {
   return {
     firstName: user?.firstName ?? '',
     lastName: user?.lastName ?? '',
     email: user?.email ?? '',
     phone: user?.mobileNumber || PHONE_PREFIX,
+    addressLine1: addressDetails?.line1 ?? '',
+    addressLine2: addressDetails?.line2 ?? '',
+    addressCity: addressDetails?.city ?? '',
+    addressProvince: addressDetails?.province ?? '',
+    addressPostalCode: addressDetails?.postalCode ?? '',
   }
 }
 
@@ -252,8 +258,9 @@ export function BorrowerPortalDashboard({ initialSummary, todayDateKey }: Borrow
   const [switchingMode, setSwitchingMode] = useState(false)
   const [modeError, setModeError] = useState('')
   const requiresMobileNumber = user?.accountType === 'borrower' && !user.mobileNumber
-  const applicationInitialValues = buildApplicationInitialValues(user)
-  const applicationFormKey = `${applicationInitialValues.email}:${applicationInitialValues.phone}`
+  const linkedBorrower = summary.linkedBorrowers[0] ?? null
+  const applicationInitialValues = buildApplicationInitialValues(user, linkedBorrower?.addressDetails)
+  const applicationFormKey = `${applicationInitialValues.email}:${applicationInitialValues.phone}:${applicationInitialValues.addressLine1}:${applicationInitialValues.addressLine2}:${applicationInitialValues.addressCity}:${applicationInitialValues.addressProvince}:${applicationInitialValues.addressPostalCode}`
   const accountName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Borrower'
   const accountInitials = getAccountInitials(user?.firstName, user?.lastName, user?.email)
   const notificationNotice = getNotificationNoticeContent(notificationStatus)
