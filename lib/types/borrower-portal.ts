@@ -1,4 +1,4 @@
-import type { LoanApplication, LoanRecord } from './lending'
+import type { AddressDetails, LoanApplication, LoanRecord } from './lending'
 
 export interface BorrowerPortalLinkedBorrower {
   id: string
@@ -7,6 +7,7 @@ export interface BorrowerPortalLinkedBorrower {
   displayName: string
   email: string
   mobileNumber: string
+  addressDetails: AddressDetails | null
 }
 
 export interface BorrowerPortalLender {

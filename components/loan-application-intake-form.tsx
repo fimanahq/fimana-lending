@@ -26,6 +26,11 @@ interface LoanApplicationIntakeFormState {
   firstPaymentDate: string
   income: string
   purpose: string
+  addressLine1: string
+  addressLine2: string
+  addressCity: string
+  addressProvince: string
+  addressPostalCode: string
 }
 
 type LoanApplicationIntakeInitialValues = Partial<Omit<LoanApplicationIntakeFormState, 'firstPaymentDate'>>
@@ -41,6 +46,11 @@ function buildInitialForm(initialValues: LoanApplicationIntakeInitialValues = {}
     firstPaymentDate: getBorrowerRequestSemiMonthlyFirstPaymentDate(),
     income: initialValues.income ?? '',
     purpose: initialValues.purpose ?? '',
+    addressLine1: initialValues.addressLine1 ?? '',
+    addressLine2: initialValues.addressLine2 ?? '',
+    addressCity: initialValues.addressCity ?? '',
+    addressProvince: initialValues.addressProvince ?? '',
+    addressPostalCode: initialValues.addressPostalCode ?? '',
   }
 }
 
@@ -125,6 +135,11 @@ export function LoanApplicationIntakeForm({
     income: false,
     purpose: false,
     gives: false,
+    addressLine1: false,
+    addressLine2: false,
+    addressCity: false,
+    addressProvince: false,
+    addressPostalCode: false,
   })
   const [submitting, setSubmitting] = useState(false)
   const [sendingVerificationCode, setSendingVerificationCode] = useState(false)
@@ -137,6 +152,7 @@ export function LoanApplicationIntakeForm({
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const requiresPublicEmailVerification = Boolean(publicLoanRequestSlug) && !onSubmitApplication
+  const requiresAddress = Boolean(publicLoanRequestSlug) || Boolean(onSubmitApplication)
   const validation = useMemo(
     () =>
       getLoanApplicationValidationResult({
@@ -147,8 +163,15 @@ export function LoanApplicationIntakeForm({
         paymentFrequency: BORROWER_REQUEST_PAYMENT_FREQUENCY,
         firstDay: BORROWER_REQUEST_FIRST_DAY,
         secondDay: BORROWER_REQUEST_SECOND_DAY,
-      }, { requireEmail: requiresPublicEmailVerification }),
-    [form, requiresPublicEmailVerification],
+        addressDetails: {
+          line1: form.addressLine1,
+          line2: form.addressLine2,
+          city: form.addressCity,
+          province: form.addressProvince,
+          postalCode: form.addressPostalCode,
+        },
+      }, { requireEmail: requiresPublicEmailVerification, requireAddress: requiresAddress }),
+    [form, requiresAddress, requiresPublicEmailVerification],
   )
   const emailValue = form.email.trim()
   const emailIsDirty = touchedFields.email && emailValue.length > 0 && Boolean(validation.errors.email) && !isRequiredError(validation.errors.email)
@@ -195,6 +218,16 @@ export function LoanApplicationIntakeForm({
         return form.purpose.trim().length === 0
       case 'gives':
         return form.gives.trim().length === 0
+      case 'addressLine1':
+        return form.addressLine1.trim().length === 0
+      case 'addressLine2':
+        return form.addressLine2.trim().length === 0
+      case 'addressCity':
+        return form.addressCity.trim().length === 0
+      case 'addressProvince':
+        return form.addressProvince.trim().length === 0
+      case 'addressPostalCode':
+        return false
     }
   }
 
@@ -229,6 +262,11 @@ export function LoanApplicationIntakeForm({
       income: false,
       purpose: false,
       gives: false,
+      addressLine1: false,
+      addressLine2: false,
+      addressCity: false,
+      addressProvince: false,
+      addressPostalCode: false,
     })
     setEmailVerificationCode('')
     setVerificationEmail('')
@@ -299,7 +337,14 @@ export function LoanApplicationIntakeForm({
         paymentFrequency: BORROWER_REQUEST_PAYMENT_FREQUENCY,
         firstDay: BORROWER_REQUEST_FIRST_DAY,
         secondDay: BORROWER_REQUEST_SECOND_DAY,
-      }, { requireEmail: requiresPublicEmailVerification })
+        addressDetails: {
+          line1: form.addressLine1,
+          line2: form.addressLine2,
+          city: form.addressCity,
+          province: form.addressProvince,
+          postalCode: form.addressPostalCode,
+        },
+      }, { requireEmail: requiresPublicEmailVerification, requireAddress: requiresAddress })
 
       if (requiresPublicEmailVerification) {
         if (!validated.email) {
@@ -414,6 +459,93 @@ export function LoanApplicationIntakeForm({
             <p className="request-loan-form__error">{getVisibleError('lastName', touchedFields.lastName)}</p>
           ) : null}
         </div>
+      </div>
+
+      <div className="request-loan-form__grid">
+        <div className="request-loan-form__field">
+          <label htmlFor={`${idPrefix}AddressLine1`}>Street Address</label>
+          <input
+            id={`${idPrefix}AddressLine1`}
+            autoComplete="address-line1"
+            placeholder="House no., street, building, unit"
+            className={showDirtyField('addressLine1', validation.errors.line1) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('line1', touchedFields.addressLine1))}
+            value={form.addressLine1}
+            onBlur={() => markTouched('addressLine1')}
+            onChange={(event) => setForm((current) => ({ ...current, addressLine1: event.target.value }))}
+          />
+          {getVisibleError('line1', touchedFields.addressLine1) ? (
+            <p className="request-loan-form__error">{getVisibleError('line1', touchedFields.addressLine1)}</p>
+          ) : null}
+        </div>
+        <div className="request-loan-form__field">
+          <label htmlFor={`${idPrefix}AddressLine2`}>Barangay or District</label>
+          <input
+            id={`${idPrefix}AddressLine2`}
+            autoComplete="address-line2"
+            placeholder="e.g., Barangay San Antonio"
+            className={showDirtyField('addressLine2', validation.errors.line2) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('line2', touchedFields.addressLine2))}
+            value={form.addressLine2}
+            onBlur={() => markTouched('addressLine2')}
+            onChange={(event) => setForm((current) => ({ ...current, addressLine2: event.target.value }))}
+          />
+          {getVisibleError('line2', touchedFields.addressLine2) ? (
+            <p className="request-loan-form__error">{getVisibleError('line2', touchedFields.addressLine2)}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="request-loan-form__grid">
+        <div className="request-loan-form__field">
+          <label htmlFor={`${idPrefix}AddressCity`}>City or Municipality</label>
+          <input
+            id={`${idPrefix}AddressCity`}
+            autoComplete="address-level2"
+            className={showDirtyField('addressCity', validation.errors.city) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('city', touchedFields.addressCity))}
+            value={form.addressCity}
+            onBlur={() => markTouched('addressCity')}
+            onChange={(event) => setForm((current) => ({ ...current, addressCity: event.target.value }))}
+          />
+          {getVisibleError('city', touchedFields.addressCity) ? (
+            <p className="request-loan-form__error">{getVisibleError('city', touchedFields.addressCity)}</p>
+          ) : null}
+        </div>
+        <div className="request-loan-form__field">
+          <label htmlFor={`${idPrefix}AddressProvince`}>Province</label>
+          <input
+            id={`${idPrefix}AddressProvince`}
+            autoComplete="address-level1"
+            className={showDirtyField('addressProvince', validation.errors.province) ? 'request-loan-form__input--dirty' : ''}
+            aria-invalid={Boolean(getVisibleError('province', touchedFields.addressProvince))}
+            value={form.addressProvince}
+            onBlur={() => markTouched('addressProvince')}
+            onChange={(event) => setForm((current) => ({ ...current, addressProvince: event.target.value }))}
+          />
+          {getVisibleError('province', touchedFields.addressProvince) ? (
+            <p className="request-loan-form__error">{getVisibleError('province', touchedFields.addressProvince)}</p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="request-loan-form__field">
+        <label htmlFor={`${idPrefix}AddressPostalCode`}>Postal Code <span className="muted">(optional)</span></label>
+        <input
+          id={`${idPrefix}AddressPostalCode`}
+          inputMode="numeric"
+          autoComplete="postal-code"
+          maxLength={4}
+          placeholder="0000"
+          className={showDirtyField('addressPostalCode', validation.errors.postalCode) ? 'request-loan-form__input--dirty' : ''}
+          aria-invalid={Boolean(getVisibleError('postalCode', touchedFields.addressPostalCode))}
+          value={form.addressPostalCode}
+          onBlur={() => markTouched('addressPostalCode')}
+          onChange={(event) => setForm((current) => ({ ...current, addressPostalCode: event.target.value.replace(/\D/g, '').slice(0, 4) }))}
+        />
+        {getVisibleError('postalCode', touchedFields.addressPostalCode) ? (
+          <p className="request-loan-form__error">{getVisibleError('postalCode', touchedFields.addressPostalCode)}</p>
+        ) : null}
       </div>
 
       <div className="request-loan-form__grid">

@@ -21,6 +21,7 @@ interface DraftLoanApplicationInput {
   postInterestOnlyMethod: PostInterestOnlyMethod | null
   simpleInterestMethod: SimpleInterestMethod | null
   purpose?: string
+  addressDetails?: LoanApplicationDraftInput['addressDetails']
 }
 
 export function isDraftLoanApplicationPayload(body: Record<string, unknown>) {
@@ -71,6 +72,7 @@ export function getDraftLoanApplicationPayload(body: Record<string, unknown>): L
       ? toSimpleInterestMethod(body.simpleInterestMethod)
       : null,
     purpose: typeof body.purpose === 'string' ? body.purpose.trim() : undefined,
+    addressDetails: toAddressDetails(body.addressDetails),
   })
 }
 
@@ -96,6 +98,26 @@ export function buildDraftLoanApplicationInput(
       ? input.simpleInterestMethod
       : null,
     purpose: input.purpose,
+    addressDetails: input.addressDetails,
+  }
+}
+
+function toAddressDetails(value: unknown): LoanApplicationDraftInput['addressDetails'] {
+  if (value === null) {
+    return null
+  }
+
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+
+  const address = value as Record<string, unknown>
+  return {
+    line1: typeof address.line1 === 'string' ? address.line1.trim() : '',
+    line2: typeof address.line2 === 'string' ? address.line2.trim() : '',
+    city: typeof address.city === 'string' ? address.city.trim() : '',
+    province: typeof address.province === 'string' ? address.province.trim() : '',
+    postalCode: typeof address.postalCode === 'string' ? address.postalCode.trim() || undefined : undefined,
   }
 }
 

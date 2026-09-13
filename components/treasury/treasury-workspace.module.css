@@ -145,13 +145,6 @@
   box-shadow: var(--shadow);
 }
 
-.capitalOverviewHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
 .capitalOverviewEyebrow,
 .capitalSummaryGrid dt {
   color: var(--muted);
@@ -160,19 +153,6 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.capitalOverviewHeader p {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.capitalOverviewFormula {
-  color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .capitalSummaryGrid {
@@ -384,14 +364,6 @@
 
   .bankActionButton {
     width: 100%;
-  }
-
-  .capitalOverviewHeader {
-    flex-direction: column;
-  }
-
-  .capitalOverviewFormula {
-    white-space: normal;
   }
 
   .capitalSummaryGrid {

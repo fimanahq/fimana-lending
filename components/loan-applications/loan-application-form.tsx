@@ -68,6 +68,11 @@ export interface LoanApplicationFormValues {
   postInterestOnlyMethod: PostInterestOnlyMethod
   simpleInterestMethod: SimpleInterestMethod
   purpose: string
+  addressLine1: string
+  addressLine2: string
+  addressCity: string
+  addressProvince: string
+  addressPostalCode: string
 }
 
 interface LoanApplicationFormProps {
@@ -95,6 +100,11 @@ const initialFormValues: LoanApplicationFormValues = {
   postInterestOnlyMethod: 'bullet',
   simpleInterestMethod: 'equal_principal',
   purpose: '',
+  addressLine1: '',
+  addressLine2: '',
+  addressCity: '',
+  addressProvince: '',
+  addressPostalCode: '',
 }
 
 const paymentFrequencyOptions: SearchableSelectOption[] = [
@@ -203,7 +213,30 @@ function incomeHasChanged(nextIncome: number | null, currentIncome?: number | nu
   return nextIncome !== (currentIncome ?? null)
 }
 
-function getDraftPayload(form: LoanApplicationFormValues) {
+function getAddressDetails(form: LoanApplicationFormValues) {
+  const addressDetails = {
+    line1: form.addressLine1.trim(),
+    line2: form.addressLine2.trim(),
+    city: form.addressCity.trim(),
+    province: form.addressProvince.trim(),
+    postalCode: form.addressPostalCode.trim() || undefined,
+  }
+
+  return Object.values(addressDetails).some(Boolean) ? addressDetails : null
+}
+
+function addressHasChanged(
+  form: LoanApplicationFormValues,
+  initialValues: LoanApplicationFormValues,
+) {
+  return form.addressLine1.trim() !== initialValues.addressLine1.trim()
+    || form.addressLine2.trim() !== initialValues.addressLine2.trim()
+    || form.addressCity.trim() !== initialValues.addressCity.trim()
+    || form.addressProvince.trim() !== initialValues.addressProvince.trim()
+    || form.addressPostalCode.trim() !== initialValues.addressPostalCode.trim()
+}
+
+function getDraftPayload(form: LoanApplicationFormValues, includeAddress: boolean) {
   const [firstDay = '', secondDay = ''] = derivePaymentDaysFromStartDate(form.startDate, form.paymentType)
 
   return buildDraftLoanApplicationInput({
@@ -225,10 +258,11 @@ function getDraftPayload(form: LoanApplicationFormValues) {
       ? form.simpleInterestMethod
       : null,
     purpose: form.purpose.trim() || undefined,
+    addressDetails: includeAddress ? getAddressDetails(form) : undefined,
   })
 }
 
-function validateForm(form: LoanApplicationFormValues) {
+function validateForm(form: LoanApplicationFormValues, requireAddress: boolean) {
   if (!form.borrowerId) {
     return 'Borrower is required'
   }
@@ -263,6 +297,18 @@ function validateForm(form: LoanApplicationFormValues) {
     if (borrowerIncome === null || !Number.isFinite(borrowerIncome) || borrowerIncome < 0) {
       return 'Monthly income must be zero or greater'
     }
+  }
+
+  const addressDetails = getAddressDetails(form)
+  if (requireAddress || addressDetails) {
+    if (!form.addressLine1.trim()) return 'Street address is required'
+    if (!form.addressLine2.trim()) return 'Barangay or district is required'
+    if (!form.addressCity.trim()) return 'City or municipality is required'
+    if (!form.addressProvince.trim()) return 'Province is required'
+  }
+
+  if (form.addressPostalCode.trim() && !/^\d{4}$/.test(form.addressPostalCode.trim())) {
+    return 'Postal code must be 4 digits'
   }
 
   if (form.calculationMethod === 'interest_only') {
@@ -301,6 +347,11 @@ export function getLoanApplicationFormValues(application: LoanApplication): Loan
     postInterestOnlyMethod: (application.postInterestOnlyMethod as PostInterestOnlyMethod) || 'bullet',
     simpleInterestMethod: (application.simpleInterestMethod as SimpleInterestMethod) || 'equal_principal',
     purpose: application.purpose || application.notes || '',
+    addressLine1: application.addressSnapshot?.line1 || application.borrower?.addressDetails?.line1 || '',
+    addressLine2: application.addressSnapshot?.line2 || application.borrower?.addressDetails?.line2 || '',
+    addressCity: application.addressSnapshot?.city || application.borrower?.addressDetails?.city || '',
+    addressProvince: application.addressSnapshot?.province || application.borrower?.addressDetails?.province || '',
+    addressPostalCode: application.addressSnapshot?.postalCode || application.borrower?.addressDetails?.postalCode || '',
   }
 }
 
@@ -325,7 +376,7 @@ export function LoanApplicationForm({
   const [showValidation, setShowValidation] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  const validationError = useMemo(() => validateForm(form), [form])
+  const validationError = useMemo(() => validateForm(form, mode === 'create'), [form, mode])
   const derivedPaymentDays = useMemo(
     () => derivePaymentDaysFromStartDate(form.startDate, form.paymentType),
     [form.paymentType, form.startDate],
@@ -415,6 +466,11 @@ export function LoanApplicationForm({
       borrowerIncome: mode === 'edit'
         ? formatOptionalIncome(nextBorrower?.income)
         : form.borrowerIncome,
+      addressLine1: nextBorrower?.addressDetails?.line1 ?? '',
+      addressLine2: nextBorrower?.addressDetails?.line2 ?? '',
+      addressCity: nextBorrower?.addressDetails?.city ?? '',
+      addressProvince: nextBorrower?.addressDetails?.province ?? '',
+      addressPostalCode: nextBorrower?.addressDetails?.postalCode ?? '',
     })
   }
 
@@ -431,7 +487,8 @@ export function LoanApplicationForm({
     const toastId = loading(mode === 'edit' ? 'Updating loan application...' : 'Creating loan application...')
 
     try {
-      const payload = getDraftPayload(form)
+      const shouldIncludeAddress = mode === 'create' || addressHasChanged(form, initialValues ?? initialFormValues)
+      const payload = getDraftPayload(form, shouldIncludeAddress)
       const saved = mode === 'edit' && applicationId
         ? await updateLoanApplication(applicationId, payload)
         : await createLoanApplication(payload)
@@ -473,6 +530,11 @@ export function LoanApplicationForm({
       ...current,
       borrowerId: newBorrower.id,
       borrowerIncome: formatOptionalIncome(newBorrower.income),
+      addressLine1: newBorrower.addressDetails?.line1 ?? '',
+      addressLine2: newBorrower.addressDetails?.line2 ?? '',
+      addressCity: newBorrower.addressDetails?.city ?? '',
+      addressProvince: newBorrower.addressDetails?.province ?? '',
+      addressPostalCode: newBorrower.addressDetails?.postalCode ?? '',
     }))
   }
 
@@ -514,6 +576,61 @@ export function LoanApplicationForm({
             onAction={mode === 'create' ? () => setShowBorrowerModal(true) : undefined}
             onChange={handleBorrowerChange}
           />
+
+          <div className="stack">
+            <div>
+              <strong>Address</strong>
+              {mode === 'edit' ? <div className="muted">Clear every field to remove this application snapshot.</div> : null}
+            </div>
+            <div className="grid two">
+              <Input
+                id={`${mode}ApplicationAddressLine1`}
+                label="Street Address"
+                autoComplete="address-line1"
+                placeholder="House no., street, building, unit"
+                required={mode === 'create'}
+                value={form.addressLine1}
+                onChange={(event) => updateForm({ addressLine1: event.target.value })}
+              />
+              <Input
+                id={`${mode}ApplicationAddressLine2`}
+                label="Barangay or District"
+                autoComplete="address-line2"
+                placeholder="e.g., Barangay San Antonio"
+                required={mode === 'create'}
+                value={form.addressLine2}
+                onChange={(event) => updateForm({ addressLine2: event.target.value })}
+              />
+            </div>
+            <div className="grid two">
+              <Input
+                id={`${mode}ApplicationAddressCity`}
+                label="City or Municipality"
+                autoComplete="address-level2"
+                required={mode === 'create'}
+                value={form.addressCity}
+                onChange={(event) => updateForm({ addressCity: event.target.value })}
+              />
+              <Input
+                id={`${mode}ApplicationAddressProvince`}
+                label="Province"
+                autoComplete="address-level1"
+                required={mode === 'create'}
+                value={form.addressProvince}
+                onChange={(event) => updateForm({ addressProvince: event.target.value })}
+              />
+            </div>
+            <Input
+              id={`${mode}ApplicationAddressPostalCode`}
+              label="Postal Code"
+              autoComplete="postal-code"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder="Optional"
+              value={form.addressPostalCode}
+              onChange={(event) => updateForm({ addressPostalCode: event.target.value.replace(/\D/g, '').slice(0, 4) })}
+            />
+          </div>
 
           {mode === 'edit' ? (
             <Input

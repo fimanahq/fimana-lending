@@ -48,6 +48,14 @@ export type InterestMode = 'rules' | 'manual'
 export type DashboardReceivableStatus = 'overdue' | 'current' | 'upcoming' | 'paid'
 export type LoanReferralStatus = 'none' | 'pending' | 'applied' | 'partially_applied'
 
+export interface AddressDetails {
+  line1: string
+  line2: string
+  city: string
+  province: string
+  postalCode?: string
+}
+
 export interface LoanReferral {
   referrerBorrowerId: string | null
   referrerBorrowerNumber: string
@@ -90,6 +98,7 @@ export interface Borrower {
   contactNumber: string
   email: string
   address: string
+  addressDetails?: AddressDetails | null
   employmentOrIncomeSource: string
   income: number | null
   notes: string
@@ -655,6 +664,7 @@ export interface LoanApplication {
   paymentType?: LoanApplicationPaymentType
   cutoffPatternCode?: LoanApplicationCutoffPatternCode | null
   purpose?: string
+  addressSnapshot?: AddressDetails | null
   source?: LoanApplicationSource
   computedPreviewSnapshot?: LoanApplicationComputedPreviewSnapshot | null
   firstName?: string
@@ -695,6 +705,7 @@ export interface LoanApplicationBorrower {
   mobileNumber: string
   email: string
   income?: number | null
+  addressDetails?: AddressDetails | null
 }
 
 export interface LoanApplicationProductSnapshot {
@@ -753,6 +764,7 @@ export interface LoanApplicationComputedPreviewSnapshot {
 
 export interface LoanApplicationDraftInput {
   borrowerId: string
+  addressDetails?: AddressDetails | null
   loanProductId?: string
   loanAmountMinor: number
   numberOfCutoffs: number

@@ -20,6 +20,11 @@ interface BorrowerFormState {
   contactNumber: string
   income: string
   notes: string
+  addressLine1: string
+  addressLine2: string
+  addressCity: string
+  addressProvince: string
+  addressPostalCode: string
 }
 
 type BorrowerFormErrors = Partial<Record<keyof BorrowerFormState, string>>
@@ -31,6 +36,11 @@ const emptyForm: BorrowerFormState = {
   lastName: '',
   notes: '',
   contactNumber: '',
+  addressLine1: '',
+  addressLine2: '',
+  addressCity: '',
+  addressProvince: '',
+  addressPostalCode: '',
 }
 
 function isValidEmail(value: string) {
@@ -53,6 +63,11 @@ function getInitialForm(borrower?: Borrower): BorrowerFormState {
     lastName,
     notes: borrower.notes || '',
     contactNumber: borrower.contactNumber || '',
+    addressLine1: borrower.addressDetails?.line1 ?? '',
+    addressLine2: borrower.addressDetails?.line2 ?? '',
+    addressCity: borrower.addressDetails?.city ?? '',
+    addressProvince: borrower.addressDetails?.province ?? '',
+    addressPostalCode: borrower.addressDetails?.postalCode ?? '',
   }
 }
 
@@ -64,6 +79,18 @@ function parseIncome(value: string) {
 
   const parsed = Number(trimmed)
   return Number.isFinite(parsed) ? parsed : Number.NaN
+}
+
+function getAddressDetails(form: BorrowerFormState) {
+  const addressDetails = {
+    line1: form.addressLine1.trim(),
+    line2: form.addressLine2.trim(),
+    city: form.addressCity.trim(),
+    province: form.addressProvince.trim(),
+    postalCode: form.addressPostalCode.trim() || undefined,
+  }
+
+  return Object.values(addressDetails).some(Boolean) ? addressDetails : null
 }
 
 function trimForm(form: BorrowerFormState): CreateBorrowerInput {
@@ -78,6 +105,7 @@ function trimForm(form: BorrowerFormState): CreateBorrowerInput {
     income: income === null ? null : income,
     notes: form.notes.trim(),
     contactNumber: form.contactNumber.trim(),
+    addressDetails: getAddressDetails(form),
   }
 }
 
@@ -99,6 +127,24 @@ function validateForm(form: BorrowerFormState) {
 
   if (trimmed.income !== undefined && trimmed.income !== null && (!Number.isFinite(trimmed.income) || trimmed.income < 0)) {
     nextErrors.income = 'Monthly income must be zero or greater.'
+  }
+
+  if (trimmed.addressDetails) {
+    if (!trimmed.addressDetails.line1) {
+      nextErrors.addressLine1 = 'Street address is required when providing an address.'
+    }
+    if (!trimmed.addressDetails.line2) {
+      nextErrors.addressLine2 = 'Barangay or district is required when providing an address.'
+    }
+    if (!trimmed.addressDetails.city) {
+      nextErrors.addressCity = 'City or municipality is required when providing an address.'
+    }
+    if (!trimmed.addressDetails.province) {
+      nextErrors.addressProvince = 'Province is required when providing an address.'
+    }
+    if (trimmed.addressDetails.postalCode && !/^\d{4}$/.test(trimmed.addressDetails.postalCode)) {
+      nextErrors.addressPostalCode = 'Postal code must be 4 digits.'
+    }
   }
 
   return nextErrors
@@ -231,6 +277,62 @@ export function BorrowerForm({ borrower, mode, onSaved }: BorrowerFormProps) {
         placeholder="0.00"
         type="number"
       />
+
+      <div className="stack">
+        <div>
+          <strong>Address</strong>
+          <div className="muted">Optional. If entered, provide the full address.</div>
+        </div>
+        <div className="grid two">
+          <Input
+            id={`${mode}-borrower-address-line1`}
+            label="Street Address"
+            value={form.addressLine1}
+            error={errors.addressLine1}
+            autoComplete="address-line1"
+            placeholder="House no., street, building, unit"
+            onChange={(event) => updateField('addressLine1', event.target.value)}
+          />
+          <Input
+            id={`${mode}-borrower-address-line2`}
+            label="Barangay or District"
+            value={form.addressLine2}
+            error={errors.addressLine2}
+            autoComplete="address-line2"
+            placeholder="e.g., Barangay San Antonio"
+            onChange={(event) => updateField('addressLine2', event.target.value)}
+          />
+        </div>
+        <div className="grid two">
+          <Input
+            id={`${mode}-borrower-address-city`}
+            label="City or Municipality"
+            value={form.addressCity}
+            error={errors.addressCity}
+            autoComplete="address-level2"
+            onChange={(event) => updateField('addressCity', event.target.value)}
+          />
+          <Input
+            id={`${mode}-borrower-address-province`}
+            label="Province"
+            value={form.addressProvince}
+            error={errors.addressProvince}
+            autoComplete="address-level1"
+            onChange={(event) => updateField('addressProvince', event.target.value)}
+          />
+        </div>
+        <Input
+          id={`${mode}-borrower-address-postal-code`}
+          label="Postal Code"
+          value={form.addressPostalCode}
+          error={errors.addressPostalCode}
+          autoComplete="postal-code"
+          inputMode="numeric"
+          maxLength={4}
+          placeholder="Optional"
+          onChange={(event) => updateField('addressPostalCode', event.target.value.replace(/\D/g, '').slice(0, 4))}
+        />
+      </div>
 
       <Textarea
         id={`${mode}-borrower-notes`}
