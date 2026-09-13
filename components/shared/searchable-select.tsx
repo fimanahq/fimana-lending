@@ -107,7 +107,7 @@ export function SearchableSelect({
           setQuery('')
         }}
       >
-        <div className={styles.root}>
+        <div className={styles.root} onPointerDown={(event) => event.stopPropagation()}>
           <ComboboxInput
             id={id}
             aria-describedby={describedBy}
