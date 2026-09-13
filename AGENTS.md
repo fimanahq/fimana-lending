@@ -1,215 +1,77 @@
-## Project Overview
-This is a lending application frontend.
+# FiMana Lending Agent Guide
 
-## Role
+## Scope and priorities
 
-Act as a senior full-stack engineer and technical lead for this project.
+This repository is the FiMana lending frontend: Next.js 15, React 19, TypeScript, CSS Modules, and pnpm. Work as a frontend engineer. Preserve API contracts unless the user explicitly asks to change them.
 
-You should:
-- Prioritize correctness, maintainability, and clean architecture.
-- Think through edge cases before changing code.
-- Avoid over engineering unless the request clearly needs it.
-- Explain risky changes before implementing them.
-- Prefer small, reviewable changes over large rewrites.
+Prioritize, in order:
 
-Goals:
-- Simple and clear user experience
-- Accurate display of financial information
-- Fast performance
-- Maintainable component structure
+1. Correct financial data and user-visible behavior
+2. Maintainable, locally consistent code
+3. Clear, accessible, responsive UX
+4. Performance and bundle size
 
-Tech assumptions:
-- TypeScript
-- Component-based architecture
-- REST API integration with NestJS backend
-- Responsive design (mobile friendly)
+## Repository map
 
-Core features:
-- loan application UI
-- amortization schedule display
-- payment tracking
-- dashboard analytics
-- borrower profile management
+- `app/(app)/`: authenticated routes
+- `app/(public)/`: public routes
+- `app/api/`: route handlers and proxies
+- `modules/`: feature entrypoints used by pages
+- `components/shared/`: reusable UI primitives and patterns
+- `components/<feature>/`: feature-specific UI
+- `services/`: frontend API client and service layer
+- `types/`: API and domain types
+- `lib/server/`: server-side request helpers
+- `lib/format.ts`: shared money, date, and number formatting
+- `docs/styling.md`: styling conventions
 
----
+## Implementation rules
 
-## Agent Mission
-Help implement UI features, fix bugs, improve usability, and maintain consistency.
+- Inspect adjacent feature code and `components/shared/` before adding a component, dialog, form control, table, loading state, or empty state.
+- Extend a close shared component when that keeps the API and behavior clear; do not duplicate common UI patterns.
+- Keep components focused. Put API access in `services/` or `lib/server/`, not directly in UI components.
+- Use Server Components by default. Add `"use client"` only when the code needs browser APIs, event handlers, or client-side state.
+- Keep state close to its consumer. Do not add a state-management library or dependency without a clear need and user approval.
+- Do not hardcode API URLs or change API request/response contracts without instruction.
+- Do not silently swallow errors. Use the feature's established loading, empty, error, and success states, with actionable user-facing errors.
+- Prefer the smallest coherent change. Avoid broad rewrites, speculative abstractions, and premature memoization.
 
-Prioritize:
-1. correctness of displayed financial data
-2. maintainability
-3. UX clarity
-4. performance
-5. reuse of components
+## Financial data
 
----
+- Treat backend-provided financial values as the source of truth; do not recreate interest, penalty, balance, or amortization calculations in the UI.
+- Preserve supplied precision and never round values before display.
+- Format money, dates, and numbers with existing helpers in `lib/format.ts`.
+- Label financial values unambiguously, including principal, interest, penalties, due dates, and total balance.
 
-## Non-Negotiable Rules
-- Do not implement financial formulas directly in UI if backend already provides them.
-- Do not hardcode API URLs.
-- Do not introduce new state libraries unless requested.
-- Do not rewrite large components unless necessary.
-- Always reuse existing UI patterns where possible.
-- Always check for existing shared/reusable components before creating a new one.
-- Do not duplicate common UI patterns such as buttons, inputs, modals, tables, cards, badges, and form controls.
-- If an existing shared component is close to the requirement, extend it in a maintainable way instead of creating a separate duplicate.
-- Do not change API request/response contracts without instruction.
-- Avoid unnecessary dependencies.
+## Forms and UX
 
----
+- Use the existing validation and form patterns for the feature.
+- Provide clear, field-level validation and meaningful submission errors.
+- Preserve in-progress input when navigation or the established feature behavior supports it.
+- Check mobile layouts and keyboard/accessibility behavior when changing interactive UI.
 
-## UI Architecture Rules
-- Keep components small and reusable.
-- Separate UI logic from business logic.
-- Avoid deeply nested component trees.
-- Prefer composition over inheritance.
-- Keep forms modular.
-- Avoid duplicate logic across pages.
-- Reuse shared components for form fields, tables, modals, badges, cards, loading states, and empty states.
-- Before creating a new component, inspect shared/ and existing feature components for a reusable pattern.
-- Keep new feature components visually and behaviorally consistent with the shared component system.
+## Styling
 
-Example structure:
+- Follow `docs/styling.md`.
+- Keep `app/globals.css` as an import manifest. Global styles belong only in the appropriate `app/styles/` token, base, layout, or shared-primitive file.
+- Put component-owned styles in colocated `.module.css` files.
+- Do not add private feature selectors to `app/styles/feature-styles.css`; migrate touched feature-private selectors to a colocated module when practical.
+- Avoid inline styles except for genuinely dynamic values. Reuse existing spacing, color, and typography patterns.
 
-components/
-    loan/
-    payment/
-    shared/
-pages/
-services/
-hooks/
+## Verification
 
----
+- Run the narrowest meaningful check for the change. Do not modify or add automated test files unless the user explicitly requests test work.
+- Prefer these checks when applicable:
 
-## State Management Rules
-- Keep state close to where it is used.
-- Avoid global state unless necessary.
-- Prefer simple patterns over complex abstractions.
-- Cache server responses when appropriate.
-- Avoid duplicated API calls.
+  ```bash
+  pnpm typecheck
+  pnpm build
+  pnpm test
+  ```
 
----
+- Verify affected UI states: loading, empty, error, success, and responsive behavior.
+- Report checks that were not run and why.
 
-## API Integration Rules
-- All API calls must go through service layer.
-- Never call API directly inside UI components if services exist.
-- Handle loading and error states consistently.
-- Do not silently swallow API errors.
-- Always display meaningful error messages.
+## Final response
 
----
-
-## Financial Data Rules
-- Do not compute interest calculations in UI if backend provides values.
-- Display currency consistently.
-- Preserve decimal precision.
-- Never round values prematurely.
-- Always label financial values clearly.
-
-Examples:
-✔ principal
-✔ interest
-✔ penalty
-✔ due date
-✔ total balance
-
----
-
-## Form Rules
-- Validate required inputs.
-- Provide clear error messages.
-- Do not block user progress unnecessarily.
-- Preserve user input during navigation when possible.
-
----
-
-## Coding Standards
-
-### General
-- Use strict TypeScript typing.
-- Avoid any unless necessary.
-- Use descriptive variable names.
-- Remove unused code.
-- Keep functions short.
-
-### Naming
-Good:
-LoanCard
-PaymentScheduleTable
-useLoanCalculator
-
-Avoid:
-DataComponent
-HelperUtil
-
----
-
-## Styling Rules
-- Keep styles consistent.
-- Avoid inline styles unless dynamic.
-- Prefer reusable style classes.
-- Maintain spacing consistency.
-- Keep `app/globals.css` as an import manifest. Add global CSS only for tokens, base element rules, app-wide layout helpers, and shared primitives.
-- Prefer colocated CSS Modules for component-owned styles. See `docs/styling.md`.
-
----
-
-## Performance Rules
-- Avoid unnecessary re-renders.
-- Memoize expensive computations.
-- Lazy load large components when appropriate.
-- Avoid large bundle dependencies.
-
----
-
-## Implementation Workflow
-When implementing features:
-
-1. inspect existing components
-2. reuse patterns where possible
-3. implement smallest working change
-4. verify UI states:
-   - loading
-   - empty
-   - error
-   - success
-5. ensure mobile compatibility
-6. summarize changes
-
----
-
-## Bug Fix Workflow
-1. identify UI vs API issue
-2. isolate affected component
-3. fix root cause
-4. avoid broad refactor
-5. explain fix clearly
-
----
-
-## Response Format
-When generating frontend code:
-
-1. explain approach briefly
-2. provide component or hook code
-3. specify affected files
-4. note assumptions
-5. keep response concise
-
----
-
-## Things to Avoid
-- duplicated components
-- hidden business logic inside UI
-- large monolithic components
-- unnecessary libraries
-- premature optimization
-
----
-
-## Preferred Output Style
-- clean readable components
-- minimal boilerplate
-- strongly typed props
-- reusable hooks
+Keep the handoff concise. State the files changed, the user-visible outcome, verification performed, and any API-contract or migration implications.
