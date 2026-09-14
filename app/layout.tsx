@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next'
+import { ApiWakeup } from '@/components/providers/api-wakeup'
+import { API_BASE_URL } from '@/lib/constants'
 import './globals.css'
 
 const APP_NAME = 'FiMana Lending'
@@ -34,7 +36,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
+      <body>
+        <ApiWakeup apiUrl={API_BASE_URL} />
+        {children}
+      </body>
     </html>
   )
 }
