@@ -12,6 +12,7 @@ interface SettingsFormState {
   startingCapital: string
   defaultPenaltyRate: string
   publicLoanRequestSlug: string
+  adminEmail: string
   ownerLoanMobileNumber: string
   excludeOwnerLoanInterestFromProfit: boolean
   includeLoanPaymentsInTreasuryByDefault: boolean
@@ -25,6 +26,7 @@ function buildFormState(settings: Settings): SettingsFormState {
     startingCapital: settings.startingCapital.toString(),
     defaultPenaltyRate: ((settings.defaultPenaltyRateBps ?? 0) / 100).toString(),
     publicLoanRequestSlug: settings.publicLoanRequestSlug ?? '',
+    adminEmail: settings.adminEmail ?? '',
     ownerLoanMobileNumber: settings.ownerLoanMobileNumber ?? '+63',
     excludeOwnerLoanInterestFromProfit: settings.excludeOwnerLoanInterestFromProfit ?? false,
     includeLoanPaymentsInTreasuryByDefault: settings.includeLoanPaymentsInTreasuryByDefault ?? true,
@@ -95,6 +97,11 @@ function validateForm(form: SettingsFormState): SettingsFormErrors {
 
   if (slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
     nextErrors.publicLoanRequestSlug = 'Use lowercase letters, numbers, and single hyphens.'
+  }
+
+  const adminEmail = form.adminEmail.trim()
+  if (adminEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+    nextErrors.adminEmail = 'Enter a valid admin email address.'
   }
 
   return nextErrors
@@ -278,6 +285,7 @@ export function WorkspaceSettingsForm() {
     || form.startingCapital !== initialForm.startingCapital
     || form.defaultPenaltyRate !== initialForm.defaultPenaltyRate
     || form.publicLoanRequestSlug !== initialForm.publicLoanRequestSlug
+    || form.adminEmail !== initialForm.adminEmail
     || form.ownerLoanMobileNumber !== initialForm.ownerLoanMobileNumber
     || form.excludeOwnerLoanInterestFromProfit !== initialForm.excludeOwnerLoanInterestFromProfit
     || form.includeLoanPaymentsInTreasuryByDefault !== initialForm.includeLoanPaymentsInTreasuryByDefault
@@ -300,9 +308,10 @@ export function WorkspaceSettingsForm() {
       const nextSettings = await updateSettings({
         defaultCurrency: form.defaultCurrency,
         startingCapital: parsedStartingCapital.value ?? settings.startingCapital,
-        defaultPenaltyRateBps: parsedDefaultPenaltyRate.value ?? settings.defaultPenaltyRateBps,
-        publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
-        ownerLoanMobileNumber: ownerLoanMobileNumber && ownerLoanMobileNumber !== '+63' ? ownerLoanMobileNumber : null,
+      defaultPenaltyRateBps: parsedDefaultPenaltyRate.value ?? settings.defaultPenaltyRateBps,
+      publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
+      adminEmail: form.adminEmail.trim() || null,
+      ownerLoanMobileNumber: ownerLoanMobileNumber && ownerLoanMobileNumber !== '+63' ? ownerLoanMobileNumber : null,
         excludeOwnerLoanInterestFromProfit: form.excludeOwnerLoanInterestFromProfit,
         includeLoanPaymentsInTreasuryByDefault: form.includeLoanPaymentsInTreasuryByDefault,
       })
@@ -403,6 +412,18 @@ export function WorkspaceSettingsForm() {
               })}
               <span className="ui-sr-only" aria-live="polite">{requestUrlCopyAnnouncement}</span>
             </div>
+          </CardWrapper>
+
+          <CardWrapper title="Email alerts">
+            <Input
+              id="workspace-admin-email"
+              label="Admin email"
+              type="email"
+              value={form.adminEmail}
+              error={errors.adminEmail}
+              hint="Receive an email when a borrower submits an application through the public link or borrower portal."
+              onChange={(event) => updateField('adminEmail', event.target.value)}
+            />
           </CardWrapper>
 
           <CardWrapper title="Owner Loan Profit Exclusion">
