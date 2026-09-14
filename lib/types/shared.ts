@@ -20,6 +20,7 @@ export interface Settings {
   startingCapital: number
   defaultPenaltyRateBps: number
   publicLoanRequestSlug: string | null
+  adminEmail: string | null
   ownerLoanMobileNumber?: string | null
   excludeOwnerLoanInterestFromProfit?: boolean
   includeLoanPaymentsInTreasuryByDefault: boolean
