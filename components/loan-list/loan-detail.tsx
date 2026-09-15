@@ -197,6 +197,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<LoanPaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentNotes, setPaymentNotes] = useState('')
   const [paymentIncludeInTreasury, setPaymentIncludeInTreasury] = useState(true)
   const [paymentConfirmExcessProfit, setPaymentConfirmExcessProfit] = useState(false)
   const [adjustmentDate, setAdjustmentDate] = useState('')
@@ -391,6 +392,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
     setPaymentAmount((payment.amountMinor / 100).toFixed(2))
     setPaymentMethod(payment.method)
     setPaymentReference(payment.referenceNo)
+    setPaymentNotes(payment.notes)
     setPaymentIncludeInTreasury(Boolean(payment.accountId && payment.transactionId))
     setPaymentConfirmExcessProfit(false)
     setPaymentActionError('')
@@ -433,6 +435,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
         amountMinor,
         method: paymentMethod,
         referenceNo: paymentReference.trim() || undefined,
+        notes: paymentNotes.trim(),
         includeInTreasury: paymentIncludeInTreasury,
         treatExcessAsProfit: paymentConfirmExcessProfit,
       })
@@ -1002,6 +1005,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
                     <td>
                       <strong>{payment.receiptNumber}</strong>
                       <div className="muted">{payment.referenceNo || 'No reference'}</div>
+                      {payment.notes ? <div className="muted">{payment.notes}</div> : null}
                     </td>
                     <td>{formatPaymentMethod(payment.method)}</td>
                     <td>{formatMinorCurrency(allocatedAmountMinor, currency)}</td>
@@ -1303,6 +1307,15 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
               value={paymentReference}
               onChange={(event) => setPaymentReference(event.target.value)}
               placeholder="Optional"
+            />
+            <Textarea
+              id="edit-payment-notes"
+              label="Note"
+              value={paymentNotes}
+              onChange={(event) => setPaymentNotes(event.target.value)}
+              placeholder="Optional"
+              maxLength={1000}
+              className="grid-span-2"
             />
           </div>
           <Switch
