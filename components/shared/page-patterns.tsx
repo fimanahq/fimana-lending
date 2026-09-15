@@ -18,7 +18,9 @@ interface SectionHeaderProps {
 interface CardWrapperProps {
   children: ReactNode
   className?: string
+  contentSpacing?: 'default' | 'compact' | 'none'
   title?: string
+  titleSize?: 'default' | 'small'
 }
 
 interface TableWrapperProps {
@@ -56,10 +58,21 @@ export function SectionHeader({
   )
 }
 
-export function CardWrapper({ children, className, title }: CardWrapperProps) {
+export function CardWrapper({
+  children,
+  className,
+  contentSpacing = 'default',
+  title,
+  titleSize = 'default',
+}: CardWrapperProps) {
   return (
-    <section className={classNames('card panel card-wrapper', className)}>
-      {title ? <h2 className="section-title">{title}</h2> : null}
+    <section className={classNames(
+      'card panel card-wrapper',
+      contentSpacing === 'compact' ? 'card-wrapper--compact' : '',
+      contentSpacing === 'none' ? 'card-wrapper--flush' : '',
+      className,
+    )}>
+      {title ? <h2 className={classNames('section-title', titleSize === 'small' ? 'card-wrapper__title--small' : '')}>{title}</h2> : null}
       {children}
     </section>
   )

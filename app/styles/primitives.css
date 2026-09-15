@@ -15,6 +15,28 @@
   gap: 1rem;
 }
 
+.card-wrapper--compact {
+  align-content: start;
+  gap: 0.5rem;
+}
+
+.card-wrapper--compact > .section-title {
+  margin-bottom: 0;
+}
+
+.card-wrapper--flush {
+  align-content: start;
+  gap: 0;
+}
+
+.card-wrapper--flush > .section-title {
+  margin-bottom: 0;
+}
+
+.card-wrapper__title--small {
+  font-size: 1rem;
+}
+
 .card-flat {
   box-shadow: none;
 }
