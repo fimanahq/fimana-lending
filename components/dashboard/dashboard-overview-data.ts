@@ -29,6 +29,7 @@ export interface DashboardProfitGrowthData {
   hasCollectedProfit: boolean
   hasInterestDue: boolean
   elapsedMonthCount: number
+  completedMonthCount: number
   scheduledInterestDueMinor: number
   averageMonthlyInterestDueMinor: number
   ytdCollectedProfitMinor: number
@@ -38,8 +39,16 @@ export interface DashboardProfitGrowthData {
     currentMonthProfitMinor: number
     previousMonthProfitMinor: number
     percentageChange: number | null
-    trend: 'percentage' | 'new_growth' | 'no_change'
+    trend: 'percentage' | 'new_growth' | 'new_loss' | 'no_change'
   }
+}
+
+export interface DashboardMonthlyReceivablesData {
+  year: number
+  currency: SettingsCurrency
+  timezone: string
+  rows: DashboardMonthlyProfitRow[]
+  hasReceivables: boolean
 }
 
 export interface DashboardOverviewData {
@@ -48,6 +57,7 @@ export interface DashboardOverviewData {
   capitalPositionSegments: DashboardProgressSegment[]
   interestOutlookSegments: DashboardProgressSegment[]
   profitGrowth: DashboardProfitGrowthData | null
+  monthlyReceivables: DashboardMonthlyReceivablesData | null
   profitGrowthYearOptions: number[]
   currentYear: number
   recentApplications: LoanApplication[]
@@ -88,12 +98,9 @@ function formatMonthShortLabel(year: number, monthIndex: number) {
   }).format(new Date(Date.UTC(year, monthIndex, 1, 12)))
 }
 
-export function buildDashboardProfitGrowthData(
-  monthlyProfit: DashboardMonthlyProfitResponse,
-  now = new Date(),
-): DashboardProfitGrowthData {
+function buildDashboardMonthlyRows(monthlyProfit: DashboardMonthlyProfitResponse) {
   const rowsByMonth = new Map(monthlyProfit.rows.map((row) => [row.monthKey, row]))
-  const rows = Array.from({ length: 12 }, (_, monthIndex): DashboardMonthlyProfitRow => {
+  return Array.from({ length: 12 }, (_, monthIndex): DashboardMonthlyProfitRow => {
     const monthKey = `${monthlyProfit.year}-${String(monthIndex + 1).padStart(2, '0')}`
     const source = rowsByMonth.get(monthKey)
     const totalProfitMinor = source?.totalProfitMinor ?? 0
@@ -103,6 +110,12 @@ export function buildDashboardProfitGrowthData(
     return {
       monthKey,
       monthLabel: formatMonthShortLabel(monthlyProfit.year, monthIndex),
+      expectedReceivableMinor: source?.expectedReceivableMinor ?? 0,
+      expectedReceivableToDateMinor: source?.expectedReceivableToDateMinor,
+      comparisonExpectedReceivableMinor: source?.expectedReceivableToDateMinor
+        ?? source?.expectedReceivableMinor
+        ?? 0,
+      actualReceivableMinor: source?.actualReceivableMinor ?? 0,
       interestDueMinor: source?.interestDueMinor ?? 0,
       interestCollectedMinor: source?.interestCollectedMinor ?? 0,
       penaltyCollectedMinor: source?.penaltyCollectedMinor ?? 0,
@@ -117,60 +130,99 @@ export function buildDashboardProfitGrowthData(
       paymentCount: source?.paymentCount ?? 0,
     }
   })
-  const currentPeriod = getManilaCalendarPeriod(now)
-  const elapsedMonthCount = monthlyProfit.year < currentPeriod.year
-    ? 12
-    : monthlyProfit.year === currentPeriod.year
-      ? currentPeriod.month
-      : 0
-  const elapsedRows = rows.slice(0, elapsedMonthCount)
-  const scheduledInterestDueMinor = rows.reduce((sum, row) => sum + row.interestDueMinor, 0)
-  const averageMonthlyInterestDueMinor = scheduledInterestDueMinor / 12
-  const ytdCollectedProfitMinor = elapsedRows.reduce((sum, row) => sum + (row.netProfitMinor ?? row.totalProfitMinor), 0)
-  const averageMonthlyProfitMinor = elapsedMonthCount > 0
-    ? ytdCollectedProfitMinor / elapsedMonthCount
-    : 0
-  const bestMonth = elapsedRows.reduce<DashboardMonthlyProfitRow | null>((best, row) => {
-    const rowProfitMinor = row.netProfitMinor ?? row.totalProfitMinor
-    const bestProfitMinor = best ? best.netProfitMinor ?? best.totalProfitMinor : 0
-    if (rowProfitMinor <= 0 || (best && rowProfitMinor <= bestProfitMinor)) {
-      return best
-    }
+}
 
-    return row
-  }, null)
-  const currentMonthProfitMinor = elapsedRows.at(-1)
-    ? elapsedRows.at(-1)!.netProfitMinor ?? elapsedRows.at(-1)!.totalProfitMinor
-    : 0
-  const previousMonthProfitMinor = elapsedRows.at(-2)
-    ? elapsedRows.at(-2)!.netProfitMinor ?? elapsedRows.at(-2)!.totalProfitMinor
-    : 0
-  const percentageChange = previousMonthProfitMinor > 0
-    ? ((currentMonthProfitMinor - previousMonthProfitMinor) / previousMonthProfitMinor) * 100
-    : null
-  const trend = percentageChange !== null
-    ? 'percentage' as const
-    : currentMonthProfitMinor > 0
-      ? 'new_growth' as const
-      : 'no_change' as const
+export function buildDashboardMonthlyReceivablesData(
+  monthlyProfit: DashboardMonthlyProfitResponse,
+): DashboardMonthlyReceivablesData {
+  const rows = buildDashboardMonthlyRows(monthlyProfit)
 
   return {
     year: monthlyProfit.year,
     currency: monthlyProfit.currency,
     timezone: monthlyProfit.timezone,
     rows,
-    hasCollectedProfit: rows.some((row) => (
-      row.interestCollectedMinor !== 0
-      || row.penaltyCollectedMinor !== 0
-      || row.excessProfitMinor !== 0
-      || row.treasuryInterestEarnedMinor !== 0
-      || (row.rewardExpenseMinor ?? 0) !== 0
-      || (row.businessExpenseMinor ?? 0) !== 0
-      || row.totalProfitMinor !== 0
-      || (row.netProfitMinor ?? 0) !== 0
+    hasReceivables: rows.some((row) => (
+      (row.expectedReceivableMinor ?? 0) !== 0 || (row.actualReceivableMinor ?? 0) !== 0
     )),
+  }
+}
+
+function hasMonthlyProfitActivity(row: DashboardMonthlyProfitRow) {
+  return row.interestCollectedMinor !== 0
+    || row.penaltyCollectedMinor !== 0
+    || (row.excessProfitMinor ?? 0) !== 0
+    || (row.treasuryInterestEarnedMinor ?? 0) !== 0
+    || (row.rewardExpenseMinor ?? 0) !== 0
+    || (row.businessExpenseMinor ?? 0) !== 0
+    || row.totalProfitMinor !== 0
+    || (row.netProfitMinor ?? 0) !== 0
+}
+
+export function buildDashboardProfitGrowthData(
+  monthlyProfit: DashboardMonthlyProfitResponse,
+  now = new Date(),
+): DashboardProfitGrowthData {
+  const rows = buildDashboardMonthlyRows(monthlyProfit)
+  const currentPeriod = getManilaCalendarPeriod(now)
+  const elapsedMonthCount = monthlyProfit.year < currentPeriod.year
+    ? 12
+    : monthlyProfit.year === currentPeriod.year
+      ? currentPeriod.month
+      : 0
+  const completedMonthCount = monthlyProfit.year < currentPeriod.year
+    ? 12
+    : monthlyProfit.year === currentPeriod.year
+      ? Math.max(0, currentPeriod.month - 1)
+      : 0
+  const elapsedRows = rows.slice(0, elapsedMonthCount)
+  const completedRows = rows.slice(0, completedMonthCount)
+  const scheduledInterestDueMinor = rows.reduce((sum, row) => sum + row.interestDueMinor, 0)
+  const averageMonthlyInterestDueMinor = scheduledInterestDueMinor / 12
+  const ytdCollectedProfitMinor = elapsedRows.reduce((sum, row) => sum + (row.netProfitMinor ?? row.totalProfitMinor), 0)
+  const completedProfitMinor = completedRows.reduce(
+    (sum, row) => sum + (row.netProfitMinor ?? row.totalProfitMinor),
+    0,
+  )
+  const completedProfitRows = completedRows.filter(hasMonthlyProfitActivity)
+  const averageMonthlyProfitMinor = completedMonthCount > 0
+    ? completedProfitMinor / completedMonthCount
+    : 0
+  const bestMonth = completedProfitRows.reduce<DashboardMonthlyProfitRow | null>((best, row) => {
+    const rowProfitMinor = row.netProfitMinor ?? row.totalProfitMinor
+    const bestProfitMinor = best ? best.netProfitMinor ?? best.totalProfitMinor : null
+    if (bestProfitMinor !== null && rowProfitMinor <= bestProfitMinor) {
+      return best
+    }
+
+    return row
+  }, null)
+  const currentMonthProfitMinor = completedRows.at(-1)
+    ? completedRows.at(-1)!.netProfitMinor ?? completedRows.at(-1)!.totalProfitMinor
+    : 0
+  const previousMonthProfitMinor = completedRows.at(-2)
+    ? completedRows.at(-2)!.netProfitMinor ?? completedRows.at(-2)!.totalProfitMinor
+    : 0
+  const percentageChange = previousMonthProfitMinor !== 0
+    ? ((currentMonthProfitMinor - previousMonthProfitMinor) / Math.abs(previousMonthProfitMinor)) * 100
+    : null
+  const trend = currentMonthProfitMinor === previousMonthProfitMinor
+    ? 'no_change' as const
+    : percentageChange !== null
+      ? 'percentage' as const
+      : currentMonthProfitMinor > 0
+        ? 'new_growth' as const
+        : 'new_loss' as const
+
+  return {
+    year: monthlyProfit.year,
+    currency: monthlyProfit.currency,
+    timezone: monthlyProfit.timezone,
+    rows,
+    hasCollectedProfit: rows.some(hasMonthlyProfitActivity),
     hasInterestDue: rows.some((row) => row.interestDueMinor !== 0),
     elapsedMonthCount,
+    completedMonthCount,
     scheduledInterestDueMinor,
     averageMonthlyInterestDueMinor,
     ytdCollectedProfitMinor,
@@ -427,6 +479,7 @@ export function buildDashboardOverviewData({
     capitalPositionSegments,
     interestOutlookSegments,
     profitGrowth: monthlyProfit ? buildDashboardProfitGrowthData(monthlyProfit, now) : null,
+    monthlyReceivables: monthlyProfit ? buildDashboardMonthlyReceivablesData(monthlyProfit) : null,
     profitGrowthYearOptions,
     currentYear,
     recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),

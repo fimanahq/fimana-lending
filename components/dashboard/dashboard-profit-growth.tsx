@@ -38,6 +38,10 @@ function formatMonthOverMonth(data: DashboardProfitGrowthData) {
     return 'New growth'
   }
 
+  if (trend === 'new_loss') {
+    return 'New loss'
+  }
+
   if (trend === 'no_change' || percentageChange === null) {
     return 'No change'
   }
@@ -163,9 +167,13 @@ export function DashboardProfitGrowth({
   const currentMonth = activeData && activeData.elapsedMonthCount > 0
     ? activeData.rows[activeData.elapsedMonthCount - 1]
     : null
-  const previousMonth = activeData && activeData.elapsedMonthCount > 1
-    ? activeData.rows[activeData.elapsedMonthCount - 2]
+  const latestCompletedMonth = activeData && activeData.completedMonthCount > 0
+    ? activeData.rows[activeData.completedMonthCount - 1]
     : null
+  const previousCompletedMonth = activeData && activeData.completedMonthCount > 1
+    ? activeData.rows[activeData.completedMonthCount - 2]
+    : null
+  const hasMonthOverMonthComparison = (activeData?.completedMonthCount ?? 0) >= 2
   const isCurrentYear = activeData?.year === currentYear
   const isFutureYear = typeof activeData?.year === 'number' && activeData.year > currentYear
 
@@ -213,16 +221,18 @@ export function DashboardProfitGrowth({
         <>
           <section className={dashboardClass('dashboard-overview__miniGrid', 'dashboard-overview__miniGrid--five')} aria-label="Growth KPIs at a glance">
             <GrowthMetric
-              label={isCurrentYear ? 'YTD Collected Profit' : `${activeData.year} Collected Profit`}
+              label={isCurrentYear ? 'YTD Net Profit' : `${activeData.year} Net Profit`}
               value={formatMinorCurrency(activeData.ytdCollectedProfitMinor, currency)}
-              meta={isFutureYear ? 'No collections yet' : `Interest and penalties through ${currentMonth?.monthLabel ?? activeData.year}`}
+              meta={isFutureYear
+                ? 'No profit activity yet'
+                : `After reward and business expenses through ${currentMonth?.monthLabel ?? activeData.year}`}
             />
             <GrowthMetric
-              label="Avg Monthly Collected Profit"
+              label="Avg Monthly Net Profit"
               value={formatMinorCurrency(activeData.averageMonthlyProfitMinor, currency)}
-              meta={activeData.elapsedMonthCount > 0
-                ? `Across ${activeData.elapsedMonthCount.toLocaleString('en-PH')} month${activeData.elapsedMonthCount === 1 ? '' : 's'}`
-                : 'No elapsed months'}
+              meta={activeData.completedMonthCount > 0
+                ? `Across ${activeData.completedMonthCount.toLocaleString('en-PH')} completed month${activeData.completedMonthCount === 1 ? '' : 's'}`
+                : 'No completed months'}
             />
             <GrowthMetric
               label="Scheduled Interest Due"
@@ -230,24 +240,28 @@ export function DashboardProfitGrowth({
               meta={`Avg monthly expected: ${formatMinorCurrency(activeData.averageMonthlyInterestDueMinor, currency)}`}
             />
             <GrowthMetric
-              label="Best Month"
+              label="Best Net Profit Month"
               value={formatMinorCurrency(activeData.bestMonth?.netProfitMinor ?? activeData.bestMonth?.totalProfitMinor ?? 0, currency)}
-              meta={activeData.bestMonth ? `${activeData.bestMonth.monthLabel} ${activeData.year}` : 'No collected profit yet'}
+              meta={activeData.bestMonth ? `${activeData.bestMonth.monthLabel} ${activeData.year}` : 'No completed months'}
             />
             <GrowthMetric
-              label={isCurrentYear ? 'This Month vs Last Month' : isFutureYear ? 'Month-over-month' : `${currentMonth?.monthLabel ?? 'Latest'} vs ${previousMonth?.monthLabel ?? 'Prior'}`}
-              value={isFutureYear ? 'Not started' : formatMonthOverMonth(activeData)}
+              label={hasMonthOverMonthComparison
+                ? `${latestCompletedMonth?.monthLabel ?? 'Latest'} vs ${previousCompletedMonth?.monthLabel ?? 'Prior'}`
+                : 'Month-over-month'}
+              value={isFutureYear ? 'Not started' : hasMonthOverMonthComparison ? formatMonthOverMonth(activeData) : 'Not enough data'}
               meta={isFutureYear
-                ? 'No payment months elapsed'
-                : `${currentMonth?.monthLabel ?? 'Current'} ${formatMinorCurrency(activeData.monthOverMonth.currentMonthProfitMinor, currency)} vs ${previousMonth?.monthLabel ?? 'prior'} ${formatMinorCurrency(activeData.monthOverMonth.previousMonthProfitMinor, currency)}`}
+                ? 'No completed months'
+                : hasMonthOverMonthComparison
+                  ? `${latestCompletedMonth?.monthLabel ?? 'Latest'} ${formatMinorCurrency(activeData.monthOverMonth.currentMonthProfitMinor, currency)} vs ${previousCompletedMonth?.monthLabel ?? 'prior'} ${formatMinorCurrency(activeData.monthOverMonth.previousMonthProfitMinor, currency)}`
+                  : 'Complete two months to compare net profit'}
             />
           </section>
 
           <section className={dashboardClass('dashboard-overview__interestCard')}>
             <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
               <div>
-                <h3>Monthly collected profit</h3>
-                <p>Interest and penalties received across {activeData.year}. The average includes zero-profit months.</p>
+                <h3>Monthly profit</h3>
+                <p>Gross and net profit across {activeData.year}. The average uses completed months and includes zero-profit months.</p>
               </div>
             </div>
 

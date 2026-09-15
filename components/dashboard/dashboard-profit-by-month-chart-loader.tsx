@@ -10,12 +10,14 @@ import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
 
-function DashboardProfitByMonthChartFallback() {
+function DashboardProfitByMonthChartFallback({ variant = 'profit' }: Pick<DashboardProfitByMonthChartProps, 'variant'>) {
+  const isReceivablesChart = variant === 'receivables'
+
   return (
     <div className={dashboardClass('dashboard-overview__interestChartFrame')}>
       <div className={dashboardClass('dashboard-overview__interestChartToolbar')} aria-hidden="true">
         <div className={dashboardClass('dashboard-overview__interestChartToolbarCopy')}>
-          <strong>Gross and net profit preview</strong>
+          <strong>{isReceivablesChart ? 'Expected and actual preview' : 'Gross and net profit preview'}</strong>
           <span>Loading full chart controls</span>
         </div>
         <span className={dashboardClass('dashboard-overview__interestChartToolbarPlaceholder')} />
@@ -26,7 +28,7 @@ function DashboardProfitByMonthChartFallback() {
       </div>
       <figure
         className={dashboardClass('dashboard-overview__interestChart', 'dashboard-overview__deferredBlock')}
-        aria-label="Loading monthly collected profit chart"
+        aria-label={`Loading monthly ${isReceivablesChart ? 'receivables' : 'collected profit'} chart`}
       >
         <div className="ui-skeleton" aria-hidden="true">
           <span className="ui-skeleton__line" />
@@ -46,7 +48,7 @@ export function DashboardProfitByMonthChartLoader(props: DashboardProfitByMonthC
   }, [])
 
   if (!hasMounted) {
-    return <DashboardProfitByMonthChartFallback />
+    return <DashboardProfitByMonthChartFallback variant={props.variant} />
   }
 
   return <DashboardProfitByMonthChart {...props} />

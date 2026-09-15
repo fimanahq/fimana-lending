@@ -7,6 +7,7 @@ import type { DashboardOverviewData, DashboardProgressSegment } from '@/componen
 import { Badge, ProtectedLink as Link } from '@/components/shared'
 import { classNames } from '@/utils/class-names'
 import { DashboardPortfolioChartLoader } from './dashboard-portfolio-chart-loader'
+import { DashboardMonthlyReceivables } from './dashboard-monthly-receivables'
 import { DashboardProfitGrowth } from './dashboard-profit-growth'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -580,6 +581,7 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     capitalPositionSegments,
     interestOutlookSegments,
     profitGrowth,
+    monthlyReceivables,
     profitGrowthYearOptions,
     currentYear,
     recentApplications,
@@ -789,6 +791,13 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
         <DashboardProfitGrowth
           currentYear={currentYear}
           data={profitGrowth}
+          fallbackCurrency={dashboardCurrency}
+          yearOptions={profitGrowthYearOptions}
+        />
+
+        <DashboardMonthlyReceivables
+          currentYear={currentYear}
+          data={monthlyReceivables}
           fallbackCurrency={dashboardCurrency}
           yearOptions={profitGrowthYearOptions}
         />

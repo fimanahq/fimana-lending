@@ -493,6 +493,9 @@ export interface DashboardInterestByCutoff {
 
 export interface DashboardMonthlyProfitSource {
   monthKey: string
+  expectedReceivableMinor?: number
+  expectedReceivableToDateMinor?: number
+  actualReceivableMinor?: number
   interestDueMinor: number
   interestCollectedMinor: number
   penaltyCollectedMinor: number
@@ -567,6 +570,7 @@ export interface DashboardMonthlyProfitDetailResponse {
 
 export interface DashboardMonthlyProfitRow extends DashboardMonthlyProfitSource {
   monthLabel: string
+  comparisonExpectedReceivableMinor: number
 }
 
 export interface LoanDashboardSummary {
