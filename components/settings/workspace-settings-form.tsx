@@ -6,6 +6,7 @@ import { CheckIcon, CopyIcon } from '@/components/shared/table-icons'
 import { formatDate } from '@/lib/format'
 import { settingsCurrencyValues, type Settings, type SettingsCurrency } from '@/lib/types/shared'
 import { getSettings, updateSettings } from '@/services'
+import styles from './workspace-settings-form.module.css'
 
 interface SettingsFormState {
   defaultCurrency: SettingsCurrency
@@ -335,7 +336,7 @@ export function WorkspaceSettingsForm() {
           <ErrorBanner title="Settings were not saved" message={submitError} />
         ) : null}
 
-        <div className="grid two">
+        <div className={`grid two ${styles.settingsGrid}`}>
           <CardWrapper title="Capital baseline">
             <div className="stack">
               <SearchableSelect
@@ -446,7 +447,7 @@ export function WorkspaceSettingsForm() {
             </div>
           </CardWrapper>
 
-          <CardWrapper title="Treasury payment defaults">
+          <CardWrapper title="Treasury payment defaults" contentSpacing="compact" titleSize="small">
             <Switch
               id="workspace-include-loan-payments-in-treasury"
               label="Include posted payments in Treasury automatically"
