@@ -40,7 +40,7 @@ describe('buildDashboardProfitGrowthData', () => {
     expect(data.averageMonthlyInterestDueMinor).toBe(30_000)
   })
 
-  it('continues to divide collected profit by elapsed months', () => {
+  it('keeps YTD current while averaging only completed months', () => {
     const data = buildDashboardProfitGrowthData(monthlyProfit(2026, [
       row('2026-01', { interestCollectedMinor: 9_000, penaltyCollectedMinor: 1_000, totalProfitMinor: 10_000 }),
       row('2026-02', { interestCollectedMinor: 20_000, totalProfitMinor: 20_000 }),
@@ -48,8 +48,9 @@ describe('buildDashboardProfitGrowthData', () => {
     ]), new Date('2026-06-15T12:00:00Z'))
 
     expect(data.elapsedMonthCount).toBe(6)
+    expect(data.completedMonthCount).toBe(5)
     expect(data.ytdCollectedProfitMinor).toBe(60_000)
-    expect(data.averageMonthlyProfitMinor).toBe(10_000)
+    expect(data.averageMonthlyProfitMinor).toBe(6_000)
   })
 
   it('preserves excess profit and Treasury interest for graph breakdowns', () => {
@@ -94,7 +95,7 @@ describe('buildDashboardProfitGrowthData', () => {
   it('does not include collected penalties in the expected average', () => {
     const withoutPenalty = buildDashboardProfitGrowthData(monthlyProfit(2026, [
       row('2026-01', { interestDueMinor: 120_000, interestCollectedMinor: 10_000, totalProfitMinor: 10_000 }),
-    ]), new Date('2026-01-15T12:00:00Z'))
+    ]), new Date('2026-02-15T12:00:00Z'))
     const withPenalty = buildDashboardProfitGrowthData(monthlyProfit(2026, [
       row('2026-01', {
         interestDueMinor: 120_000,
@@ -102,11 +103,39 @@ describe('buildDashboardProfitGrowthData', () => {
         penaltyCollectedMinor: 50_000,
         totalProfitMinor: 60_000,
       }),
-    ]), new Date('2026-01-15T12:00:00Z'))
+    ]), new Date('2026-02-15T12:00:00Z'))
 
     expect(withoutPenalty.averageMonthlyInterestDueMinor).toBe(10_000)
     expect(withPenalty.averageMonthlyInterestDueMinor).toBe(10_000)
     expect(withPenalty.averageMonthlyProfitMinor).toBe(60_000)
+  })
+
+  it('reports improvement between completed loss months', () => {
+    const data = buildDashboardProfitGrowthData(monthlyProfit(2026, [
+      row('2026-01', { totalProfitMinor: -2_000 }),
+      row('2026-02', { totalProfitMinor: -1_000 }),
+    ]), new Date('2026-03-15T12:00:00Z'))
+
+    expect(data.monthOverMonth).toEqual({
+      currentMonthProfitMinor: -1_000,
+      previousMonthProfitMinor: -2_000,
+      percentageChange: 50,
+      trend: 'percentage',
+    })
+  })
+
+  it('reports a new loss after a zero-profit completed month', () => {
+    const data = buildDashboardProfitGrowthData(monthlyProfit(2026, [
+      row('2026-01'),
+      row('2026-02', { totalProfitMinor: -1_000 }),
+    ]), new Date('2026-03-15T12:00:00Z'))
+
+    expect(data.monthOverMonth).toEqual({
+      currentMonthProfitMinor: -1_000,
+      previousMonthProfitMinor: 0,
+      percentageChange: null,
+      trend: 'new_loss',
+    })
   })
 })
 

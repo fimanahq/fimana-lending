@@ -38,6 +38,8 @@ type ChartLegendItem = {
   style: 'bar' | 'line' | 'line-dashed'
 }
 
+export type DashboardMonthlyChartVariant = 'profit' | 'receivables'
+
 type LockableScreenOrientation = ScreenOrientation & {
   lock?: (orientation: 'landscape') => Promise<void>
 }
@@ -54,6 +56,11 @@ const detailedLegendItems: ChartLegendItem[] = [
   { color: '#3f7f8c', label: 'Treasury interest', style: 'bar' },
   { color: '#7f5a2f', label: 'Interest due', style: 'line-dashed' },
   { color: '#17140f', label: 'Net profit', style: 'line' },
+]
+
+const receivablesLegendItems: ChartLegendItem[] = [
+  { color: '#2d6b59', label: 'Actual collected', style: 'bar' },
+  { color: '#7f5a2f', label: 'Expected target', style: 'line-dashed' },
 ]
 
 const tooltipContentStyle: CSSProperties = {
@@ -122,6 +129,7 @@ type ProfitGrowthTooltipProps = TooltipContentProps & {
   compact: boolean
   currency: string
   showInterestDue: boolean
+  variant: DashboardMonthlyChartVariant
 }
 
 function ProfitGrowthTooltip({
@@ -130,6 +138,7 @@ function ProfitGrowthTooltip({
   currency,
   payload,
   showInterestDue,
+  variant,
 }: ProfitGrowthTooltipProps) {
   if (!active || !payload?.length) {
     return null
@@ -151,6 +160,24 @@ function ProfitGrowthTooltip({
       <strong style={tooltipValueStyle}>{formatMinorCurrency(valueMinor, currency)}</strong>
     </div>
   )
+
+  if (variant === 'receivables') {
+    const expectedTargetMinor = row.comparisonExpectedReceivableMinor
+    const isCurrentMonthProrated = typeof row.expectedReceivableToDateMinor === 'number'
+
+    return (
+      <div style={tooltipContentStyle}>
+        <p style={tooltipTitleStyle}>{row.monthLabel}</p>
+        <div style={tooltipListStyle}>
+          {renderRow(isCurrentMonthProrated ? 'Expected by today' : 'Expected receivable', expectedTargetMinor)}
+          {isCurrentMonthProrated
+            ? renderRow('Full-month expected', row.expectedReceivableMinor ?? 0)
+            : null}
+          {renderRow('Actual collected', row.actualReceivableMinor ?? 0, tooltipTotalRowStyle)}
+        </div>
+      </div>
+    )
+  }
 
   if (compact) {
     return (
@@ -211,6 +238,7 @@ export type DashboardProfitByMonthChartProps = {
   currency: string
   rows: DashboardMonthlyProfitRow[]
   showInterestDue?: boolean
+  variant?: DashboardMonthlyChartVariant
 }
 
 export function DashboardProfitByMonthChart({
@@ -218,6 +246,7 @@ export function DashboardProfitByMonthChart({
   currency,
   rows,
   showInterestDue = true,
+  variant = 'profit',
 }: DashboardProfitByMonthChartProps) {
   const [isCompactViewport, setIsCompactViewport] = useState(getCompactChartPreference)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -366,6 +395,16 @@ export function DashboardProfitByMonthChart({
   }, [closeExpandedChart, fullscreenButtonId, isExpanded, restoreCollapsedChart])
 
   const ariaLabel = rows.map((row) => {
+    if (variant === 'receivables') {
+      const actualCollected = formatMinorCurrency(row.actualReceivableMinor ?? 0, currency)
+
+      if (typeof row.expectedReceivableToDateMinor === 'number') {
+        return `${row.monthLabel}: ${formatMinorCurrency(row.comparisonExpectedReceivableMinor, currency)} expected by today, ${formatMinorCurrency(row.expectedReceivableMinor ?? 0, currency)} full-month expected, ${actualCollected} actual collected`
+      }
+
+      return `${row.monthLabel}: ${formatMinorCurrency(row.comparisonExpectedReceivableMinor, currency)} expected receivable, ${actualCollected} actual collected`
+    }
+
     const netProfit = formatMinorCurrency(row.netProfitMinor ?? row.totalProfitMinor, currency)
 
     if (isCompact) {
@@ -375,9 +414,12 @@ export function DashboardProfitByMonthChart({
     return `${row.monthLabel}: ${showInterestDue ? `${formatMinorCurrency(row.interestDueMinor, currency)} interest due, ` : ''}${formatMinorCurrency(row.interestCollectedMinor, currency)} interest collected, ${formatMinorCurrency(row.penaltyCollectedMinor, currency)} penalties, ${formatMinorCurrency(row.excessProfitMinor ?? 0, currency)} excess profit, ${formatMinorCurrency(row.treasuryInterestEarnedMinor ?? 0, currency)} Treasury interest, ${formatMinorCurrency(row.rewardExpenseMinor ?? 0, currency)} reward expenses, ${formatMinorCurrency(row.businessExpenseMinor ?? 0, currency)} business expenses, ${netProfit} net profit`
   }).join('. ')
 
-  const legendItems = isCompact
-    ? compactLegendItems
-    : detailedLegendItems.filter((item) => showInterestDue || item.label !== 'Interest due')
+  const legendItems = variant === 'receivables'
+    ? receivablesLegendItems
+    : isCompact
+      ? compactLegendItems
+      : detailedLegendItems.filter((item) => showInterestDue || item.label !== 'Interest due')
+  const isReceivablesChart = variant === 'receivables'
 
   return (
     <div
@@ -394,10 +436,14 @@ export function DashboardProfitByMonthChart({
       <div className={dashboardClass('dashboard-overview__interestChartToolbar')}>
         <div className={dashboardClass('dashboard-overview__interestChartToolbarCopy')}>
           <strong id={chartViewerTitleId}>
-            {isExpanded ? 'Monthly collected profit' : 'Gross and net profit preview'}
+            {isReceivablesChart
+              ? isExpanded ? 'Monthly receivables' : 'Expected and actual preview'
+              : isExpanded ? 'Monthly collected profit' : 'Gross and net profit preview'}
           </strong>
           <span>
-            {isExpanded ? 'Full monthly profit breakdown' : 'Open the full chart for every profit source'}
+            {isReceivablesChart
+              ? isExpanded ? 'Full expected versus actual comparison' : 'Open the full monthly receivables chart'
+              : isExpanded ? 'Full monthly profit breakdown' : 'Open the full chart for every profit source'}
           </span>
         </div>
         <Button
@@ -407,7 +453,9 @@ export function DashboardProfitByMonthChart({
           className={dashboardClass('dashboard-overview__interestChartFullscreenButton')}
           aria-controls={chartViewerId}
           aria-expanded={isExpanded}
-          aria-label={isExpanded ? 'Exit full-screen profit chart' : 'View profit chart full screen'}
+          aria-label={isExpanded
+            ? `Exit full-screen ${isReceivablesChart ? 'receivables' : 'profit'} chart`
+            : `View ${isReceivablesChart ? 'receivables' : 'profit'} chart full screen`}
           onClick={isExpanded ? () => void closeExpandedChart() : () => void openExpandedChart()}
         >
           {isExpanded ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}
@@ -446,12 +494,13 @@ export function DashboardProfitByMonthChart({
                   compact={isCompact}
                   currency={currency}
                   showInterestDue={showInterestDue}
+                  variant={variant}
                 />
               )}
               wrapperStyle={{ zIndex: 8 }}
             />
             <ReferenceLine y={0} stroke="rgba(97, 84, 62, 0.32)" />
-            {typeof averageMonthlyProfitMinor === 'number' && averageMonthlyProfitMinor > 0 ? (
+            {!isReceivablesChart && typeof averageMonthlyProfitMinor === 'number' && averageMonthlyProfitMinor !== 0 ? (
               <ReferenceLine
                 y={averageMonthlyProfitMinor}
                 stroke="#2d6b59"
@@ -459,14 +508,35 @@ export function DashboardProfitByMonthChart({
                 strokeWidth={1.5}
                 ifOverflow="extendDomain"
                 label={{
-                  value: 'Avg monthly',
+                  value: 'Avg net',
                   position: 'insideTopRight',
                   fill: '#2d6b59',
                   fontSize: 12,
                 }}
               />
             ) : null}
-            {isCompact ? (
+            {isReceivablesChart ? (
+              <>
+                <Bar
+                  dataKey="actualReceivableMinor"
+                  name="Actual collected"
+                  fill="#2d6b59"
+                  radius={[8, 8, 0, 0]}
+                  isAnimationActive={false}
+                />
+                <Line
+                  dataKey="comparisonExpectedReceivableMinor"
+                  name="Expected target"
+                  type="monotone"
+                  stroke="#7f5a2f"
+                  strokeDasharray="6 4"
+                  strokeWidth={2.5}
+                  dot={{ fill: '#7f5a2f', r: 3 }}
+                  activeDot={{ r: 5 }}
+                  isAnimationActive={false}
+                />
+              </>
+            ) : isCompact ? (
               <Bar
                 dataKey="totalProfitMinor"
                 name="Gross profit"
@@ -520,16 +590,18 @@ export function DashboardProfitByMonthChart({
                 ) : null}
               </>
             )}
-            <Line
-              dataKey="netProfitMinor"
-              name="Net profit"
-              type="monotone"
-              stroke="#17140f"
-              strokeWidth={2.5}
-              dot={{ fill: '#17140f', r: 3 }}
-              activeDot={{ r: 5 }}
-              isAnimationActive={false}
-            />
+            {!isReceivablesChart ? (
+              <Line
+                dataKey="netProfitMinor"
+                name="Net profit"
+                type="monotone"
+                stroke="#17140f"
+                strokeWidth={2.5}
+                dot={{ fill: '#17140f', r: 3 }}
+                activeDot={{ r: 5 }}
+                isAnimationActive={false}
+              />
+            ) : null}
           </ComposedChart>
         </ResponsiveContainer>
       </figure>
