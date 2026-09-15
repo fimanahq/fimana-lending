@@ -275,6 +275,7 @@ export interface LoanPaymentHistory {
   currency: string
   method: LoanPaymentMethod
   referenceNo: string
+  notes: string
   accountId: string | null
   transactionId: string | null
   allocationStatus: LoanPaymentAllocationStatus
@@ -294,6 +295,7 @@ export interface PostLoanPaymentInput {
   amountMinor: number
   method: LoanPaymentMethod
   referenceNo?: string
+  notes?: string
   treatExcessAsProfit?: boolean
 }
 
@@ -302,6 +304,7 @@ export interface UpdateLoanPaymentInput {
   amountMinor: number
   method: LoanPaymentMethod
   referenceNo?: string
+  notes?: string
   includeInTreasury?: boolean
   treatExcessAsProfit?: boolean
 }
