@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, Switch, TableShell, useToast } from '@/components/shared'
+import { Button, Card, DataTable, Dialog, EmptyState, ErrorBanner, Input, LoadingState, SearchableSelect, Switch, TableShell, Textarea, useToast } from '@/components/shared'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { getStatusClassName } from '@/lib/status'
 import type {
@@ -121,6 +121,7 @@ function PaymentHistoryTable({
                   <td>
                     <strong>{payment.receiptNumber}</strong>
                     <div className="muted">{payment.referenceNo || 'No reference'}</div>
+                    {payment.notes ? <div className="muted">{payment.notes}</div> : null}
                   </td>
                   <td>{formatPaymentMethod(payment.method)}</td>
                   <td>{formatMinorCurrency(allocatedAmountMinor, currency)}</td>
@@ -161,6 +162,7 @@ export function LoanPaymentDialog({
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState<LoanPaymentMethod>('cash')
   const [referenceNo, setReferenceNo] = useState('')
+  const [notes, setNotes] = useState('')
   const [confirmExcessProfit, setConfirmExcessProfit] = useState(false)
   const submitLockRef = useRef(false)
 
@@ -199,6 +201,7 @@ export function LoanPaymentDialog({
       setAmount('')
       setMethod('cash')
       setReferenceNo('')
+      setNotes('')
       setConfirmExcessProfit(false)
       setSubmitError('')
     }
@@ -237,6 +240,7 @@ export function LoanPaymentDialog({
         amountMinor,
         method,
         referenceNo: referenceNo.trim() || undefined,
+        notes: notes.trim() || undefined,
         treatExcessAsProfit: confirmExcessProfit,
       })
 
@@ -246,6 +250,7 @@ export function LoanPaymentDialog({
       })
       setAmount(getCurrentCutoffOutstandingValue(response.loan))
       setReferenceNo('')
+      setNotes('')
       setConfirmExcessProfit(false)
       setSubmitError('')
       await onPaymentPosted?.(response.loan)
@@ -356,6 +361,15 @@ export function LoanPaymentDialog({
                   value={referenceNo}
                   onChange={(event) => setReferenceNo(event.target.value)}
                   placeholder="Optional"
+                />
+                <Textarea
+                  id="payment-notes"
+                  label="Note"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Optional"
+                  maxLength={1000}
+                  className="grid-span-2"
                 />
               </div>
 
