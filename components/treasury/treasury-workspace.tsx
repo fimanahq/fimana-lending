@@ -986,6 +986,13 @@ export function TreasuryWorkspace() {
                         <div className={styles.movementDescription}>
                           {movement.description || formatMovementType(movement)}
                         </div>
+                        {movement.loanId && movement.loanNumber ? (
+                          <div className="micro-copy">
+                            <ProtectedLink href={`/loans/${movement.loanId}`} className={styles.loanLink}>
+                              {movement.loanNumber}
+                            </ProtectedLink>
+                          </div>
+                        ) : null}
                         {movement.reversalOfTransactionId ? (
                           <div className="muted micro-copy">Reversal movement</div>
                         ) : null}
