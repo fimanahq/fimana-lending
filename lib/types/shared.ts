@@ -84,6 +84,8 @@ export interface TreasuryMovement {
   signedAmount: number
   signedAmountMinor: number
   description: string
+  loanId?: string
+  loanNumber?: string
   occurredAt: string | Date
   reversalOfTransactionId?: string
   reversedByTransactionId?: string
