@@ -551,34 +551,6 @@ a:where(
   pointer-events: none;
 }
 
-.module-scaffold {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(17.5rem, 0.9fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.module-scaffold__steps {
-  padding: 1rem;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.48);
-}
-
-.module-scaffold__steps ul {
-  display: grid;
-  gap: 0.65rem;
-  margin: 0.75rem 0 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
-.module-scaffold__steps h3 {
-  margin: 0;
-  font-family: var(--font-heading), sans-serif;
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
