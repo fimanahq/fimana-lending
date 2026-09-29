@@ -26,7 +26,15 @@ export default async function CollectionCutoffPage({
   try {
     const endpoint = `/loans/collections-summary/cutoffs/${encodeURIComponent(cutoffDate)}`
     const data = await authorizedBackendRequestWithCurrentAccess<CollectionCutoffDetailResponse>(endpoint)
-    return <CollectionCutoffDetail currency={data.currency} cutoff={data.cutoff} detailPath={detailPath} returnPath={returnPath} />
+    return (
+      <CollectionCutoffDetail
+        currency={data.currency}
+        cutoff={data.cutoff}
+        detailPath={detailPath}
+        previousCutoffs={data.previousCutoffs}
+        returnPath={returnPath}
+      />
+    )
   } catch (error) {
     return (
       <CollectionCutoffDetail
@@ -34,6 +42,7 @@ export default async function CollectionCutoffPage({
         cutoff={null}
         detailPath={detailPath}
         error={error instanceof Error ? error.message : 'Cutoff detail is unavailable.'}
+        previousCutoffs={[]}
         returnPath={returnPath}
       />
     )
