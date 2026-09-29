@@ -50,6 +50,45 @@
   white-space: pre-wrap;
 }
 
+.overdueSummary {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(143, 51, 38, 0.18);
+  border-radius: 14px;
+  background: rgba(143, 51, 38, 0.06);
+}
+
+.overdueSummaryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.overdueSummaryHeader strong,
+.overdueSummaryGrid strong {
+  font-family: var(--font-heading), sans-serif;
+}
+
+.overdueSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.overdueSummaryGrid > div {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.overdueSummaryNote {
+  margin: 0;
+  color: var(--muted);
+}
+
 .defaultOutcome {
   display: grid;
   gap: 1rem;
@@ -85,6 +124,10 @@
 }
 
 @media (max-width: 900px) {
+  .overdueSummaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .defaultOutcomeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -93,6 +136,14 @@
 @media (max-width: 560px) {
   .referralSubmitButton {
     width: 100%;
+  }
+
+  .overdueSummaryHeader {
+    flex-direction: column;
+  }
+
+  .overdueSummaryGrid {
+    grid-template-columns: 1fr;
   }
 
   .defaultOutcomeHeader {

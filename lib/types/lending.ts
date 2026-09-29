@@ -162,6 +162,16 @@ export interface LoanRecordBalances {
   totalPaidAmountMinor: number
 }
 
+export interface LoanOverdueSummary {
+  asOfDate: string
+  totalAmountMinor: number
+  principalAmountMinor: number
+  interestAmountMinor: number
+  penaltyAmountMinor: number
+  unitemizedAmountMinor: number
+  oldestUnpaidDueDate: string | null
+}
+
 export interface LoanDisbursementDeduction {
   code: string
   description: string
@@ -235,6 +245,7 @@ export interface LoanRecord {
   lossAmountMinor: number
   defaultedAt?: string | null
   balances: LoanRecordBalances
+  overdue?: LoanOverdueSummary
   disbursement: LoanDisbursementRecord
   referral: LoanReferral
   createdAt: string
