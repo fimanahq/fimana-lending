@@ -751,6 +751,12 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
             <span className="muted">Outstanding</span>
             <strong>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, currency)}</strong>
           </div>
+          {loan.status === 'active' && loan.overdue ? (
+            <div className="data-card">
+              <span className="muted">Overdue</span>
+              <strong>{formatMinorCurrency(loan.overdue.totalAmountMinor, currency)}</strong>
+            </div>
+          ) : null}
           <div className="data-card">
             <span className="muted">Outstanding penalty</span>
             <strong>{formatMinorCurrency(loan.balances.penaltyOutstandingAmountMinor ?? 0, currency)}</strong>
@@ -784,6 +790,45 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
             <strong>{formatLoanNextDue(loan)}</strong>
           </div>
         </div>
+
+        {loan.status === 'active' && loan.overdue ? (
+          <section className={styles.overdueSummary} aria-label="Overdue breakdown">
+            <div className={styles.overdueSummaryHeader}>
+              <div>
+                <div className="muted">Overdue breakdown</div>
+                <strong>{loan.overdue.oldestUnpaidDueDate
+                  ? `Oldest unpaid due date: ${formatDate(`${loan.overdue.oldestUnpaidDueDate}T12:00:00.000Z`)}`
+                  : 'No overdue installments'}</strong>
+              </div>
+              <span className="muted">As of {formatDate(`${loan.overdue.asOfDate}T12:00:00.000Z`)}</span>
+            </div>
+            <div className={styles.overdueSummaryGrid}>
+              <div>
+                <span className="muted">Principal</span>
+                <strong>{formatMinorCurrency(loan.overdue.principalAmountMinor, currency)}</strong>
+              </div>
+              <div>
+                <span className="muted">Interest</span>
+                <strong>{formatMinorCurrency(loan.overdue.interestAmountMinor, currency)}</strong>
+              </div>
+              <div>
+                <span className="muted">Posted penalties</span>
+                <strong>{formatMinorCurrency(loan.overdue.penaltyAmountMinor, currency)}</strong>
+              </div>
+              {loan.overdue.unitemizedAmountMinor > 0 ? (
+                <div>
+                  <span className="muted">Unitemized balance</span>
+                  <strong>{formatMinorCurrency(loan.overdue.unitemizedAmountMinor, currency)}</strong>
+                </div>
+              ) : null}
+            </div>
+            {loan.overdue.unitemizedAmountMinor > 0 ? (
+              <p className={styles.overdueSummaryNote}>
+                This amount is in the installment balance but is not assigned to principal, interest, or penalties. Review the repayment schedule.
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         {loan.status === 'defaulted' ? (
           <section className={styles.defaultOutcome} aria-label="Default outcome">
