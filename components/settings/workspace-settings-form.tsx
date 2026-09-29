@@ -331,14 +331,14 @@ export function WorkspaceSettingsForm() {
 
   return (
     <PageContainer className="stack">
-      <form className="stack" onSubmit={handleSubmit} noValidate>
+      <form className={styles.settingsForm} onSubmit={handleSubmit} noValidate>
         {submitError ? (
           <ErrorBanner title="Settings were not saved" message={submitError} />
         ) : null}
 
-        <div className={`grid two ${styles.settingsGrid}`}>
-          <CardWrapper title="Capital baseline">
-            <div className="stack">
+        <div className={styles.settingsGrid}>
+          <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Capital baseline" titleSize="small">
+            <div className={styles.fieldStack}>
               <SearchableSelect
                 id="workspace-default-currency"
                 label="Default currency"
@@ -378,8 +378,8 @@ export function WorkspaceSettingsForm() {
             </div>
           </CardWrapper>
 
-          <CardWrapper title="Request link">
-            <div className="stack">
+          <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Request link" titleSize="small">
+            <div className={styles.fieldStack}>
               <Input
                 id="workspace-public-request-slug"
                 label="Request slug"
@@ -394,8 +394,8 @@ export function WorkspaceSettingsForm() {
                 const isCurrentTarget = requestUrlCopyTarget === requestUrlCard.target
 
                 return (
-                  <div className="data-card" key={requestUrlCard.target}>
-                    <div className="request-url-card__header">
+                  <div className={`data-card ${styles.requestUrlCard}`} key={requestUrlCard.target}>
+                    <div className={styles.requestUrlHeader}>
                       <div className="subsection-title">{requestUrlCard.title}</div>
                       <button
                         type="button"
@@ -407,7 +407,7 @@ export function WorkspaceSettingsForm() {
                         {isCurrentTarget && requestUrlCopyStatus === 'success' ? <CheckIcon /> : <CopyIcon />}
                       </button>
                     </div>
-                    <div className="muted request-url-card__value">{requestUrlCard.value}</div>
+                    <div className={`muted ${styles.requestUrlValue}`}>{requestUrlCard.value}</div>
                   </div>
                 )
               })}
@@ -415,7 +415,7 @@ export function WorkspaceSettingsForm() {
             </div>
           </CardWrapper>
 
-          <CardWrapper title="Email alerts">
+          <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Email alerts" titleSize="small">
             <Input
               id="workspace-admin-email"
               label="Admin email"
@@ -427,8 +427,8 @@ export function WorkspaceSettingsForm() {
             />
           </CardWrapper>
 
-          <CardWrapper title="Owner Loan Profit Exclusion">
-            <div className="stack">
+          <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Owner loan profit exclusion" titleSize="small">
+            <div className={styles.fieldStack}>
               <Input
                 id="workspace-owner-loan-mobile-number"
                 label="Owner borrower mobile number"
@@ -447,7 +447,7 @@ export function WorkspaceSettingsForm() {
             </div>
           </CardWrapper>
 
-          <CardWrapper title="Treasury payment defaults" contentSpacing="compact" titleSize="small">
+          <CardWrapper className={styles.settingsCard} title="Treasury payment defaults" contentSpacing="compact" titleSize="small">
             <Switch
               id="workspace-include-loan-payments-in-treasury"
               label="Include posted payments in Treasury automatically"
@@ -457,20 +457,20 @@ export function WorkspaceSettingsForm() {
             />
           </CardWrapper>
 
-          <CardWrapper title="Email usage">
-            <div className="stack">
-              <div className="data-card">
+          <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Email usage" titleSize="small">
+            <div className={styles.usageGrid}>
+              <div className={`data-card ${styles.usageStat}`}>
                 <div className="muted">Current month</div>
                 <strong>{formatCount(settings.emailSentCurrentMonthCount ?? 0)}</strong>
                 <div className="muted">{settings.emailSentCurrentMonthKey ? `${settings.emailSentCurrentMonthKey} UTC` : 'Current UTC month'}</div>
               </div>
 
-              <div className="data-card">
+              <div className={`data-card ${styles.usageStat}`}>
                 <div className="muted">Lifetime sent</div>
                 <strong>{formatCount(settings.emailSentCount ?? 0)}</strong>
               </div>
 
-              <div className="data-card">
+              <div className={`data-card ${styles.usageStat}`}>
                 <div className="muted">Last sent</div>
                 <strong>{settings.emailSentLastAt ? formatDate(settings.emailSentLastAt) : 'Never'}</strong>
               </div>
@@ -478,8 +478,8 @@ export function WorkspaceSettingsForm() {
           </CardWrapper>
         </div>
 
-        <div className="inline-actions">
-          <Button type="submit" disabled={saving || !hasChanges}>
+        <div className={styles.actions}>
+          <Button type="submit" size="sm" disabled={saving || !hasChanges}>
             {saving ? 'Saving settings...' : 'Save settings'}
           </Button>
         </div>
