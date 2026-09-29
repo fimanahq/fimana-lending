@@ -1,3 +1,90 @@
+.settingsForm {
+  display: grid;
+  gap: 0.8rem;
+}
+
 .settingsGrid {
-  align-items: start;
+  columns: 2;
+  column-gap: 0.8rem;
+}
+
+.settingsCard {
+  break-inside: avoid;
+  margin: 0 0 0.8rem;
+  padding: 1rem;
+}
+
+.fieldStack {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.settingsForm :global(.field) {
+  gap: 0.35rem;
+}
+
+.settingsForm :global(.field) input {
+  min-height: 2.75rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.requestUrlCard {
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-control);
+}
+
+.requestUrlHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.requestUrlValue {
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.usageGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.usageStat {
+  align-content: start;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.7rem;
+  border-radius: var(--radius-control);
+}
+
+.usageStat strong {
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+
+.usageStat :global(.muted) {
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 980px) {
+  .settingsGrid {
+    columns: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .usageGrid {
+    grid-template-columns: 1fr;
+  }
 }
