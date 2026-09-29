@@ -493,6 +493,7 @@ export interface CollectionsSummary {
 export interface CollectionCutoffDetailResponse {
   currency: string
   cutoff: DashboardCutoffReceivable
+  previousCutoffs: DashboardCutoffReceivable[]
 }
 
 export interface DashboardInterestByCutoff {
