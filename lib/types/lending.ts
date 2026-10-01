@@ -431,6 +431,7 @@ export interface DashboardCutoffReceivableLoan {
   totalReceivableMinor: number
   totalCollectedMinor: number
   remainingMinor: number
+  overdueMinor?: number
 }
 
 export interface DashboardCutoffReceivable {
