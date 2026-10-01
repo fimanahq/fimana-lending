@@ -14,6 +14,7 @@ interface SettingsFormState {
   defaultPenaltyRate: string
   publicLoanRequestSlug: string
   adminEmail: string
+  cutoffEmailRemindersEnabled: boolean
   ownerLoanMobileNumber: string
   excludeOwnerLoanInterestFromProfit: boolean
   includeLoanPaymentsInTreasuryByDefault: boolean
@@ -28,6 +29,7 @@ function buildFormState(settings: Settings): SettingsFormState {
     defaultPenaltyRate: ((settings.defaultPenaltyRateBps ?? 0) / 100).toString(),
     publicLoanRequestSlug: settings.publicLoanRequestSlug ?? '',
     adminEmail: settings.adminEmail ?? '',
+    cutoffEmailRemindersEnabled: settings.cutoffEmailRemindersEnabled ?? false,
     ownerLoanMobileNumber: settings.ownerLoanMobileNumber ?? '+63',
     excludeOwnerLoanInterestFromProfit: settings.excludeOwnerLoanInterestFromProfit ?? false,
     includeLoanPaymentsInTreasuryByDefault: settings.includeLoanPaymentsInTreasuryByDefault ?? true,
@@ -287,6 +289,7 @@ export function WorkspaceSettingsForm() {
     || form.defaultPenaltyRate !== initialForm.defaultPenaltyRate
     || form.publicLoanRequestSlug !== initialForm.publicLoanRequestSlug
     || form.adminEmail !== initialForm.adminEmail
+    || form.cutoffEmailRemindersEnabled !== initialForm.cutoffEmailRemindersEnabled
     || form.ownerLoanMobileNumber !== initialForm.ownerLoanMobileNumber
     || form.excludeOwnerLoanInterestFromProfit !== initialForm.excludeOwnerLoanInterestFromProfit
     || form.includeLoanPaymentsInTreasuryByDefault !== initialForm.includeLoanPaymentsInTreasuryByDefault
@@ -312,6 +315,7 @@ export function WorkspaceSettingsForm() {
       defaultPenaltyRateBps: parsedDefaultPenaltyRate.value ?? settings.defaultPenaltyRateBps,
       publicLoanRequestSlug: form.publicLoanRequestSlug.trim() || null,
       adminEmail: form.adminEmail.trim() || null,
+      cutoffEmailRemindersEnabled: form.cutoffEmailRemindersEnabled,
       ownerLoanMobileNumber: ownerLoanMobileNumber && ownerLoanMobileNumber !== '+63' ? ownerLoanMobileNumber : null,
         excludeOwnerLoanInterestFromProfit: form.excludeOwnerLoanInterestFromProfit,
         includeLoanPaymentsInTreasuryByDefault: form.includeLoanPaymentsInTreasuryByDefault,
@@ -416,15 +420,25 @@ export function WorkspaceSettingsForm() {
           </CardWrapper>
 
           <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Email alerts" titleSize="small">
-            <Input
-              id="workspace-admin-email"
-              label="Admin email"
-              type="email"
-              value={form.adminEmail}
-              error={errors.adminEmail}
-              hint="Receive an email when a borrower submits an application through the public link or borrower portal."
-              onChange={(event) => updateField('adminEmail', event.target.value)}
-            />
+            <div className={styles.fieldStack}>
+              <Input
+                id="workspace-admin-email"
+                label="Admin email"
+                type="email"
+                value={form.adminEmail}
+                error={errors.adminEmail}
+                hint="Receive an email when a borrower submits an application through the public link or borrower portal."
+                onChange={(event) => updateField('adminEmail', event.target.value)}
+              />
+
+              <Switch
+                id="workspace-cutoff-email-reminders"
+                label="Send borrower cutoff reminders"
+                description="Email borrowers three days before, one day before, on, and one day after an unpaid cutoff. Reminders run at approximately 8:05 AM Manila time."
+                checked={form.cutoffEmailRemindersEnabled}
+                onChange={(event) => updateField('cutoffEmailRemindersEnabled', event.target.checked)}
+              />
+            </div>
           </CardWrapper>
 
           <CardWrapper className={styles.settingsCard} contentSpacing="compact" title="Owner loan profit exclusion" titleSize="small">
