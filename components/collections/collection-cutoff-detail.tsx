@@ -77,6 +77,7 @@ function CutoffLoansTable({
             <th>Total receivable</th>
             <th>Collected</th>
             <th>Remaining</th>
+            <th>Overdue</th>
             <th>Cutoff status</th>
             <th>Loan status</th>
             <th className={styles.detailActionColumn}><span className="ui-sr-only">Actions</span></th>
@@ -97,6 +98,7 @@ function CutoffLoansTable({
                 <td>{formatMinorCurrency(loan.totalReceivableMinor, currency)}</td>
                 <td>{formatMinorCurrency(loan.totalCollectedMinor, currency)}</td>
                 <td>{formatMinorCurrency(loan.remainingMinor, currency)}</td>
+                <td>{formatMinorCurrency(loan.overdueMinor ?? 0, currency)}</td>
                 <td><span className={`status-pill ${collectionStatus}`}>{getLoanCollectionStatusLabel(collectionStatus)}</span></td>
                 <td><span className={`status-pill ${loan.loanStatus}`}>{loan.loanStatus === 'completed' ? 'Completed' : 'Active'}</span></td>
                 <td className={`${styles.actions} ${styles.detailActionColumn}`}>
