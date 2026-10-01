@@ -7,6 +7,7 @@ export interface UpdateSettingsInput {
   defaultPenaltyRateBps?: number
   publicLoanRequestSlug?: string | null
   adminEmail?: string | null
+  cutoffEmailRemindersEnabled?: boolean
   ownerLoanMobileNumber?: string | null
   excludeOwnerLoanInterestFromProfit?: boolean
   includeLoanPaymentsInTreasuryByDefault?: boolean
