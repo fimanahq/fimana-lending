@@ -434,7 +434,7 @@ export function WorkspaceSettingsForm() {
               <Switch
                 id="workspace-cutoff-email-reminders"
                 label="Send borrower cutoff reminders"
-                description="Email borrowers three days before, one day before, on, and one day after an unpaid cutoff. Reminders run at approximately 8:05 AM Manila time."
+                description="Email borrowers one day before, on, and one day after an unpaid cutoff. Reminders run at approximately 8:05 AM Manila time."
                 checked={form.cutoffEmailRemindersEnabled}
                 onChange={(event) => updateField('cutoffEmailRemindersEnabled', event.target.checked)}
               />
