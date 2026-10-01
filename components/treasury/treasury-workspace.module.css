@@ -222,6 +222,12 @@
   text-align: right;
 }
 
+.movementDescriptionContent {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
 .movementDescription {
   font-weight: 600;
 }
@@ -343,6 +349,12 @@
 
   .rowActions {
     justify-self: end;
+  }
+
+  .positiveAmount,
+  .negativeAmount,
+  .neutralAmount {
+    text-align: left;
   }
 }
 
