@@ -727,7 +727,7 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
       ) : null}
 
       <Card
-        title={loan.loanNumber}
+        title={`${loan.borrower.displayName} · ${loan.loanNumber}`}
         description={(
           <>
             Application{' '}
