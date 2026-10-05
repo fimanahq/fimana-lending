@@ -3,8 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Button, ConfirmationDialog, DataTable, EmptyState, ErrorState, ListToolbar, LoadingState, Pagination, ProtectedLink as Link, TableShell, useToast } from '@/components/shared'
-import { DeleteIcon, PaymentIcon, ViewIcon } from '@/components/shared/table-icons'
-import { LoanPaymentDialog } from '@/components/payments'
+import { DeleteIcon, ViewIcon } from '@/components/shared/table-icons'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import {
   buildLoanDetailPath,
@@ -71,7 +70,6 @@ export function LoansList({ listState }: LoansListProps) {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [paymentLoanId, setPaymentLoanId] = useState('')
   const [deleteLoanId, setDeleteLoanId] = useState('')
   const [deleting, setDeleting] = useState(false)
   const loanRequestSequenceRef = useRef(0)
@@ -159,7 +157,6 @@ export function LoansList({ listState }: LoansListProps) {
     }
   }, [loadLoans])
 
-  const selectedPaymentLoan = loans.find((loan) => loan.id === paymentLoanId) || null
   const selectedDeleteLoan = loans.find((loan) => loan.id === deleteLoanId) || null
   const currentListPath = buildLoanListPath(listState)
 
@@ -252,6 +249,7 @@ export function LoansList({ listState }: LoansListProps) {
                   <th>Installments</th>
                   <th>Total interest</th>
                   <th>Outstanding</th>
+                  <th>Overdue</th>
                   <th>Next due</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -286,6 +284,7 @@ export function LoansList({ listState }: LoansListProps) {
                     <td>{loan.installmentCount}</td>
                     <td>{formatMinorCurrency(loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
+                    <td>{formatMinorCurrency(loan.overdue?.totalAmountMinor ?? 0, loan.loanProduct.currency)}</td>
                     <td>{formatLoanNextDue(loan)}</td>
                     <td>
                       <span className={getStatusClassName(loan.status)}>
@@ -303,20 +302,6 @@ export function LoansList({ listState }: LoansListProps) {
                         >
                           <ViewIcon />
                         </Link>
-
-                        <button
-                          type="button"
-                          className={classNames('button-ghost table-action-icon', styles.iconAction)}
-                          aria-label={`Post payment for ${loan.loanNumber}`}
-                          title="Post payment"
-                          disabled={loan.status !== 'active' || loan.balances.totalOutstandingAmountMinor <= 0}
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            setPaymentLoanId(loan.id)
-                          }}
-                        >
-                          <PaymentIcon />
-                        </button>
 
                         <button
                           type="button"
@@ -352,14 +337,6 @@ export function LoansList({ listState }: LoansListProps) {
           />
         </>
       ) : null}
-
-      <LoanPaymentDialog
-        open={Boolean(paymentLoanId)}
-        loanId={paymentLoanId}
-        loanLabel={selectedPaymentLoan ? `${selectedPaymentLoan.borrower.displayName} · ${selectedPaymentLoan.loanNumber}` : undefined}
-        onClose={() => setPaymentLoanId('')}
-        onPaymentPosted={loadLoans}
-      />
 
       <ConfirmationDialog
         open={Boolean(deleteLoanId)}
