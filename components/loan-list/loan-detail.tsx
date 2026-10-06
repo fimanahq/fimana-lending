@@ -748,7 +748,11 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
             <strong>{formatMinorCurrency(loan.disbursedAmountMinor, currency)}</strong>
           </div>
           <div className="data-card">
-            <span className="muted">Outstanding</span>
+            <span className="muted">Collected</span>
+            <strong>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, currency)}</strong>
+          </div>
+          <div className="data-card">
+            <span className="muted">Remaining</span>
             <strong>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, currency)}</strong>
           </div>
           {loan.status === 'active' && loan.overdue ? (
