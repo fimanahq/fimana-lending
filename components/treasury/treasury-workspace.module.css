@@ -290,6 +290,24 @@
   justify-content: flex-end;
 }
 
+.amountField {
+  min-width: 0;
+}
+
+.quickAmountHint {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.quickAmounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
 .postInterestIntro {
   display: flex;
   align-items: flex-start;
