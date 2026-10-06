@@ -62,6 +62,7 @@ interface AdjustmentFormState {
 }
 
 type CapitalMovementDirection = 'deposit' | 'withdrawal' | 'expense'
+const CAPITAL_MOVEMENT_QUICK_AMOUNTS = [500, 1000, 5000, 10000] as const
 
 interface CapitalMovementFormState {
   direction: CapitalMovementDirection
@@ -97,6 +98,22 @@ function getCapitalMovementActionLabel(direction: CapitalMovementDirection) {
   if (direction === 'deposit') return 'capital deposit'
   if (direction === 'withdrawal') return 'capital withdrawal'
   return 'business expense'
+}
+
+function addCapitalMovementAmount(currentAmount: string, amount: number) {
+  const parsedAmount = Number(currentAmount)
+  const currentMinor = Number.isFinite(parsedAmount) && parsedAmount > 0
+    ? Math.round(parsedAmount * 100)
+    : 0
+  return String((currentMinor + amount * 100) / 100)
+}
+
+function exceedsTreasuryBalance(amount: string, direction: CapitalMovementDirection, balanceMinor: number) {
+  const parsedAmount = Number(amount)
+  return direction !== 'deposit'
+    && Number.isFinite(parsedAmount)
+    && parsedAmount > 0
+    && Math.round(parsedAmount * 100) > balanceMinor
 }
 
 function toDateInputValue(date: Date) {
@@ -543,6 +560,10 @@ export function TreasuryWorkspace() {
       setCapitalMovementError(parsedAmount.error || parsedDate.error || 'Treasury movement reason is required.')
       return
     }
+    if (exceedsTreasuryBalance(capitalMovementForm.amount, capitalMovementForm.direction, treasury?.account?.balanceMinor ?? 0)) {
+      setCapitalMovementError('Amount cannot exceed the available Treasury balance.')
+      return
+    }
 
     setMovingCapital(true)
     setCapitalMovementError('')
@@ -718,6 +739,9 @@ export function TreasuryWorkspace() {
   const account = treasury?.account ?? null
   const capitalSummary = treasury?.capitalSummary ?? null
   const hasNameChange = isConfigured && account ? form.name.trim() !== account.name : true
+  const capitalMovementExceedsBalance = account
+    ? exceedsTreasuryBalance(capitalMovementForm.amount, capitalMovementForm.direction, account.balanceMinor)
+    : false
 
   return (
     <PageContainer className="stack">
@@ -1130,6 +1154,15 @@ export function TreasuryWorkspace() {
                   onChange={(value) => setCapitalMovementForm((current) => ({ ...current, direction: value as CapitalMovementDirection }))}
                 />
                 <Input
+                  id="treasury-capital-movement-date"
+                  label="Posting date"
+                  type="date"
+                  value={capitalMovementForm.occurredAt}
+                  onChange={(event) => setCapitalMovementForm((current) => ({ ...current, occurredAt: event.target.value }))}
+                />
+              </div>
+              <div className={styles.amountField}>
+                <Input
                   id="treasury-capital-movement-amount"
                   label="Amount"
                   type="number"
@@ -1137,15 +1170,51 @@ export function TreasuryWorkspace() {
                   min="0.01"
                   step="0.01"
                   value={capitalMovementForm.amount}
+                  error={capitalMovementExceedsBalance ? 'Amount cannot exceed the available Treasury balance.' : undefined}
                   onChange={(event) => setCapitalMovementForm((current) => ({ ...current, amount: event.target.value }))}
                 />
-                <Input
-                  id="treasury-capital-movement-date"
-                  label="Posting date"
-                  type="date"
-                  value={capitalMovementForm.occurredAt}
-                  onChange={(event) => setCapitalMovementForm((current) => ({ ...current, occurredAt: event.target.value }))}
-                />
+                <span className={styles.quickAmountHint}>
+                  {capitalMovementForm.direction === 'deposit'
+                    ? 'Add to amount · Max is available for withdrawals and expenses'
+                    : `Add to amount · Available: ${formatCurrency(account.balanceMinor / 100, account.currency)}`}
+                </span>
+                <div className={styles.quickAmounts} role="group" aria-label="Treasury movement amount shortcuts">
+                  {CAPITAL_MOVEMENT_QUICK_AMOUNTS.map((amount) => (
+                    <Button
+                      key={amount}
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      aria-label={`Add ${formatCurrency(amount, account.currency)} to amount`}
+                      disabled={movingCapital || exceedsTreasuryBalance(
+                        addCapitalMovementAmount(capitalMovementForm.amount, amount),
+                        capitalMovementForm.direction,
+                        account.balanceMinor,
+                      )}
+                      onClick={() => setCapitalMovementForm((current) => ({
+                        ...current,
+                        amount: addCapitalMovementAmount(current.amount, amount),
+                      }))}
+                    >
+                      {formatCurrency(amount, account.currency)}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    aria-label={capitalMovementForm.direction === 'deposit'
+                      ? 'Max is available for withdrawals and expenses'
+                      : `Set amount to available balance ${formatCurrency(account.balanceMinor / 100, account.currency)}`}
+                    disabled={movingCapital || capitalMovementForm.direction === 'deposit' || account.balanceMinor <= 0}
+                    onClick={() => setCapitalMovementForm((current) => ({
+                      ...current,
+                      amount: String(account.balanceMinor / 100),
+                    }))}
+                  >
+                    Max
+                  </Button>
+                </div>
               </div>
               <Textarea
                 id="treasury-capital-movement-reason"
@@ -1156,7 +1225,7 @@ export function TreasuryWorkspace() {
               />
               <div className={`ui-card__actions ${styles.modalActions}`}>
                 <Button type="button" variant="secondary" disabled={movingCapital} onClick={closeCapitalMovement}>Cancel</Button>
-                <Button type="submit" disabled={movingCapital}>{movingCapital ? 'Posting…' : 'Post Treasury movement'}</Button>
+                <Button type="submit" disabled={movingCapital || capitalMovementExceedsBalance}>{movingCapital ? 'Posting…' : 'Post Treasury movement'}</Button>
               </div>
             </form>
           </Dialog>
