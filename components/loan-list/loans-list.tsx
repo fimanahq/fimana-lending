@@ -39,6 +39,14 @@ function formatLoanSchedule(loan: LoanRecord) {
   return `${frequencyLabel} on ${loan.paymentDays.map(formatPaymentDay).join(' and ')}`
 }
 
+function countCreditedInstallments(loan: LoanRecord) {
+  return loan.schedule?.filter((installment) =>
+    installment.status === 'paid'
+    || (installment.status === 'partial'
+      && installment.paidTotalAmountMinor > installment.outstandingTotalAmountMinor)
+  ).length ?? 0
+}
+
 function formatLoanNextDue(loan: LoanRecord) {
   if (loan.nextDueDate) {
     return formatDate(loan.nextDueDate)
@@ -246,7 +254,9 @@ export function LoansList({ listState }: LoansListProps) {
                   <th>Borrower</th>
                   <th>Loan</th>
                   <th>Principal</th>
-                  <th>Installments</th>
+                  <th title="Fully paid installments and partial installments paid over 50% count toward progress">
+                    Installment progress
+                  </th>
                   <th>Total interest</th>
                   <th>Collected</th>
                   <th>Remaining</th>
@@ -282,7 +292,7 @@ export function LoansList({ listState }: LoansListProps) {
                       <div className="muted micro-copy">{formatLoanSchedule(loan)}</div>
                     </td>
                     <td>{formatMinorCurrency(loan.principalAmountMinor, loan.loanProduct.currency)}</td>
-                    <td>{loan.installmentCount}</td>
+                    <td>{countCreditedInstallments(loan)}/{loan.installmentCount}</td>
                     <td>{formatMinorCurrency(loan.totalInterestAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, loan.loanProduct.currency)}</td>
                     <td>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, loan.loanProduct.currency)}</td>
