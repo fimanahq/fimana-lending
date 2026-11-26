@@ -28,7 +28,7 @@ export function DashboardMonthlyReceivables({
   fallbackCurrency: string
   yearOptions: number[]
 }) {
-  const initialYear = data?.year ?? yearOptions[0] ?? currentYear
+  const initialYear = data?.year ?? currentYear
   const dataByYearRef = useRef(new Map<number, DashboardMonthlyReceivablesData>(
     data ? [[data.year, data]] : [],
   ))

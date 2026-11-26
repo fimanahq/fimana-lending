@@ -1,8 +1,8 @@
 import { Info } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
-import type { DashboardRecentApplication } from '@/lib/types/lending'
+import type { DashboardApplicationOverview, DashboardRecentApplication } from '@/lib/types/lending'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 import { Badge, ProtectedLink as Link } from '@/components/shared'
 import { classNames } from '@/utils/class-names'
@@ -574,7 +574,129 @@ function CurrentCapitalPositionPanel({
   )
 }
 
-export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
+async function DashboardPendingReviewCount({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
+  const result = await applicationOverview
+  if (!result) {
+    return 'Pending reviews unavailable'
+  }
+
+  return result.pendingReviewCount > 0
+    ? `${result.pendingReviewCount} pending review${result.pendingReviewCount === 1 ? '' : 's'} still in the queue`
+    : 'No pending reviews in the intake queue'
+}
+
+async function DashboardRecentApplications({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
+  const result = await applicationOverview
+  if (!result) {
+    return (
+      <div className={dashboardClass('dashboard-overview__emptyState')} role="alert">
+        <div>
+          <strong>Unable to load recent applications</strong>
+          <p>View all history to check your applications.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const recentApplications = result.recentApplications
+  return (
+    <>
+      {recentApplications.length > 0 ? (
+        <>
+          <div className={dashboardClass('dashboard-overview__recentApplicationsTableDesktop')}>
+            <table className={dashboardClass('dashboard-overview__table')}>
+              <thead>
+                <tr>
+                  <th>Client Name</th>
+                  <th>Schedule</th>
+                  <th className={dashboardClass('dashboard-overview__tableAmount')}>Amount</th>
+                  <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentApplications.map((application) => (
+                  <tr key={application.id}>
+                    <td>
+                      <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__clientCell')}>
+                        <span className={dashboardClass('dashboard-overview__avatar')}>
+                          {getNameInitials(getApplicationName(application))}
+                        </span>
+                        <span className={dashboardClass('dashboard-overview__clientName')}>
+                          {getApplicationName(application)}
+                        </span>
+                      </Link>
+                    </td>
+                    <td>{getApplicationPlan(application)}</td>
+                    <td className={dashboardClass('dashboard-overview__tableAmount')}>
+                      {formatApplicationAmount(application)}
+                    </td>
+                    <td className={dashboardClass('dashboard-overview__tableStatus')}>
+                      <span className={getStatusClassName(application.status)}>
+                        {formatLoanApplicationStatus(application.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className={dashboardClass('dashboard-overview__recentApplicationTileList')} aria-label="Recent applications">
+            {recentApplications.map((application) => (
+              <article key={application.id} className={dashboardClass('dashboard-overview__recentApplicationTile')}>
+                <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__recentApplicationTileHeader')}>
+                  <span className={dashboardClass('dashboard-overview__avatar')}>
+                    {getNameInitials(getApplicationName(application))}
+                  </span>
+                  <span className={dashboardClass('dashboard-overview__clientName')}>
+                    {getApplicationName(application)}
+                  </span>
+                </Link>
+
+                <dl className={dashboardClass('dashboard-overview__recentApplicationTileMetrics')}>
+                  <div>
+                    <dt>Schedule</dt>
+                    <dd>{getApplicationPlan(application)}</dd>
+                  </div>
+                  <div>
+                    <dt>Amount</dt>
+                    <dd>{formatApplicationAmount(application)}</dd>
+                  </div>
+                  <div>
+                    <dt>Status</dt>
+                    <dd>
+                      <span className={getStatusClassName(application.status)}>
+                        {formatLoanApplicationStatus(application.status)}
+                      </span>
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className={dashboardClass('dashboard-overview__emptyState')}>
+          <span className={dashboardClass('dashboard-overview__emptyIcon')}>
+            <OverviewGlyph name="note" />
+          </span>
+          <div>
+            <strong>No applications yet</strong>
+            <p>New borrower applications will appear here once the intake flow is used.</p>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+export function DashboardOverview({
+  data,
+  applicationOverview,
+}: {
+  data: DashboardOverviewData
+  applicationOverview: Promise<DashboardApplicationOverview | null>
+}) {
   const {
     summary,
     activeLoanBalanceSegments,
@@ -584,7 +706,6 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
     monthlyReceivables,
     profitGrowthYearOptions,
     currentYear,
-    recentApplications,
     partialFailureNotice,
   } = data
   const dashboardCurrency = summary.currency
@@ -696,10 +817,10 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue', 'dashboard-overview__statSubvalue--contrast')}>
-              {summary.pendingReviewCount > 0
-                ? `${summary.pendingReviewCount} pending review${summary.pendingReviewCount === 1 ? '' : 's'} still in the queue`
-                : 'No pending reviews in the intake queue'}
+            <span className={dashboardClass('dashboard-overview__statSubvalue', 'dashboard-overview__statSubvalue--contrast')} aria-live="polite">
+              <Suspense fallback="Loading pending reviews…">
+                <DashboardPendingReviewCount applicationOverview={applicationOverview} />
+              </Suspense>
             </span>
             <StatInfoDisclosure id="money-with-borrowers-info" label="Show money with borrowers details" contrast>
               Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}.
@@ -901,91 +1022,13 @@ export function DashboardOverview({ data }: { data: DashboardOverviewData }) {
             </div>
 
             <div className={dashboardClass('dashboard-overview__tableCard')}>
-              {recentApplications.length > 0 ? (
-                <>
-                  <div className={dashboardClass('dashboard-overview__recentApplicationsTableDesktop')}>
-                    <table className={dashboardClass('dashboard-overview__table')}>
-                      <thead>
-                        <tr>
-                          <th>Client Name</th>
-                          <th>Schedule</th>
-                          <th className={dashboardClass('dashboard-overview__tableAmount')}>Amount</th>
-                          <th className={dashboardClass('dashboard-overview__tableStatus')}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {recentApplications.map((application) => (
-                          <tr key={application.id}>
-                            <td>
-                              <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__clientCell')}>
-                                <span className={dashboardClass('dashboard-overview__avatar')}>
-                                  {getNameInitials(getApplicationName(application))}
-                                </span>
-                                <span className={dashboardClass('dashboard-overview__clientName')}>
-                                  {getApplicationName(application)}
-                                </span>
-                              </Link>
-                            </td>
-                            <td>{getApplicationPlan(application)}</td>
-                            <td className={dashboardClass('dashboard-overview__tableAmount')}>
-                              {formatApplicationAmount(application)}
-                            </td>
-                            <td className={dashboardClass('dashboard-overview__tableStatus')}>
-                              <span className={getStatusClassName(application.status)}>
-                                {formatLoanApplicationStatus(application.status)}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className={dashboardClass('dashboard-overview__recentApplicationTileList')} aria-label="Recent applications">
-                    {recentApplications.map((application) => (
-                      <article key={application.id} className={dashboardClass('dashboard-overview__recentApplicationTile')}>
-                        <Link href={getApplicationHref(application)} className={dashboardClass('dashboard-overview__recentApplicationTileHeader')}>
-                          <span className={dashboardClass('dashboard-overview__avatar')}>
-                            {getNameInitials(getApplicationName(application))}
-                          </span>
-                          <span className={dashboardClass('dashboard-overview__clientName')}>
-                            {getApplicationName(application)}
-                          </span>
-                        </Link>
-
-                        <dl className={dashboardClass('dashboard-overview__recentApplicationTileMetrics')}>
-                          <div>
-                            <dt>Schedule</dt>
-                            <dd>{getApplicationPlan(application)}</dd>
-                          </div>
-                          <div>
-                            <dt>Amount</dt>
-                            <dd>{formatApplicationAmount(application)}</dd>
-                          </div>
-                          <div>
-                            <dt>Status</dt>
-                            <dd>
-                              <span className={getStatusClassName(application.status)}>
-                                {formatLoanApplicationStatus(application.status)}
-                              </span>
-                            </dd>
-                          </div>
-                        </dl>
-                      </article>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className={dashboardClass('dashboard-overview__emptyState')}>
-                  <span className={dashboardClass('dashboard-overview__emptyIcon')}>
-                    <OverviewGlyph name="note" />
-                  </span>
-                  <div>
-                    <strong>No applications yet</strong>
-                    <p>New borrower applications will appear here once the intake flow is used.</p>
-                  </div>
+              <Suspense fallback={
+                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__deferredBlock')} role="status">
+                  Loading recent applications…
                 </div>
-              )}
+              }>
+                <DashboardRecentApplications applicationOverview={applicationOverview} />
+              </Suspense>
             </div>
           </div>
         </section>
