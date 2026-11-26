@@ -2166,7 +2166,11 @@
   .dashboard-shell__content {
     width: 100%;
     max-width: none;
-    padding-left: 0.75rem;
+    padding-inline: 0.75rem;
+  }
+
+  .dashboard-shell__footer {
+    padding-inline: 0.75rem;
   }
 
   .dashboard-shell__actions {
