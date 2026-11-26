@@ -718,6 +718,22 @@ export interface LoanApplication {
   loanId?: string | null
 }
 
+export interface DashboardRecentApplication extends Pick<LoanApplication, 'id' | 'paymentDays' | 'status' | 'createdAt'> {
+  borrower?: { displayName: string }
+  paymentType?: LoanApplicationPaymentType
+  paymentFrequency?: PaymentFrequency
+  loanAmountMinor?: number
+  principal?: number
+  loanProduct?: { currency: string } | null
+  firstName?: string
+  lastName?: string
+}
+
+export interface DashboardApplicationOverview {
+  pendingReviewCount: number
+  recentApplications: DashboardRecentApplication[]
+}
+
 export interface LoanApplicationBorrower {
   id: string
   borrowerNumber: string
