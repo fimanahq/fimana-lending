@@ -2,7 +2,7 @@ import { Info } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
-import type { LoanApplication } from '@/lib/types/lending'
+import type { DashboardRecentApplication } from '@/lib/types/lending'
 import type { DashboardOverviewData, DashboardProgressSegment } from '@/components/dashboard/dashboard-overview-data'
 import { Badge, ProtectedLink as Link } from '@/components/shared'
 import { classNames } from '@/utils/class-names'
@@ -31,18 +31,18 @@ function getNameInitials(name: string) {
   return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || 'FM'
 }
 
-function getApplicationPlan(application: LoanApplication) {
+function getApplicationPlan(application: DashboardRecentApplication) {
   const frequency = application.paymentType || application.paymentFrequency
   const frequencyLabel = frequency === 'monthly' ? 'Monthly' : 'Semi-monthly'
   const days = application.paymentDays.map(formatPaymentDay).join(' and ')
   return `${frequencyLabel} · ${days}`
 }
 
-function getApplicationHref(application: LoanApplication) {
+function getApplicationHref(application: DashboardRecentApplication) {
   return `/loan-applications/${application.id}`
 }
 
-function getApplicationName(application: LoanApplication) {
+function getApplicationName(application: DashboardRecentApplication) {
   return application.borrower?.displayName
     || `${application.firstName || ''} ${application.lastName || ''}`.trim()
     || 'Borrower'
@@ -71,7 +71,7 @@ function StatInfoDisclosure({
   )
 }
 
-function formatApplicationAmount(application: LoanApplication) {
+function formatApplicationAmount(application: DashboardRecentApplication) {
   return formatCurrency(
     (application.loanAmountMinor ?? application.principal ?? 0) / (application.loanAmountMinor ? 100 : 1),
     application.loanProduct?.currency,
