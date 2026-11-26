@@ -3,26 +3,18 @@ import { authorizedBackendRequestWithCurrentAccess } from '@/lib/server/backend'
 import type { DashboardApplicationOverview, LoanDashboardSummary } from '@/lib/types/lending'
 
 export default async function DashboardPage() {
-  const [summaryResult, applicationResult] = await Promise.allSettled([
-    authorizedBackendRequestWithCurrentAccess<LoanDashboardSummary>('/loans/dashboard-summary'),
-    authorizedBackendRequestWithCurrentAccess<DashboardApplicationOverview>('/loan-applications/dashboard-overview'),
-  ])
-
-  const failedSources: DashboardDataSource[] = []
-
-  if (summaryResult.status === 'rejected') {
-    failedSources.push('summary')
-  }
-
-  if (applicationResult.status === 'rejected') {
-    failedSources.push('applications')
-  }
+  const applicationOverview = authorizedBackendRequestWithCurrentAccess<DashboardApplicationOverview>(
+    '/loan-applications/dashboard-overview',
+  ).catch(() => null)
+  const summary = await authorizedBackendRequestWithCurrentAccess<LoanDashboardSummary>(
+    '/loans/dashboard-summary',
+  ).catch(() => null)
+  const failedSources: DashboardDataSource[] = summary ? [] : ['summary']
 
   const data = buildDashboardOverviewData({
-    summary: summaryResult.status === 'fulfilled' ? summaryResult.value : null,
-    applicationOverview: applicationResult.status === 'fulfilled' ? applicationResult.value : null,
+    summary,
     failedSources,
   })
 
-  return <DashboardOverview data={data} />
+  return <DashboardOverview data={data} applicationOverview={applicationOverview} />
 }

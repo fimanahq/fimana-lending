@@ -61,7 +61,7 @@ export function DashboardProfitGrowth({
   fallbackCurrency: string
   yearOptions: number[]
 }) {
-  const initialYear = data?.year ?? yearOptions[0] ?? currentYear
+  const initialYear = data?.year ?? currentYear
   const dataByYearRef = useRef(new Map<number, DashboardProfitGrowthData>(
     data ? [[data.year, data]] : [],
   ))
