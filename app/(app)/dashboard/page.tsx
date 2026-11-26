@@ -1,15 +1,11 @@
-import { DashboardOverview, buildDashboardOverviewData, getManilaCalendarPeriod, type DashboardDataSource } from '@/modules/dashboard'
+import { DashboardOverview, buildDashboardOverviewData, type DashboardDataSource } from '@/modules/dashboard'
 import { authorizedBackendRequestWithCurrentAccess } from '@/lib/server/backend'
-import type { DashboardMonthlyProfitResponse, LoanApplication, LoanDashboardSummary } from '@/lib/types/lending'
+import type { DashboardApplicationOverview, LoanDashboardSummary } from '@/lib/types/lending'
 
 export default async function DashboardPage() {
-  const { year } = getManilaCalendarPeriod()
-  const [summaryResult, applicationResult, monthlyProfitResult] = await Promise.allSettled([
+  const [summaryResult, applicationResult] = await Promise.allSettled([
     authorizedBackendRequestWithCurrentAccess<LoanDashboardSummary>('/loans/dashboard-summary'),
-    authorizedBackendRequestWithCurrentAccess<LoanApplication[]>('/loan-applications/applications'),
-    authorizedBackendRequestWithCurrentAccess<DashboardMonthlyProfitResponse>(
-      `/loans/dashboard/profit-by-month?year=${year}`,
-    ),
+    authorizedBackendRequestWithCurrentAccess<DashboardApplicationOverview>('/loan-applications/dashboard-overview'),
   ])
 
   const failedSources: DashboardDataSource[] = []
@@ -22,14 +18,9 @@ export default async function DashboardPage() {
     failedSources.push('applications')
   }
 
-  if (monthlyProfitResult.status === 'rejected') {
-    failedSources.push('monthlyProfit')
-  }
-
   const data = buildDashboardOverviewData({
     summary: summaryResult.status === 'fulfilled' ? summaryResult.value : null,
-    applications: applicationResult.status === 'fulfilled' ? applicationResult.value : [],
-    monthlyProfit: monthlyProfitResult.status === 'fulfilled' ? monthlyProfitResult.value : null,
+    applicationOverview: applicationResult.status === 'fulfilled' ? applicationResult.value : null,
     failedSources,
   })
 

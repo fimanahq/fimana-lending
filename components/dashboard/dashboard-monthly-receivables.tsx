@@ -35,7 +35,7 @@ export function DashboardMonthlyReceivables({
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [activeData, setActiveData] = useState(data)
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(data === null)
 
   useEffect(() => {
     if (!data) {

@@ -1,6 +1,8 @@
 import type {
   DashboardMonthlyProfitResponse,
   DashboardMonthlyProfitRow,
+  DashboardApplicationOverview,
+  DashboardRecentApplication,
   LoanApplication,
   LoanDashboardSummary,
 } from '@/lib/types/lending'
@@ -60,13 +62,14 @@ export interface DashboardOverviewData {
   monthlyReceivables: DashboardMonthlyReceivablesData | null
   profitGrowthYearOptions: number[]
   currentYear: number
-  recentApplications: LoanApplication[]
+  recentApplications: DashboardRecentApplication[]
   partialFailureNotice: string | null
 }
 
 interface BuildDashboardOverviewDataInput {
   summary?: LoanDashboardSummary | null
-  applications: LoanApplication[]
+  applicationOverview?: DashboardApplicationOverview | null
+  applications?: LoanApplication[]
   monthlyProfit?: DashboardMonthlyProfitResponse | null
   failedSources?: DashboardDataSource[]
   now?: Date
@@ -343,7 +346,8 @@ function getDefaultSummary(): DashboardSummaryMetrics {
 
 export function buildDashboardOverviewData({
   summary,
-  applications,
+  applicationOverview,
+  applications = [],
   monthlyProfit,
   failedSources = [],
   now = new Date(),
@@ -351,7 +355,7 @@ export function buildDashboardOverviewData({
   const mergedSummary: DashboardSummaryMetrics = {
     ...getDefaultSummary(),
     ...(summary ?? {}),
-    pendingReviewCount: getPendingReviewCount(applications),
+    pendingReviewCount: applicationOverview?.pendingReviewCount ?? getPendingReviewCount(applications),
   }
   mergedSummary.ownerLoanInterestExcluded = mergedSummary.ownerLoanInterestExcluded ?? false
   mergedSummary.ownerLoanInterestExcludedAmountMinor = mergedSummary.ownerLoanInterestExcludedAmountMinor ?? 0
@@ -482,7 +486,8 @@ export function buildDashboardOverviewData({
     monthlyReceivables: monthlyProfit ? buildDashboardMonthlyReceivablesData(monthlyProfit) : null,
     profitGrowthYearOptions,
     currentYear,
-    recentApplications: [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
+    recentApplications: applicationOverview?.recentApplications
+      ?? [...applications].sort((left, right) => right.createdAt.localeCompare(left.createdAt)).slice(0, 4),
     partialFailureNotice: buildPartialFailureNotice(failedSources),
   }
 }

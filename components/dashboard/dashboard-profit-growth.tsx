@@ -68,7 +68,7 @@ export function DashboardProfitGrowth({
   const [selectedYear, setSelectedYear] = useState(initialYear)
   const [activeData, setActiveData] = useState(data)
   const [profitError, setProfitError] = useState<string | null>(null)
-  const [isProfitLoading, setIsProfitLoading] = useState(false)
+  const [isProfitLoading, setIsProfitLoading] = useState(data === null)
   const [selectedRow, setSelectedRow] = useState<DashboardMonthlyProfitRow | null>(null)
   const [detail, setDetail] = useState<DashboardMonthlyProfitDetailResponse | null>(null)
   const [detailError, setDetailError] = useState<string | null>(null)
