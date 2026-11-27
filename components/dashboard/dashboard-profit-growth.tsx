@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { DashboardMonthlyProfitDetailDialog, DashboardMonthlyProfitTable } from '@/components/dashboard/dashboard-monthly-profit-details'
 import { DashboardProfitByMonthChartLoader } from '@/components/dashboard/dashboard-profit-by-month-chart-loader'
+import { StatInfoDisclosure } from '@/components/dashboard/dashboard-stat-info'
 import { Select } from '@/components/shared'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -180,8 +181,13 @@ export function DashboardProfitGrowth({
   return (
     <section className={dashboardClass('dashboard-overview__operator')}>
       <div className={dashboardClass('dashboard-overview__operatorHeader')}>
-        <div>
-          <h2 className="section-title title-offset">{DASHBOARD_PROFIT_GROWTH_TITLE}</h2>
+        <div className={dashboardClass('dashboard-overview__operatorInfoHeading')}>
+          <div className={dashboardClass('dashboard-overview__operatorInfoTitleRow')}>
+            <h2 className="section-title">{DASHBOARD_PROFIT_GROWTH_TITLE}</h2>
+            <StatInfoDisclosure id="profit-growth-info" label="Show profit growth details">
+              {DASHBOARD_PROFIT_GROWTH_DESCRIPTION}
+            </StatInfoDisclosure>
+          </div>
           <p className="muted">{DASHBOARD_PROFIT_GROWTH_DESCRIPTION}</p>
         </div>
         <Select
@@ -257,10 +263,15 @@ export function DashboardProfitGrowth({
             />
           </section>
 
-          <section className={dashboardClass('dashboard-overview__interestCard')}>
+          <section className={dashboardClass('dashboard-overview__interestCard', 'dashboard-overview__infoCard')}>
             <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
-              <div>
-                <h3>Monthly profit</h3>
+              <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
+                <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
+                  <h3>Monthly profit</h3>
+                  <StatInfoDisclosure id="monthly-profit-info" label="Show monthly profit details">
+                    Gross and net profit across {activeData.year}. The average uses completed months and includes zero-profit months.
+                  </StatInfoDisclosure>
+                </div>
                 <p>Gross and net profit across {activeData.year}. The average uses completed months and includes zero-profit months.</p>
               </div>
             </div>
