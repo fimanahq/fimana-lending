@@ -671,6 +671,43 @@ export interface LoanDashboardSummary {
   interestByCutoff: DashboardInterestByCutoff[]
 }
 
+export interface DashboardKpis {
+  currency: SettingsCurrency
+  startingCapitalMinor: number
+  currentCapitalBasisMinor: number
+  currentContributedCapitalMinor: number
+  capitalDepositsMinor: number
+  capitalWithdrawalsMinor: number
+  netCapitalMovementMinor: number
+  collectedProfitMinor: number
+  netCollectedProfitMinor: number
+  rewardExpenseMinor: number
+  businessExpenseMinor: number
+  writtenOffPrincipalMinor: number
+  principalWriteOffLossMinor: number
+  cashOnHandMinor: number
+  calculatedCashOnHandMinor: number
+  treasuryCashOnHandMinor: number | null
+  cashReconciliationDifferenceMinor: number | null
+  cashReconciliationStatus: 'balanced' | 'variance' | 'treasury_unconfigured'
+  moneyWithBorrowersMinor: number
+  activeLoanCount: number
+  nextCutoffReceivableMinor: number
+  currentCutoffDate: string | null
+  overdueReceivableMinor: number
+  oldestUnpaidDueDate: string | null
+  projectedNetWorthMinor: number
+  netProjectedProfitVsCapitalBps: number
+  historicalUnallocatedAmountMinor: number
+  historicalUnallocatedPaymentCount: number
+  outstandingPrincipalMinor: number
+  remainingProjectedProfitMinor: number
+}
+
+export interface DashboardKpiResponse extends DashboardKpis {
+  viewerUserId: string
+}
+
 export interface LoanApplication {
   id: string
   applicationNumber?: string
