@@ -31,7 +31,7 @@ function LedgerMetric({ label, value, meta }: { label: string; value: string; me
   )
 }
 
-type SelectedLoan = { loanId: string; label: string }
+type SelectedLoan = { loanId: string }
 
 function CutoffLedger({
   cutoff,
@@ -108,7 +108,7 @@ function CutoffLoansTable({
                     aria-label={`Post payment for ${loan.borrowerDisplayName} ${loan.loanNumber} in cutoff on ${formatDate(cutoff.cutoffDate)}`}
                     title={canPostPayment ? 'Post payment' : 'Payment unavailable'}
                     disabled={isRefreshing || !canPostPayment}
-                    onClick={() => onSelectLoan({ loanId: loan.loanId, label: `${loan.borrowerDisplayName} · ${loan.loanNumber}` })}
+                    onClick={() => onSelectLoan({ loanId: loan.loanId })}
                   >
                     <PaymentIcon />
                   </button>
@@ -239,7 +239,6 @@ export function CollectionCutoffDetail({
       <LoanPaymentDialog
         open={Boolean(selectedLoan)}
         loanId={selectedLoan?.loanId ?? ''}
-        loanLabel={selectedLoan?.label}
         onClose={() => setSelectedLoan(null)}
         onPaymentPosted={() => {
           setSelectedLoan(null)
