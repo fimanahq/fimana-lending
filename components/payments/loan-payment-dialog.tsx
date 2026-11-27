@@ -51,7 +51,7 @@ function toAmountMinor(amount: string) {
 }
 
 function getDefaultPaymentAmountMinor(loan: LoanRecord) {
-  return (loan.schedule ?? []).find((row) => row.outstandingTotalAmountMinor > 0)?.outstandingTotalAmountMinor ?? null
+  return loan.schedule?.[0]?.scheduledTotalAmountMinor ?? null
 }
 
 function getDefaultPaymentAmountValue(loan: LoanRecord) {
