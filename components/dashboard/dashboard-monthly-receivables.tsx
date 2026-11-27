@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { DashboardProfitByMonthChartLoader } from '@/components/dashboard/dashboard-profit-by-month-chart-loader'
+import { StatInfoDisclosure } from '@/components/dashboard/dashboard-stat-info'
 import {
   buildDashboardMonthlyReceivablesData,
   type DashboardMonthlyReceivablesData,
@@ -93,8 +94,13 @@ export function DashboardMonthlyReceivables({
   return (
     <section className={dashboardClass('dashboard-overview__operator')}>
       <div className={dashboardClass('dashboard-overview__operatorHeader')}>
-        <div>
-          <h2 className="section-title title-offset">{DASHBOARD_MONTHLY_RECEIVABLES_TITLE}</h2>
+        <div className={dashboardClass('dashboard-overview__operatorInfoHeading')}>
+          <div className={dashboardClass('dashboard-overview__operatorInfoTitleRow')}>
+            <h2 className="section-title">{DASHBOARD_MONTHLY_RECEIVABLES_TITLE}</h2>
+            <StatInfoDisclosure id="monthly-receivables-section-info" label="Show monthly receivables details">
+              {DASHBOARD_MONTHLY_RECEIVABLES_DESCRIPTION}
+            </StatInfoDisclosure>
+          </div>
           <p className="muted">{DASHBOARD_MONTHLY_RECEIVABLES_DESCRIPTION}</p>
         </div>
         <Select
@@ -131,10 +137,15 @@ export function DashboardMonthlyReceivables({
           </div>
         </section>
       ) : (
-        <section className={dashboardClass('dashboard-overview__interestCard')}>
+        <section className={dashboardClass('dashboard-overview__interestCard', 'dashboard-overview__infoCard')}>
           <div className={dashboardClass('dashboard-overview__tableCardHeader')}>
-            <div>
-              <h3>Monthly receivables</h3>
+            <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
+              <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
+                <h3>Monthly receivables</h3>
+                <StatInfoDisclosure id="monthly-receivables-chart-info" label="Show monthly receivables chart details">
+                  Actual collections are recorded by payment month. The current month&apos;s expected target is prorated through today.
+                </StatInfoDisclosure>
+              </div>
               <p>Actual collections are recorded by payment month. The current month&apos;s expected target is prorated through today.</p>
             </div>
           </div>

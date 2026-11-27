@@ -178,11 +178,15 @@ function ProfitOutlookPanel({
   const hasPositiveNetProfit = totalProjectedProfitMinor > 0
 
   return (
-    <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard')}>
+    <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard', 'dashboard-overview__profitOutlookCard')}>
       <div className={dashboardClass('dashboard-overview__progressHeader')}>
-        <div>
-          <span className={dashboardClass('dashboard-overview__statLabel')}>Profit Outlook</span>
-          <h2>Collected versus projected profit</h2>
+        <div className={dashboardClass('dashboard-overview__profitOutlookTitleGroup')}>
+          <div className={dashboardClass('dashboard-overview__profitOutlookTitleRow')}>
+            <h2 className={dashboardClass('dashboard-overview__statLabel')}>Profit Outlook</h2>
+            <StatInfoDisclosure id="profit-outlook-info" label="Show profit outlook details">
+              Realized profit already booked and expected profit still tied to active schedules.
+            </StatInfoDisclosure>
+          </div>
           <p>Realized profit already booked and expected profit still tied to active schedules.</p>
           {summary.ownerLoanInterestExcluded ? (
             <Badge tone="warning">Owner loan interest excluded from profit</Badge>
@@ -443,8 +447,12 @@ function ActiveLoansPanel({
     <article className={dashboardClass('dashboard-overview__activeLoansPanel')}>
       <div className={dashboardClass('dashboard-overview__activeLoansHeader')}>
         <div className={dashboardClass('dashboard-overview__activeLoansTitleGroup')}>
-          <span className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</span>
-          <h2>Active loan position</h2>
+          <div className={dashboardClass('dashboard-overview__activeLoansTitleRow')}>
+            <h2 className={dashboardClass('dashboard-overview__statLabel')}>Active Loans</h2>
+            <StatInfoDisclosure id="active-loan-position-info" label="Show active loan position details">
+              See deployed principal, expected profit, and profit already collected from active schedules in one operating view.
+            </StatInfoDisclosure>
+          </div>
           <p>See deployed principal, expected profit, and profit already collected from active schedules in one operating view.</p>
         </div>
         <div className={dashboardClass('dashboard-overview__activeLoansSummary')}>
@@ -523,9 +531,13 @@ function CurrentCapitalPositionPanel({
   return (
     <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__mixCard', 'dashboard-overview__currentCapitalCard')}>
       <div className={dashboardClass('dashboard-overview__progressHeader', 'dashboard-overview__currentCapitalHeader')}>
-        <div>
-          <span className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</span>
-          <h2>Where current capital sits</h2>
+        <div className={dashboardClass('dashboard-overview__currentCapitalTitleGroup')}>
+          <div className={dashboardClass('dashboard-overview__currentCapitalTitleRow')}>
+            <h2 className={dashboardClass('dashboard-overview__statLabel')}>Current Capital Position</h2>
+            <StatInfoDisclosure id="current-capital-position-info" label="Show current capital position details">
+              Cash available now and principal still deployed across active loans.
+            </StatInfoDisclosure>
+          </div>
           <p>Cash available now and principal still deployed across active loans.</p>
         </div>
       </div>
@@ -941,11 +953,15 @@ export function DashboardOverview({
 
         <section className="grid two">
           {hasCapitalLosses ? (
-            <article className={dashboardClass('dashboard-overview__progressCard')}>
+            <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__infoCard')}>
               <div className={dashboardClass('dashboard-overview__progressHeader')}>
-                <div>
-                  <span className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</span>
-                  <h2>Capital losses</h2>
+                <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
+                  <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
+                    <h2 className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</h2>
+                    <StatInfoDisclosure id="capital-losses-info" label="Show capital losses details">
+                      Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
+                    </StatInfoDisclosure>
+                  </div>
                   <p>
                     Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
                   </p>
@@ -982,11 +998,15 @@ export function DashboardOverview({
             </article>
           ) : null}
 
-          <article className={dashboardClass('dashboard-overview__progressCard')}>
+          <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__infoCard')}>
             <div className={dashboardClass('dashboard-overview__progressHeader')}>
-              <div>
-                <span className={dashboardClass('dashboard-overview__statLabel')}>Collection Risk</span>
-                <h2>What needs collection attention</h2>
+              <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
+                <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
+                  <h2 className={dashboardClass('dashboard-overview__statLabel')}>Collection Risk</h2>
+                  <StatInfoDisclosure id="collection-risk-info" label="Show collection risk details">
+                    Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
+                  </StatInfoDisclosure>
+                </div>
                 <p>
                   Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
                 </p>
