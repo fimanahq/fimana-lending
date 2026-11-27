@@ -14,6 +14,7 @@ import {
   DASHBOARD_MONTHLY_RECEIVABLES_TITLE,
 } from './dashboard-copy'
 import dashboardStyles from './dashboard.module.css'
+import { DashboardLoadingSpinner } from './dashboard-loading-spinner'
 import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
@@ -119,11 +120,8 @@ export function DashboardMonthlyReceivables({
 
       {isLoading ? (
         <section className={dashboardClass('dashboard-overview__interestCard')} aria-busy="true">
-          <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')} role="status" aria-live="polite">
-            <div>
-              <strong>Loading {selectedYear} receivables</strong>
-              <p>Comparing scheduled receivables with posted collections for the selected year.</p>
-            </div>
+          <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact', 'dashboard-overview__loadingPlaceholder')}>
+            <DashboardLoadingSpinner label={`Loading ${selectedYear} receivables`} />
           </div>
         </section>
       ) : error ? (
