@@ -1,4 +1,3 @@
-import { Info } from 'lucide-react'
 import { Suspense, type ReactNode } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
@@ -9,6 +8,7 @@ import { classNames } from '@/utils/class-names'
 import { DashboardPortfolioChartLoader } from './dashboard-portfolio-chart-loader'
 import { DashboardMonthlyReceivables } from './dashboard-monthly-receivables'
 import { DashboardProfitGrowth } from './dashboard-profit-growth'
+import { StatInfoDisclosure } from './dashboard-stat-info'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
 
@@ -48,26 +48,22 @@ function getApplicationName(application: DashboardRecentApplication) {
     || 'Borrower'
 }
 
-function StatInfoDisclosure({
-  children,
-  contrast = false,
-  id,
-  label,
+function StatBreakdown({
+  items,
+  wide = false,
 }: {
-  children: ReactNode
-  contrast?: boolean
-  id: string
-  label: string
+  items: Array<{ label: string; value: ReactNode }>
+  wide?: boolean
 }) {
   return (
-    <details className={dashboardClass('dashboard-overview__statInfo', contrast && 'dashboard-overview__statInfo--contrast')}>
-      <summary aria-describedby={id} aria-label={label} className={dashboardClass('dashboard-overview__statInfoButton')}>
-        <Info className={dashboardClass('dashboard-overview__statMetaIcon')} aria-hidden="true" strokeWidth={2} />
-        <span className={dashboardClass('dashboard-overview__statInfoBubble')} id={id} role="tooltip">
-          {children}
-        </span>
-      </summary>
-    </details>
+    <dl className={dashboardClass('dashboard-overview__statBreakdown', wide && 'dashboard-overview__statBreakdown--wide')}>
+      {items.map(({ label, value }) => (
+        <div className={dashboardClass('dashboard-overview__statBreakdownRow')} key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -577,12 +573,10 @@ function CurrentCapitalPositionPanel({
 async function DashboardPendingReviewCount({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
   const result = await applicationOverview
   if (!result) {
-    return 'Pending reviews unavailable'
+    return 'Unavailable'
   }
 
-  return result.pendingReviewCount > 0
-    ? `${result.pendingReviewCount} pending review${result.pendingReviewCount === 1 ? '' : 's'} still in the queue`
-    : 'No pending reviews in the intake queue'
+  return result.pendingReviewCount.toLocaleString('en-PH')
 }
 
 async function DashboardRecentApplications({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
@@ -744,9 +738,12 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} starting · {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)} net capital movement · {formatMinorCurrency(summary.netCollectedProfitMinor, dashboardCurrency)} net realized profit · {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} capital losses
-            </span>
+            <StatBreakdown wide items={[
+              { label: 'Starting capital', value: formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency) },
+              { label: 'Net capital movement', value: formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency) },
+              { label: 'Net realized profit', value: formatMinorCurrency(summary.netCollectedProfitMinor, dashboardCurrency) },
+              { label: 'Less: capital losses', value: formatMinorCurrency(capitalLossesMinor, dashboardCurrency) },
+            ]} />
             <StatInfoDisclosure id="current-capital-basis-info" label="Show current capital basis details">
               <span>Formula: starting capital + net capital movement + net realized profit - capital losses.</span>
               <br />
@@ -780,9 +777,11 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.currentContributedCapitalMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)} original · {formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency)} deposits · {formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency)} withdrawals
-            </span>
+            <StatBreakdown items={[
+              { label: 'Original capital', value: formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency) },
+              { label: 'Capital deposits', value: formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency) },
+              { label: 'Less: withdrawals', value: formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency) },
+            ]} />
             <StatInfoDisclosure id="current-contributed-capital-info" label="Show current contributed capital details">
               <span>Formula: original capital + capital deposits - capital withdrawals.</span>
               <br />
@@ -802,11 +801,13 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {summary.treasuryCashOnHandMinor !== null
-                ? `Calculated lending cash: ${formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency)}`
-                : 'Current capital basis less active principal'}
-            </span>
+            {summary.treasuryCashOnHandMinor !== null ? (
+              <StatBreakdown items={[
+                { label: 'Calculated lending cash', value: formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency) },
+              ]} />
+            ) : (
+              <span className={dashboardClass('dashboard-overview__statSubvalue')}>Current capital basis less active principal</span>
+            )}
             <StatInfoDisclosure id="cash-on-hand-info" label="Show cash on hand details">
               {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury.' : 'Calculated amount available to lend.'}
             </StatInfoDisclosure>
@@ -817,11 +818,18 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue', 'dashboard-overview__statSubvalue--contrast')} aria-live="polite">
-              <Suspense fallback="Loading pending reviews…">
-                <DashboardPendingReviewCount applicationOverview={applicationOverview} />
-              </Suspense>
-            </span>
+            <StatBreakdown items={[
+              {
+                label: 'Pending reviews',
+                value: (
+                  <span aria-live="polite">
+                    <Suspense fallback="Loading…">
+                      <DashboardPendingReviewCount applicationOverview={applicationOverview} />
+                    </Suspense>
+                  </span>
+                ),
+              },
+            ]} />
             <StatInfoDisclosure id="money-with-borrowers-info" label="Show money with borrowers details" contrast>
               Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}.
             </StatInfoDisclosure>
@@ -832,9 +840,13 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.nextCutoffReceivableMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {summary.currentCutoffReceivable ? formatDate(summary.currentCutoffReceivable.cutoffDate) : 'No upcoming cutoff'}
-            </span>
+            {summary.currentCutoffReceivable ? (
+              <StatBreakdown items={[
+                { label: 'Cutoff date', value: formatDate(summary.currentCutoffReceivable.cutoffDate) },
+              ]} />
+            ) : (
+              <span className={dashboardClass('dashboard-overview__statSubvalue')}>No upcoming cutoff</span>
+            )}
             <StatInfoDisclosure id="next-cutoff-receivable-info" label="Show next cutoff receivable details">
               Expected collection on the nearest cutoff date.
             </StatInfoDisclosure>
@@ -845,9 +857,13 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No overdue schedules right now'}
-            </span>
+            {summary.oldestUnpaidDueDate ? (
+              <StatBreakdown items={[
+                { label: 'Oldest unpaid due', value: formatDate(summary.oldestUnpaidDueDate) },
+              ]} />
+            ) : (
+              <span className={dashboardClass('dashboard-overview__statSubvalue')}>No overdue schedules right now</span>
+            )}
             <StatInfoDisclosure id="overdue-receivable-info" label="Show overdue receivable details">
               Past due unpaid schedules.
             </StatInfoDisclosure>
@@ -858,9 +874,9 @@ export function DashboardOverview({
             <strong className={dashboardClass('dashboard-overview__statValue')}>
               {formatMinorCurrency(projectedNetWorthAfterWriteOffMinor, dashboardCurrency)}
             </strong>
-            <span className={dashboardClass('dashboard-overview__statSubvalue')}>
-              {formatBasisPointsPercentage(summary.netProjectedProfitVsCapitalBps)} net projected profit vs starting capital
-            </span>
+            <StatBreakdown items={[
+              { label: 'Net profit vs starting capital', value: formatBasisPointsPercentage(summary.netProjectedProfitVsCapitalBps) },
+            ]} />
             <StatInfoDisclosure id="projected-net-worth-info" label="Show projected total net worth details">
               <span>Formula: cash on hand - unallocated payments + active principal + remaining projected profit.</span>
               <br />
