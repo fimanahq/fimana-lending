@@ -11,6 +11,7 @@ import type {
   LoanStatus,
 } from '@/lib/types/lending'
 import dashboardStyles from './dashboard.module.css'
+import { DashboardLoadingSpinner } from './dashboard-loading-spinner'
 import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
@@ -296,7 +297,7 @@ export function DashboardMonthlyProfitDetailDialog({
         ) : null}
 
         {loading ? (
-          <div className="notice" role="status" aria-live="polite">Loading monthly profit details...</div>
+          <div className={dashboardClass('dashboard-overview__loadingPlaceholder')}><DashboardLoadingSpinner label="Loading monthly profit details" /></div>
         ) : null}
         {error ? <div className="notice" role="alert">{error}</div> : null}
 

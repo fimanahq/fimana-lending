@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from 'react'
+import { Suspense } from 'react'
 import { formatCurrency, formatDate, formatPaymentDay } from '@/lib/format'
 import { formatLoanApplicationStatus, getStatusClassName } from '@/lib/status'
 import type { DashboardApplicationOverview, DashboardRecentApplication } from '@/lib/types/lending'
@@ -8,6 +8,7 @@ import { classNames } from '@/utils/class-names'
 import { DashboardPortfolioChartLoader } from './dashboard-portfolio-chart-loader'
 import { DashboardMonthlyReceivables } from './dashboard-monthly-receivables'
 import { DashboardProfitGrowth } from './dashboard-profit-growth'
+import { DashboardLoadingSpinner } from './dashboard-loading-spinner'
 import { StatInfoDisclosure } from './dashboard-stat-info'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -46,25 +47,6 @@ function getApplicationName(application: DashboardRecentApplication) {
   return application.borrower?.displayName
     || `${application.firstName || ''} ${application.lastName || ''}`.trim()
     || 'Borrower'
-}
-
-function StatBreakdown({
-  items,
-  wide = false,
-}: {
-  items: Array<{ label: string; value: ReactNode }>
-  wide?: boolean
-}) {
-  return (
-    <dl className={dashboardClass('dashboard-overview__statBreakdown', wide && 'dashboard-overview__statBreakdown--wide')}>
-      {items.map(({ label, value }) => (
-        <div className={dashboardClass('dashboard-overview__statBreakdownRow')} key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
 }
 
 function formatApplicationAmount(application: DashboardRecentApplication) {
@@ -582,7 +564,7 @@ function CurrentCapitalPositionPanel({
   )
 }
 
-async function DashboardPendingReviewCount({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
+export async function DashboardPendingReviewCount({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
   const result = await applicationOverview
   if (!result) {
     return 'Unavailable'
@@ -698,10 +680,8 @@ async function DashboardRecentApplications({ applicationOverview }: { applicatio
 
 export function DashboardOverview({
   data,
-  applicationOverview,
 }: {
   data: DashboardOverviewData
-  applicationOverview: Promise<DashboardApplicationOverview | null>
 }) {
   const {
     summary,
@@ -719,356 +699,166 @@ export function DashboardOverview({
   const hasCapitalLosses = capitalLossesMinor > 0
   const defaultedLoanLabel = `${summary.defaultedLoanCount.toLocaleString('en-PH')} defaulted loan${summary.defaultedLoanCount === 1 ? '' : 's'}`
   const liveCapitalPositionMinor = Math.max(0, summary.cashOnHandMinor) + summary.moneyWithBorrowersMinor
-  const projectedNetWorthAfterWriteOffMinor = summary.projectedNetWorthMinor
 
   return (
-    <div className={classNames('stack', dashboardClass('dashboard-overview'))}>
-      <section className={dashboardClass('dashboard-overview__executive')}>
-        {partialFailureNotice ? <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>{partialFailureNotice}</div> : null}
-        {summary.cashReconciliationStatus === 'variance' && summary.cashReconciliationDifferenceMinor !== null ? (
-          <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>
-            Treasury differs from calculated lending cash by {formatMinorCurrency(Math.abs(summary.cashReconciliationDifferenceMinor), dashboardCurrency)}
-            {' '}({summary.cashReconciliationDifferenceMinor < 0 ? 'Treasury is lower' : 'Treasury is higher'}).{' '}
-            <Link href="/treasury">Review Treasury reconciliation</Link>.
-          </div>
-        ) : null}
-        {summary.cashReconciliationStatus === 'treasury_unconfigured' ? (
-          <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>
-            Treasury is not configured. Cash on hand is using the calculated lending balance. <Link href="/treasury">Set up Treasury</Link>.
-          </div>
-        ) : null}
-        {summary.historicalUnallocatedPaymentCount > 0 ? (
-          <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>
-            {summary.historicalUnallocatedPaymentCount.toLocaleString('en-PH')} historical payment{summary.historicalUnallocatedPaymentCount === 1 ? '' : 's'} contain{' '}
-            {formatMinorCurrency(summary.historicalUnallocatedAmountMinor, dashboardCurrency)} awaiting excess-profit review. <Link href="/treasury/historical-excess">Review payments</Link>.
-          </div>
-        ) : null}
+    <section className={dashboardClass('dashboard-overview__executive')}>
+      {partialFailureNotice ? <div className={classNames('notice', dashboardClass('dashboard-overview__notice'))}>{partialFailureNotice}</div> : null}
 
-        <section className={dashboardClass('dashboard-overview__kpiGrid')}>
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warm', 'dashboard-overview__statCard--hasInfo', 'dashboard-overview__statCard--capitalBasis')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Current capital basis</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.currentCapitalBasisMinor, dashboardCurrency)}
-            </strong>
-            <StatBreakdown wide items={[
-              { label: 'Starting capital', value: formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency) },
-              { label: 'Net capital movement', value: formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency) },
-              { label: 'Net realized profit', value: formatMinorCurrency(summary.netCollectedProfitMinor, dashboardCurrency) },
-              { label: 'Less: capital losses', value: formatMinorCurrency(capitalLossesMinor, dashboardCurrency) },
-            ]} />
-            <StatInfoDisclosure id="current-capital-basis-info" label="Show current capital basis details">
-              <span>Formula: starting capital + net capital movement + net realized profit - capital losses.</span>
-              <br />
-              <br />
-              <span>Starting capital: {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Capital deposits: {formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Capital withdrawals: {formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Net capital movement: {formatMinorCurrency(summary.netCapitalMovementMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Realized profit: {formatMinorCurrency(summary.collectedProfitMinor, dashboardCurrency)} from collected interest, penalties, excess-payment profit, and Treasury interest.</span>
-              <br />
-              <span>Reward expenses: {formatMinorCurrency(summary.rewardExpenseMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Business expenses: {formatMinorCurrency(summary.businessExpenseMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Net realized profit: {formatMinorCurrency(summary.netCollectedProfitMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Capital losses: {formatMinorCurrency(capitalLossesMinor, dashboardCurrency)} total.</span>
-              <br />
-              <span>Defaulted principal: {formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Principal capital losses: {formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}</span>
-            </StatInfoDisclosure>
-          </article>
+      <ActiveLoansPanel
+        currency={dashboardCurrency}
+        segments={activeLoanBalanceSegments}
+        summary={summary}
+      />
 
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Current contributed capital</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.currentContributedCapitalMinor, dashboardCurrency)}
-            </strong>
-            <StatBreakdown items={[
-              { label: 'Original capital', value: formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency) },
-              { label: 'Capital deposits', value: formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency) },
-              { label: 'Less: withdrawals', value: formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency) },
-            ]} />
-            <StatInfoDisclosure id="current-contributed-capital-info" label="Show current contributed capital details">
-              <span>Formula: original capital + capital deposits - capital withdrawals.</span>
-              <br />
-              <br />
-              <span>Original capital: {formatMinorCurrency(summary.startingCapitalMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Capital deposits: {formatMinorCurrency(summary.capitalDepositsMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Capital withdrawals: {formatMinorCurrency(summary.capitalWithdrawalsMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Current contributed capital: {formatMinorCurrency(summary.currentContributedCapitalMinor, dashboardCurrency)}</span>
-            </StatInfoDisclosure>
-          </article>
-
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--sage', 'dashboard-overview__statCard--hasInfo')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Cash on hand</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}
-            </strong>
-            {summary.treasuryCashOnHandMinor !== null ? (
-              <StatBreakdown items={[
-                { label: 'Calculated lending cash', value: formatMinorCurrency(summary.calculatedCashOnHandMinor, dashboardCurrency) },
-              ]} />
-            ) : (
-              <span className={dashboardClass('dashboard-overview__statSubvalue')}>Current capital basis less active principal</span>
-            )}
-            <StatInfoDisclosure id="cash-on-hand-info" label="Show cash on hand details">
-              {summary.treasuryCashOnHandMinor !== null ? 'Available balance from Treasury.' : 'Calculated amount available to lend.'}
-            </StatInfoDisclosure>
-          </article>
-
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--ink', 'dashboard-overview__statCard--hasInfo')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Money with borrowers</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.moneyWithBorrowersMinor, dashboardCurrency)}
-            </strong>
-            <StatBreakdown items={[
-              {
-                label: 'Pending reviews',
-                value: (
-                  <span aria-live="polite">
-                    <Suspense fallback="Loading…">
-                      <DashboardPendingReviewCount applicationOverview={applicationOverview} />
-                    </Suspense>
-                  </span>
-                ),
-              },
-            ]} />
-            <StatInfoDisclosure id="money-with-borrowers-info" label="Show money with borrowers details" contrast>
-              Principal still deployed across {summary.activeLoanCount.toLocaleString('en-PH')} active loan{summary.activeLoanCount === 1 ? '' : 's'}.
-            </StatInfoDisclosure>
-          </article>
-
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Next cutoff receivable</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.nextCutoffReceivableMinor, dashboardCurrency)}
-            </strong>
-            {summary.currentCutoffReceivable ? (
-              <StatBreakdown items={[
-                { label: 'Cutoff date', value: formatDate(summary.currentCutoffReceivable.cutoffDate) },
-              ]} />
-            ) : (
-              <span className={dashboardClass('dashboard-overview__statSubvalue')}>No upcoming cutoff</span>
-            )}
-            <StatInfoDisclosure id="next-cutoff-receivable-info" label="Show next cutoff receivable details">
-              Expected collection on the nearest cutoff date.
-            </StatInfoDisclosure>
-          </article>
-
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--warningSoft', 'dashboard-overview__statCard--hasInfo')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Overdue receivable</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
-            </strong>
-            {summary.oldestUnpaidDueDate ? (
-              <StatBreakdown items={[
-                { label: 'Oldest unpaid due', value: formatDate(summary.oldestUnpaidDueDate) },
-              ]} />
-            ) : (
-              <span className={dashboardClass('dashboard-overview__statSubvalue')}>No overdue schedules right now</span>
-            )}
-            <StatInfoDisclosure id="overdue-receivable-info" label="Show overdue receivable details">
-              Past due unpaid schedules.
-            </StatInfoDisclosure>
-          </article>
-
-          <article className={dashboardClass('dashboard-overview__statCard', 'dashboard-overview__statCard--tinted', 'dashboard-overview__statCard--hasInfo')}>
-            <span className={dashboardClass('dashboard-overview__statLabel')}>Projected total net worth</span>
-            <strong className={dashboardClass('dashboard-overview__statValue')}>
-              {formatMinorCurrency(projectedNetWorthAfterWriteOffMinor, dashboardCurrency)}
-            </strong>
-            <StatBreakdown items={[
-              { label: 'Net profit vs starting capital', value: formatBasisPointsPercentage(summary.netProjectedProfitVsCapitalBps) },
-            ]} />
-            <StatInfoDisclosure id="projected-net-worth-info" label="Show projected total net worth details">
-              <span>Formula: cash on hand - unallocated payments + active principal + remaining projected profit.</span>
-              <br />
-              <br />
-              <span>Cash on hand: {formatMinorCurrency(summary.cashOnHandMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Unallocated payments: {formatMinorCurrency(summary.historicalUnallocatedAmountMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Active principal: {formatMinorCurrency(summary.outstandingPrincipalMinor, dashboardCurrency)}</span>
-              <br />
-              <span>Remaining projected profit: {formatMinorCurrency(summary.remainingProjectedProfitMinor, dashboardCurrency)}</span>
-              <br />
-              <br />
-              <span>Projected total net worth: {formatMinorCurrency(summary.projectedNetWorthMinor, dashboardCurrency)}</span>
-              <br />
-              <br />
-              <span>Booked expenses are already reflected in cash.</span>
-              {summary.ownerLoanInterestExcluded ? (
-                <>
-                  <br />
-                  <span>Owner loan interest is excluded only from Profit Outlook.</span>
-                </>
-              ) : null}
-            </StatInfoDisclosure>
-          </article>
-        </section>
-
-        <ActiveLoansPanel
+      <div className="grid two">
+        <CurrentCapitalPositionPanel
           currency={dashboardCurrency}
-          segments={activeLoanBalanceSegments}
+          liveCapitalPositionMinor={liveCapitalPositionMinor}
+          segments={capitalPositionSegments}
           summary={summary}
         />
 
-        <div className="grid two">
-          <CurrentCapitalPositionPanel
-            currency={dashboardCurrency}
-            liveCapitalPositionMinor={liveCapitalPositionMinor}
-            segments={capitalPositionSegments}
-            summary={summary}
-          />
-
-          <ProfitOutlookPanel
-            currency={dashboardCurrency}
-            segments={interestOutlookSegments}
-            summary={summary}
-          />
-        </div>
-
-        <DashboardProfitGrowth
-          currentYear={currentYear}
-          data={profitGrowth}
-          fallbackCurrency={dashboardCurrency}
-          yearOptions={profitGrowthYearOptions}
+        <ProfitOutlookPanel
+          currency={dashboardCurrency}
+          segments={interestOutlookSegments}
+          summary={summary}
         />
+      </div>
 
-        <DashboardMonthlyReceivables
-          currentYear={currentYear}
-          data={monthlyReceivables}
-          fallbackCurrency={dashboardCurrency}
-          yearOptions={profitGrowthYearOptions}
-        />
+      <DashboardProfitGrowth
+        currentYear={currentYear}
+        data={profitGrowth}
+        fallbackCurrency={dashboardCurrency}
+        yearOptions={profitGrowthYearOptions}
+      />
 
-        <section className="grid two">
-          {hasCapitalLosses ? (
-            <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__infoCard')}>
-              <div className={dashboardClass('dashboard-overview__progressHeader')}>
-                <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
-                  <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
-                    <h2 className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</h2>
-                    <StatInfoDisclosure id="capital-losses-info" label="Show capital losses details">
-                      Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
-                    </StatInfoDisclosure>
-                  </div>
-                  <p>
-                    Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
-                  </p>
-                </div>
-              </div>
-              <div className={dashboardClass('dashboard-overview__miniGrid')}>
-                {summary.writtenOffPrincipalMinor > 0 ? (
-                  <>
-                    <MiniMetric
-                      label="Defaulted principal"
-                      value={formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}
-                      meta={`Across ${defaultedLoanLabel}`}
-                    />
-                    <MiniMetric
-                      label="Collected profit"
-                      value={formatMinorCurrency(summary.defaultedCollectedProfitMinor, dashboardCurrency)}
-                      meta="Interest and penalties collected before default"
-                    />
-                    <MiniMetric
-                      label="Net default loss"
-                      value={formatMinorCurrency(summary.netDefaultLossMinor, dashboardCurrency)}
-                      meta="Defaulted principal less collected profit"
-                    />
-                  </>
-                ) : null}
-                {summary.principalWriteOffLossMinor > 0 ? (
-                  <MiniMetric
-                    label="Principal capital losses"
-                    value={formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}
-                    meta="Principal write-offs and principal rounding write-offs"
-                  />
-                ) : null}
-              </div>
-            </article>
-          ) : null}
+      <DashboardMonthlyReceivables
+        currentYear={currentYear}
+        data={monthlyReceivables}
+        fallbackCurrency={dashboardCurrency}
+        yearOptions={profitGrowthYearOptions}
+      />
 
+      <section className="grid two">
+        {hasCapitalLosses ? (
           <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__infoCard')}>
             <div className={dashboardClass('dashboard-overview__progressHeader')}>
               <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
                 <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
-                  <h2 className={dashboardClass('dashboard-overview__statLabel')}>Collection Risk</h2>
-                  <StatInfoDisclosure id="collection-risk-info" label="Show collection risk details">
-                    Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
+                  <h2 className={dashboardClass('dashboard-overview__statLabel')}>Defaulted / Losses</h2>
+                  <StatInfoDisclosure id="capital-losses-info" label="Show capital losses details">
+                    Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
                   </StatInfoDisclosure>
                 </div>
                 <p>
-                  Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
+                  Defaulted principal, principal write-offs, and principal rounding write-offs are excluded from active receivables and deducted from current capital basis.
                 </p>
               </div>
             </div>
             <div className={dashboardClass('dashboard-overview__miniGrid')}>
-              <MiniMetric
-                label="Overdue receivable"
-                value={formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
-                meta="Past due unpaid schedules only"
-              />
-              <MiniMetric
-                label="Overdue principal"
-                value={formatMinorCurrency(summary.overduePrincipalMinor, dashboardCurrency)}
-                meta="Principal already past due"
-              />
-              <MiniMetric
-                label="Overdue interest"
-                value={formatMinorCurrency(summary.overdueInterestMinor, dashboardCurrency)}
-                meta="Interest already past due"
-              />
-              <MiniMetric
-                label="Overdue penalty"
-                value={formatMinorCurrency(summary.overduePenaltyMinor, dashboardCurrency)}
-                meta="Manual penalties already past due"
-              />
-              <MiniMetric
-                label="Overdue loans"
-                value={summary.overdueLoanCount.toLocaleString('en-PH')}
-                meta="Loans with missed schedule rows"
-              />
-              <MiniMetric
-                label="Borrowers with missed payments"
-                value={summary.overdueBorrowerCount.toLocaleString('en-PH')}
-                meta={summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No missed payments right now'}
-              />
+              {summary.writtenOffPrincipalMinor > 0 ? (
+                <>
+                  <MiniMetric
+                    label="Defaulted principal"
+                    value={formatMinorCurrency(summary.writtenOffPrincipalMinor, dashboardCurrency)}
+                    meta={`Across ${defaultedLoanLabel}`}
+                  />
+                  <MiniMetric
+                    label="Collected profit"
+                    value={formatMinorCurrency(summary.defaultedCollectedProfitMinor, dashboardCurrency)}
+                    meta="Interest and penalties collected before default"
+                  />
+                  <MiniMetric
+                    label="Net default loss"
+                    value={formatMinorCurrency(summary.netDefaultLossMinor, dashboardCurrency)}
+                    meta="Defaulted principal less collected profit"
+                  />
+                </>
+              ) : null}
+              {summary.principalWriteOffLossMinor > 0 ? (
+                <MiniMetric
+                  label="Principal capital losses"
+                  value={formatMinorCurrency(summary.principalWriteOffLossMinor, dashboardCurrency)}
+                  meta="Principal write-offs and principal rounding write-offs"
+                />
+              ) : null}
             </div>
           </article>
+        ) : null}
 
-        </section>
-      </section>
-
-      <section className={dashboardClass('dashboard-overview__operator')}>
-        <section className={dashboardClass('dashboard-overview__contentGrid')}>
-          <div className={dashboardClass('dashboard-overview__mainColumn')}>
-            <div className={dashboardClass('dashboard-overview__sectionHead')}>
-              <h2>Recent Applications</h2>
-              <Link href="/loan-applications">View all history</Link>
-            </div>
-
-            <div className={dashboardClass('dashboard-overview__tableCard')}>
-              <Suspense fallback={
-                <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__deferredBlock')} role="status">
-                  Loading recent applications…
-                </div>
-              }>
-                <DashboardRecentApplications applicationOverview={applicationOverview} />
-              </Suspense>
+        <article className={dashboardClass('dashboard-overview__progressCard', 'dashboard-overview__infoCard')}>
+          <div className={dashboardClass('dashboard-overview__progressHeader')}>
+            <div className={dashboardClass('dashboard-overview__infoTitleGroup')}>
+              <div className={dashboardClass('dashboard-overview__infoTitleRow')}>
+                <h2 className={dashboardClass('dashboard-overview__statLabel')}>Collection Risk</h2>
+                <StatInfoDisclosure id="collection-risk-info" label="Show collection risk details">
+                  Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
+                </StatInfoDisclosure>
+              </div>
+              <p>
+                Track the overdue receivable, split between overdue principal, interest, and penalty, then watch how many borrowers and loans are already late.
+              </p>
             </div>
           </div>
-        </section>
+          <div className={dashboardClass('dashboard-overview__miniGrid')}>
+            <MiniMetric
+              label="Overdue receivable"
+              value={formatMinorCurrency(summary.overdueReceivableMinor, dashboardCurrency)}
+              meta="Past due unpaid schedules only"
+            />
+            <MiniMetric
+              label="Overdue principal"
+              value={formatMinorCurrency(summary.overduePrincipalMinor, dashboardCurrency)}
+              meta="Principal already past due"
+            />
+            <MiniMetric
+              label="Overdue interest"
+              value={formatMinorCurrency(summary.overdueInterestMinor, dashboardCurrency)}
+              meta="Interest already past due"
+            />
+            <MiniMetric
+              label="Overdue penalty"
+              value={formatMinorCurrency(summary.overduePenaltyMinor, dashboardCurrency)}
+              meta="Manual penalties already past due"
+            />
+            <MiniMetric
+              label="Overdue loans"
+              value={summary.overdueLoanCount.toLocaleString('en-PH')}
+              meta="Loans with missed schedule rows"
+            />
+            <MiniMetric
+              label="Borrowers with missed payments"
+              value={summary.overdueBorrowerCount.toLocaleString('en-PH')}
+              meta={summary.oldestUnpaidDueDate ? `Oldest unpaid due ${formatDate(summary.oldestUnpaidDueDate)}` : 'No missed payments right now'}
+            />
+          </div>
+        </article>
       </section>
-    </div>
+    </section>
+  )
+}
+
+export function DashboardRecentApplicationsPanel({ applicationOverview }: { applicationOverview: Promise<DashboardApplicationOverview | null> }) {
+  return (
+    <section className={dashboardClass('dashboard-overview__operator')}>
+      <section className={dashboardClass('dashboard-overview__contentGrid')}>
+        <div className={dashboardClass('dashboard-overview__mainColumn')}>
+          <div className={dashboardClass('dashboard-overview__sectionHead')}>
+            <h2>Recent Applications</h2>
+            <Link href="/loan-applications">View all history</Link>
+          </div>
+
+          <div className={dashboardClass('dashboard-overview__tableCard')}>
+            <Suspense fallback={
+              <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__deferredBlock', 'dashboard-overview__loadingPlaceholder')}>
+                <DashboardLoadingSpinner label="Loading recent applications" />
+              </div>
+            }>
+              <DashboardRecentApplications applicationOverview={applicationOverview} />
+            </Suspense>
+          </div>
+        </div>
+      </section>
+    </section>
   )
 }

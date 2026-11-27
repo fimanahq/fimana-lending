@@ -704,6 +704,33 @@
   min-height: 12rem;
 }
 
+.dashboard-overview__loadingPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-overview__loadingSpinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  vertical-align: middle;
+}
+
+.dashboard-overview__refreshStatus {
+  margin: -1.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-overview__loadingSpinner :global(.state-card__spinner) {
+    animation: none;
+  }
+}
+
 .dashboard-overview__deferredBlock :global(.ui-skeleton) {
   min-height: 100%;
   align-content: start;

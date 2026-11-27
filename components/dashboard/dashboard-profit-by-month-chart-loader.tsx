@@ -6,6 +6,7 @@ import {
   type DashboardProfitByMonthChartProps,
 } from './dashboard-profit-by-month-chart'
 import dashboardStyles from './dashboard.module.css'
+import { DashboardLoadingSpinner } from './dashboard-loading-spinner'
 import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
@@ -18,7 +19,7 @@ function DashboardProfitByMonthChartFallback({ variant = 'profit' }: Pick<Dashbo
       <div className={dashboardClass('dashboard-overview__interestChartToolbar')} aria-hidden="true">
         <div className={dashboardClass('dashboard-overview__interestChartToolbarCopy')}>
           <strong>{isReceivablesChart ? 'Expected and actual preview' : 'Gross and net profit preview'}</strong>
-          <span>Loading full chart controls</span>
+          <DashboardLoadingSpinner label="Loading full chart controls" />
         </div>
         <span className={dashboardClass('dashboard-overview__interestChartToolbarPlaceholder')} />
       </div>

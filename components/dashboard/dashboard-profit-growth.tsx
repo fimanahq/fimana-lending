@@ -14,6 +14,7 @@ import type { DashboardMonthlyProfitDetailResponse, DashboardMonthlyProfitRow } 
 import { getDashboardMonthlyProfit, getDashboardMonthlyProfitDetails } from '@/services/dashboard'
 import { DASHBOARD_PROFIT_GROWTH_DESCRIPTION, DASHBOARD_PROFIT_GROWTH_TITLE } from './dashboard-copy'
 import dashboardStyles from './dashboard.module.css'
+import { DashboardLoadingSpinner } from './dashboard-loading-spinner'
 import { getDashboardClass } from './dashboard-styles'
 
 const dashboardClass = (...values: Array<string | false | null | undefined>) => getDashboardClass(dashboardStyles, ...values)
@@ -206,11 +207,8 @@ export function DashboardProfitGrowth({
 
       {isProfitLoading ? (
         <section className={dashboardClass('dashboard-overview__interestCard')} aria-busy="true">
-          <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact')} role="status" aria-live="polite">
-            <div>
-              <strong>Loading {selectedYear} profit</strong>
-              <p>Collecting posted interest and penalty totals for the selected year.</p>
-            </div>
+          <div className={dashboardClass('dashboard-overview__emptyState', 'dashboard-overview__emptyState--compact', 'dashboard-overview__loadingPlaceholder')}>
+            <DashboardLoadingSpinner label={`Loading ${selectedYear} profit`} />
           </div>
         </section>
       ) : profitError ? (

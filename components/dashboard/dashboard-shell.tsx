@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AppLogo } from '@/components/shared/app-logo'
 import { useAuth } from '@/components/providers/auth-provider'
 import { switchAccountMode } from '@/services/auth'
+import { invalidateDashboardKpis } from '@/lib/dashboard-kpi-cache'
 import { classNames } from '@/utils/class-names'
 import dashboardStyles from './dashboard.module.css'
 import { getDashboardClass } from './dashboard-styles'
@@ -253,6 +254,7 @@ export function DashboardShell({
     }
 
     setIsLoggingOut(true)
+    invalidateDashboardKpis()
 
     try {
       await fetch('/api/auth/logout', {
