@@ -2,6 +2,71 @@
   width: min(75rem, calc(100vw - 2rem));
 }
 
+.paymentDialog {
+  width: min(64rem, calc(100vw - 2rem));
+  align-content: start;
+  background: #fff8eb;
+}
+
+.content {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.summaryCard {
+  padding: 1rem;
+  gap: 0.75rem;
+}
+
+.summaryCard :global(.ui-card__header) {
+  flex-direction: row;
+  align-items: center;
+}
+
+.summaryCard :global(.ui-card__actions) {
+  width: auto;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.summaryMetric {
+  display: grid;
+  align-content: start;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.defaultPaymentMetric {
+  border-color: rgba(146, 75, 16, 0.34);
+  background: rgba(255, 240, 215, 0.72);
+}
+
+.summaryMetric strong {
+  overflow-wrap: anywhere;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.notesField {
+  grid-column: 1 / -1;
+}
+
+.notesField textarea {
+  min-height: 4.5rem;
+}
+
 .formCard {
   border-color: transparent;
   background: transparent;
@@ -9,6 +74,85 @@
   backdrop-filter: none;
 }
 
+.paymentFormCard {
+  gap: 0.75rem;
+  padding: 0.15rem 0;
+}
+
 .formActions {
   justify-content: flex-start;
+}
+
+.detailTable {
+  padding: 0.75rem 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.detailDisclosure {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-strong);
+}
+
+.detailDisclosure summary {
+  cursor: pointer;
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 700;
+}
+
+.disclosureMeta {
+  color: var(--muted);
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+@media (max-width: 700px) {
+  .paymentDialog {
+    gap: 0.7rem;
+    padding: 0.85rem;
+  }
+
+  .content {
+    gap: 0.65rem;
+  }
+
+  .summaryCard {
+    padding: 0.8rem;
+  }
+
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .defaultPaymentMetric {
+    grid-column: 1 / -1;
+  }
+
+  .summaryMetric {
+    padding: 0.6rem;
+  }
+
+  .formGrid {
+    gap: 0.6rem;
+  }
+
+  .formGrid :global(.field),
+  .formGrid :global(input) {
+    min-width: 0;
+  }
+
+  .detailDisclosure {
+    padding: 0.75rem 0.8rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .formGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

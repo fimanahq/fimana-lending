@@ -50,34 +50,44 @@ function toAmountMinor(amount: string) {
   return Math.round(parsed * 100)
 }
 
-function getCurrentCutoffOutstandingValue(loan: LoanRecord) {
-  const currentCutoff = (loan.schedule ?? []).find((row) => row.outstandingTotalAmountMinor > 0)
-  return currentCutoff ? (currentCutoff.outstandingTotalAmountMinor / 100).toFixed(2) : ''
+function getDefaultPaymentAmountMinor(loan: LoanRecord) {
+  return (loan.schedule ?? []).find((row) => row.outstandingTotalAmountMinor > 0)?.outstandingTotalAmountMinor ?? null
+}
+
+function getDefaultPaymentAmountValue(loan: LoanRecord) {
+  const amountMinor = getDefaultPaymentAmountMinor(loan)
+  return amountMinor === null ? '' : (amountMinor / 100).toFixed(2)
 }
 
 function LoanSummary({ loan }: { loan: LoanRecord }) {
   const currency = loan.loanProduct.currency || 'PHP'
   const openScheduleRows = (loan.schedule ?? []).filter((row) => row.outstandingTotalAmountMinor > 0)
+  const defaultPaymentAmountMinor = getDefaultPaymentAmountMinor(loan)
 
   return (
     <Card
-      title={`${loan.borrower.displayName} · ${loan.loanNumber}`}
+      title={loan.borrower.displayName}
       actions={<span className={getStatusClassName(loan.status)}>{loan.status}</span>}
+      className={styles.summaryCard}
     >
-      <div className="application-summary-grid">
-        <div className="data-card">
+      <div className={styles.summaryGrid}>
+        <div className={`${styles.summaryMetric} ${styles.defaultPaymentMetric}`}>
+          <span className="muted">Payment per cutoff</span>
+          <strong>{defaultPaymentAmountMinor === null ? '—' : formatMinorCurrency(defaultPaymentAmountMinor, currency)}</strong>
+        </div>
+        <div className={styles.summaryMetric}>
           <span className="muted">Outstanding</span>
           <strong>{formatMinorCurrency(loan.balances.totalOutstandingAmountMinor, currency)}</strong>
         </div>
-        <div className="data-card">
+        <div className={styles.summaryMetric}>
           <span className="muted">Paid</span>
           <strong>{formatMinorCurrency(loan.balances.totalPaidAmountMinor, currency)}</strong>
         </div>
-        <div className="data-card">
+        <div className={styles.summaryMetric}>
           <span className="muted">Next due</span>
           <strong>{loan.nextDueDate ? formatDate(loan.nextDueDate) : 'Completed'}</strong>
         </div>
-        <div className="data-card">
+        <div className={styles.summaryMetric}>
           <span className="muted">Open rows</span>
           <strong>{openScheduleRows.length}</strong>
         </div>
@@ -94,7 +104,7 @@ function PaymentHistoryTable({
   currency: string
 }) {
   return (
-    <TableShell label="Recent posted payments">
+    <TableShell label="Recent posted payments" className={styles.detailTable}>
       <DataTable>
         <thead>
           <tr>
@@ -139,7 +149,6 @@ function PaymentHistoryTable({
 
 export interface LoanPaymentDialogProps {
   loanId: string
-  loanLabel?: string
   onClose: () => void
   onPaymentPosted?: (loan: LoanRecord) => Promise<void> | void
   open: boolean
@@ -147,7 +156,6 @@ export interface LoanPaymentDialogProps {
 
 export function LoanPaymentDialog({
   loanId,
-  loanLabel,
   onClose,
   onPaymentPosted,
   open,
@@ -165,34 +173,61 @@ export function LoanPaymentDialog({
   const [notes, setNotes] = useState('')
   const [confirmExcessProfit, setConfirmExcessProfit] = useState(false)
   const submitLockRef = useRef(false)
+  const loadRequestRef = useRef(0)
 
   const loadDetail = useCallback(async () => {
+    const requestId = ++loadRequestRef.current
+    setDetail(null)
+    setPaymentDate(todayDateValue())
+    setAmount('')
+    setMethod('cash')
+    setReferenceNo('')
+    setNotes('')
+    setConfirmExcessProfit(false)
+    setSubmitError('')
+    setDetailError('')
+
     if (!loanId) {
-      setDetail(null)
+      setLoading(false)
       return
     }
 
     setLoading(true)
-    setDetailError('')
 
     try {
       const nextDetail = await getLoanPaymentDetail(loanId)
+      if (requestId !== loadRequestRef.current) {
+        return
+      }
+      if (nextDetail.loan.id !== loanId) {
+        throw new Error('Loaded loan does not match the selected loan. Retry to continue.')
+      }
       setDetail(nextDetail)
-      setAmount(getCurrentCutoffOutstandingValue(nextDetail.loan))
+      setAmount(getDefaultPaymentAmountValue(nextDetail.loan))
     } catch (caughtError) {
-      setDetailError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan payment detail')
+      if (requestId === loadRequestRef.current) {
+        setDetailError(caughtError instanceof Error ? caughtError.message : 'Unable to load loan payment detail')
+      }
     } finally {
-      setLoading(false)
+      if (requestId === loadRequestRef.current) {
+        setLoading(false)
+      }
     }
   }, [loanId])
 
   useEffect(() => {
     if (!open) {
+      loadRequestRef.current += 1
       submitLockRef.current = false
+      setDetail(null)
+      setLoading(false)
       return
     }
 
     void loadDetail()
+    return () => {
+      loadRequestRef.current += 1
+    }
   }, [loadDetail, open])
 
   useEffect(() => {
@@ -212,7 +247,12 @@ export function LoanPaymentDialog({
       return
     }
 
-    if (!detail?.loan || detail.loan.status !== 'active' || detail.loan.balances.totalOutstandingAmountMinor <= 0) {
+    if (!open || loading || detailError || !detail?.loan || detail.loan.id !== loanId) {
+      setSubmitError('Wait for the selected loan to finish loading')
+      return
+    }
+
+    if (detail.loan.status !== 'active' || detail.loan.balances.totalOutstandingAmountMinor <= 0) {
       setSubmitError('Loan has no outstanding balance to post')
       return
     }
@@ -248,7 +288,7 @@ export function LoanPaymentDialog({
         loan: response.loan,
         payments: response.payments,
       })
-      setAmount(getCurrentCutoffOutstandingValue(response.loan))
+      setAmount(getDefaultPaymentAmountValue(response.loan))
       setReferenceNo('')
       setNotes('')
       setConfirmExcessProfit(false)
@@ -264,7 +304,7 @@ export function LoanPaymentDialog({
     }
   }
 
-  const loan = detail?.loan ?? null
+  const loan = detail?.loan.id === loanId ? detail.loan : null
   const currency = loan?.loanProduct.currency || 'PHP'
   const openScheduleRows = (loan?.schedule ?? []).filter((row) => row.outstandingTotalAmountMinor > 0)
   const amountMinor = toAmountMinor(amount)
@@ -290,17 +330,18 @@ export function LoanPaymentDialog({
       : shortagePreviewMinor > 0
         ? `${formatMinorCurrency(shortagePreviewMinor, currency)} shortage will be waived from interest as a rounding adjustment.`
         : ''
-  const canPostPayment = loan?.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
+  const canPostPayment = !loading && !detailError && loan?.status === 'active' && loan.balances.totalOutstandingAmountMinor > 0
 
   return (
     <Dialog
       id="loan-payment-dialog"
       open={open}
       onClose={onClose}
-      title={loanLabel ? `Post Payment - ${loanLabel}` : 'Post Payment'}
-      className={styles.dialog}
+      dismissDisabled={submitting}
+      title="Post payment"
+      className={styles.paymentDialog}
     >
-      <div className="stack">
+      <div className={styles.content}>
         {loading ? (
           <LoadingState title="Loading loan payment detail" description="Fetching schedule rows and payment history." />
         ) : null}
@@ -326,11 +367,11 @@ export function LoanPaymentDialog({
 
             <Card
               variant="flat"
-              className={styles.formCard}
+              className={`${styles.formCard} ${styles.paymentFormCard}`}
             >
               {submitError ? <ErrorBanner title="Unable to post payment" message={submitError} /> : null}
 
-              <div className="grid two">
+              <div className={styles.formGrid}>
                 <Input
                   id="payment-date"
                   label="Payment date"
@@ -369,7 +410,7 @@ export function LoanPaymentDialog({
                   onChange={(event) => setNotes(event.target.value)}
                   placeholder="Optional"
                   maxLength={1000}
-                  className="grid-span-2"
+                  className={styles.notesField}
                 />
               </div>
 
@@ -395,40 +436,46 @@ export function LoanPaymentDialog({
               </div>
             </Card>
 
-            <TableShell label={`${loan.loanNumber} open schedule rows`}>
-              <DataTable>
-                <thead>
-                  <tr>
-                    <th>Installment</th>
-                    <th>Due date</th>
-                    <th>Outstanding principal</th>
-                    <th>Outstanding interest</th>
-                    <th>Outstanding total</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {openScheduleRows.length === 0 ? (
+            <details className={styles.detailDisclosure}>
+              <summary>Open schedule <span className={styles.disclosureMeta}>({openScheduleRows.length})</span></summary>
+              <TableShell label="Open schedule rows" className={styles.detailTable}>
+                <DataTable>
+                  <thead>
                     <tr>
-                      <td colSpan={6} className="muted">No open schedule rows remain.</td>
+                      <th>Installment</th>
+                      <th>Due date</th>
+                      <th>Outstanding principal</th>
+                      <th>Outstanding interest</th>
+                      <th>Outstanding total</th>
+                      <th>Status</th>
                     </tr>
-                  ) : (
-                    openScheduleRows.map((row) => (
-                      <tr key={row.id}>
-                        <td>#{row.sequence}</td>
-                        <td>{formatDate(row.dueDate)}</td>
-                        <td>{formatMinorCurrency(row.outstandingPrincipalAmountMinor, currency)}</td>
-                        <td>{formatMinorCurrency(row.outstandingInterestAmountMinor, currency)}</td>
-                        <td>{formatMinorCurrency(row.outstandingTotalAmountMinor, currency)}</td>
-                        <td><span className={getStatusClassName(row.status)}>{row.status}</span></td>
+                  </thead>
+                  <tbody>
+                    {openScheduleRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="muted">No open schedule rows remain.</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </DataTable>
-            </TableShell>
+                    ) : (
+                      openScheduleRows.map((row) => (
+                        <tr key={row.id}>
+                          <td>#{row.sequence}</td>
+                          <td>{formatDate(row.dueDate)}</td>
+                          <td>{formatMinorCurrency(row.outstandingPrincipalAmountMinor, currency)}</td>
+                          <td>{formatMinorCurrency(row.outstandingInterestAmountMinor, currency)}</td>
+                          <td>{formatMinorCurrency(row.outstandingTotalAmountMinor, currency)}</td>
+                          <td><span className={getStatusClassName(row.status)}>{row.status}</span></td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </DataTable>
+              </TableShell>
+            </details>
 
-            <PaymentHistoryTable payments={detail?.payments ?? []} currency={currency} />
+            <details className={styles.detailDisclosure}>
+              <summary>Recent payments <span className={styles.disclosureMeta}>({detail?.payments.length ?? 0})</span></summary>
+              <PaymentHistoryTable payments={detail?.payments ?? []} currency={currency} />
+            </details>
           </>
         ) : null}
       </div>
