@@ -1172,7 +1172,6 @@ export function LoanDetail({ loanId, backNavigation }: LoanDetailProps) {
       <LoanPaymentDialog
         open={paymentDialogOpen}
         loanId={loanId}
-        loanLabel={`${loan.borrower.displayName} · ${loan.loanNumber}`}
         onClose={() => setPaymentDialogOpen(false)}
         onPaymentPosted={async (updatedLoan) => {
           setLoan(updatedLoan)
