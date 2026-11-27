@@ -112,6 +112,10 @@
   box-shadow: none;
 }
 
+.searchField .searchInput:focus-visible {
+  outline: none;
+}
+
 .searchButton {
   flex: 0 0 auto;
   min-width: 4.35rem;
